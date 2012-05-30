@@ -1,0 +1,20 @@
+out
+data-ignore
+logs
+
+# pydev #
+#########
+.project
+.pydevproject
+
+# Compiled source #
+###################
+*.class
+*.pyc
+
+# OS generated files #
+######################
+.DS_Store*
+ehthumbs.db
+Icon?
+Thumbs.db
