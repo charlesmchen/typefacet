@@ -1,0 +1,210 @@
+- {blockName: Basic Latin, blockRangeEnd: '0x007F', blockRangeStart: '0x0000'}
+- {blockName: Latin-1 Supplement, blockRangeEnd: '0x00FF', blockRangeStart: '0x0080'}
+- {blockName: Latin Extended-A, blockRangeEnd: '0x017F', blockRangeStart: '0x0100'}
+- {blockName: Latin Extended-B, blockRangeEnd: '0x024F', blockRangeStart: '0x0180'}
+- {blockName: IPA Extensions, blockRangeEnd: '0x02AF', blockRangeStart: '0x0250'}
+- {blockName: Spacing Modifier Letters, blockRangeEnd: '0x02FF', blockRangeStart: '0x02B0'}
+- {blockName: Combining Diacritical Marks, blockRangeEnd: '0x036F', blockRangeStart: '0x0300'}
+- {blockName: Greek and Coptic, blockRangeEnd: '0x03FF', blockRangeStart: '0x0370'}
+- {blockName: Cyrillic, blockRangeEnd: '0x04FF', blockRangeStart: '0x0400'}
+- {blockName: Cyrillic Supplement, blockRangeEnd: '0x052F', blockRangeStart: '0x0500'}
+- {blockName: Armenian, blockRangeEnd: '0x058F', blockRangeStart: '0x0530'}
+- {blockName: Hebrew, blockRangeEnd: '0x05FF', blockRangeStart: '0x0590'}
+- {blockName: Arabic, blockRangeEnd: '0x06FF', blockRangeStart: '0x0600'}
+- {blockName: Syriac, blockRangeEnd: '0x074F', blockRangeStart: '0x0700'}
+- {blockName: Arabic Supplement, blockRangeEnd: '0x077F', blockRangeStart: '0x0750'}
+- {blockName: Thaana, blockRangeEnd: '0x07BF', blockRangeStart: '0x0780'}
+- {blockName: NKo, blockRangeEnd: '0x07FF', blockRangeStart: '0x07C0'}
+- {blockName: Samaritan, blockRangeEnd: '0x083F', blockRangeStart: '0x0800'}
+- {blockName: Mandaic, blockRangeEnd: '0x085F', blockRangeStart: '0x0840'}
+- {blockName: Devanagari, blockRangeEnd: '0x097F', blockRangeStart: '0x0900'}
+- {blockName: Bengali, blockRangeEnd: '0x09FF', blockRangeStart: '0x0980'}
+- {blockName: Gurmukhi, blockRangeEnd: '0x0A7F', blockRangeStart: '0x0A00'}
+- {blockName: Gujarati, blockRangeEnd: '0x0AFF', blockRangeStart: '0x0A80'}
+- {blockName: Oriya, blockRangeEnd: '0x0B7F', blockRangeStart: '0x0B00'}
+- {blockName: Tamil, blockRangeEnd: '0x0BFF', blockRangeStart: '0x0B80'}
+- {blockName: Telugu, blockRangeEnd: '0x0C7F', blockRangeStart: '0x0C00'}
+- {blockName: Kannada, blockRangeEnd: '0x0CFF', blockRangeStart: '0x0C80'}
+- {blockName: Malayalam, blockRangeEnd: '0x0D7F', blockRangeStart: '0x0D00'}
+- {blockName: Sinhala, blockRangeEnd: '0x0DFF', blockRangeStart: '0x0D80'}
+- {blockName: Thai, blockRangeEnd: '0x0E7F', blockRangeStart: '0x0E00'}
+- {blockName: Lao, blockRangeEnd: '0x0EFF', blockRangeStart: '0x0E80'}
+- {blockName: Tibetan, blockRangeEnd: '0x0FFF', blockRangeStart: '0x0F00'}
+- {blockName: Myanmar, blockRangeEnd: '0x109F', blockRangeStart: '0x1000'}
+- {blockName: Georgian, blockRangeEnd: '0x10FF', blockRangeStart: '0x10A0'}
+- {blockName: Hangul Jamo, blockRangeEnd: '0x11FF', blockRangeStart: '0x1100'}
+- {blockName: Ethiopic, blockRangeEnd: '0x137F', blockRangeStart: '0x1200'}
+- {blockName: Ethiopic Supplement, blockRangeEnd: '0x139F', blockRangeStart: '0x1380'}
+- {blockName: Cherokee, blockRangeEnd: '0x13FF', blockRangeStart: '0x13A0'}
+- {blockName: Unified Canadian Aboriginal Syllabics, blockRangeEnd: '0x167F', blockRangeStart: '0x1400'}
+- {blockName: Ogham, blockRangeEnd: '0x169F', blockRangeStart: '0x1680'}
+- {blockName: Runic, blockRangeEnd: '0x16FF', blockRangeStart: '0x16A0'}
+- {blockName: Tagalog, blockRangeEnd: '0x171F', blockRangeStart: '0x1700'}
+- {blockName: Hanunoo, blockRangeEnd: '0x173F', blockRangeStart: '0x1720'}
+- {blockName: Buhid, blockRangeEnd: '0x175F', blockRangeStart: '0x1740'}
+- {blockName: Tagbanwa, blockRangeEnd: '0x177F', blockRangeStart: '0x1760'}
+- {blockName: Khmer, blockRangeEnd: '0x17FF', blockRangeStart: '0x1780'}
+- {blockName: Mongolian, blockRangeEnd: '0x18AF', blockRangeStart: '0x1800'}
+- {blockName: Unified Canadian Aboriginal Syllabics Extended, blockRangeEnd: '0x18FF',
+  blockRangeStart: '0x18B0'}
+- {blockName: Limbu, blockRangeEnd: '0x194F', blockRangeStart: '0x1900'}
+- {blockName: Tai Le, blockRangeEnd: '0x197F', blockRangeStart: '0x1950'}
+- {blockName: New Tai Lue, blockRangeEnd: '0x19DF', blockRangeStart: '0x1980'}
+- {blockName: Khmer Symbols, blockRangeEnd: '0x19FF', blockRangeStart: '0x19E0'}
+- {blockName: Buginese, blockRangeEnd: '0x1A1F', blockRangeStart: '0x1A00'}
+- {blockName: Tai Tham, blockRangeEnd: '0x1AAF', blockRangeStart: '0x1A20'}
+- {blockName: Balinese, blockRangeEnd: '0x1B7F', blockRangeStart: '0x1B00'}
+- {blockName: Sundanese, blockRangeEnd: '0x1BBF', blockRangeStart: '0x1B80'}
+- {blockName: Batak, blockRangeEnd: '0x1BFF', blockRangeStart: '0x1BC0'}
+- {blockName: Lepcha, blockRangeEnd: '0x1C4F', blockRangeStart: '0x1C00'}
+- {blockName: Ol Chiki, blockRangeEnd: '0x1C7F', blockRangeStart: '0x1C50'}
+- {blockName: Vedic Extensions, blockRangeEnd: '0x1CFF', blockRangeStart: '0x1CD0'}
+- {blockName: Phonetic Extensions, blockRangeEnd: '0x1D7F', blockRangeStart: '0x1D00'}
+- {blockName: Phonetic Extensions Supplement, blockRangeEnd: '0x1DBF', blockRangeStart: '0x1D80'}
+- {blockName: Combining Diacritical Marks Supplement, blockRangeEnd: '0x1DFF', blockRangeStart: '0x1DC0'}
+- {blockName: Latin Extended Additional, blockRangeEnd: '0x1EFF', blockRangeStart: '0x1E00'}
+- {blockName: Greek Extended, blockRangeEnd: '0x1FFF', blockRangeStart: '0x1F00'}
+- {blockName: General Punctuation, blockRangeEnd: '0x206F', blockRangeStart: '0x2000'}
+- {blockName: Superscripts and Subscripts, blockRangeEnd: '0x209F', blockRangeStart: '0x2070'}
+- {blockName: Currency Symbols, blockRangeEnd: '0x20CF', blockRangeStart: '0x20A0'}
+- {blockName: Combining Diacritical Marks for Symbols, blockRangeEnd: '0x20FF', blockRangeStart: '0x20D0'}
+- {blockName: Letterlike Symbols, blockRangeEnd: '0x214F', blockRangeStart: '0x2100'}
+- {blockName: Number Forms, blockRangeEnd: '0x218F', blockRangeStart: '0x2150'}
+- {blockName: Arrows, blockRangeEnd: '0x21FF', blockRangeStart: '0x2190'}
+- {blockName: Mathematical Operators, blockRangeEnd: '0x22FF', blockRangeStart: '0x2200'}
+- {blockName: Miscellaneous Technical, blockRangeEnd: '0x23FF', blockRangeStart: '0x2300'}
+- {blockName: Control Pictures, blockRangeEnd: '0x243F', blockRangeStart: '0x2400'}
+- {blockName: Optical Character Recognition, blockRangeEnd: '0x245F', blockRangeStart: '0x2440'}
+- {blockName: Enclosed Alphanumerics, blockRangeEnd: '0x24FF', blockRangeStart: '0x2460'}
+- {blockName: Box Drawing, blockRangeEnd: '0x257F', blockRangeStart: '0x2500'}
+- {blockName: Block Elements, blockRangeEnd: '0x259F', blockRangeStart: '0x2580'}
+- {blockName: Geometric Shapes, blockRangeEnd: '0x25FF', blockRangeStart: '0x25A0'}
+- {blockName: Miscellaneous Symbols, blockRangeEnd: '0x26FF', blockRangeStart: '0x2600'}
+- {blockName: Dingbats, blockRangeEnd: '0x27BF', blockRangeStart: '0x2700'}
+- {blockName: Miscellaneous Mathematical Symbols-A, blockRangeEnd: '0x27EF', blockRangeStart: '0x27C0'}
+- {blockName: Supplemental Arrows-A, blockRangeEnd: '0x27FF', blockRangeStart: '0x27F0'}
+- {blockName: Braille Patterns, blockRangeEnd: '0x28FF', blockRangeStart: '0x2800'}
+- {blockName: Supplemental Arrows-B, blockRangeEnd: '0x297F', blockRangeStart: '0x2900'}
+- {blockName: Miscellaneous Mathematical Symbols-B, blockRangeEnd: '0x29FF', blockRangeStart: '0x2980'}
+- {blockName: Supplemental Mathematical Operators, blockRangeEnd: '0x2AFF', blockRangeStart: '0x2A00'}
+- {blockName: Miscellaneous Symbols and Arrows, blockRangeEnd: '0x2BFF', blockRangeStart: '0x2B00'}
+- {blockName: Glagolitic, blockRangeEnd: '0x2C5F', blockRangeStart: '0x2C00'}
+- {blockName: Latin Extended-C, blockRangeEnd: '0x2C7F', blockRangeStart: '0x2C60'}
+- {blockName: Coptic, blockRangeEnd: '0x2CFF', blockRangeStart: '0x2C80'}
+- {blockName: Georgian Supplement, blockRangeEnd: '0x2D2F', blockRangeStart: '0x2D00'}
+- {blockName: Tifinagh, blockRangeEnd: '0x2D7F', blockRangeStart: '0x2D30'}
+- {blockName: Ethiopic Extended, blockRangeEnd: '0x2DDF', blockRangeStart: '0x2D80'}
+- {blockName: Cyrillic Extended-A, blockRangeEnd: '0x2DFF', blockRangeStart: '0x2DE0'}
+- {blockName: Supplemental Punctuation, blockRangeEnd: '0x2E7F', blockRangeStart: '0x2E00'}
+- {blockName: CJK Radicals Supplement, blockRangeEnd: '0x2EFF', blockRangeStart: '0x2E80'}
+- {blockName: Kangxi Radicals, blockRangeEnd: '0x2FDF', blockRangeStart: '0x2F00'}
+- {blockName: Ideographic Description Characters, blockRangeEnd: '0x2FFF', blockRangeStart: '0x2FF0'}
+- {blockName: CJK Symbols and Punctuation, blockRangeEnd: '0x303F', blockRangeStart: '0x3000'}
+- {blockName: Hiragana, blockRangeEnd: '0x309F', blockRangeStart: '0x3040'}
+- {blockName: Katakana, blockRangeEnd: '0x30FF', blockRangeStart: '0x30A0'}
+- {blockName: Bopomofo, blockRangeEnd: '0x312F', blockRangeStart: '0x3100'}
+- {blockName: Hangul Compatibility Jamo, blockRangeEnd: '0x318F', blockRangeStart: '0x3130'}
+- {blockName: Kanbun, blockRangeEnd: '0x319F', blockRangeStart: '0x3190'}
+- {blockName: Bopomofo Extended, blockRangeEnd: '0x31BF', blockRangeStart: '0x31A0'}
+- {blockName: CJK Strokes, blockRangeEnd: '0x31EF', blockRangeStart: '0x31C0'}
+- {blockName: Katakana Phonetic Extensions, blockRangeEnd: '0x31FF', blockRangeStart: '0x31F0'}
+- {blockName: Enclosed CJK Letters and Months, blockRangeEnd: '0x32FF', blockRangeStart: '0x3200'}
+- {blockName: CJK Compatibility, blockRangeEnd: '0x33FF', blockRangeStart: '0x3300'}
+- {blockName: CJK Unified Ideographs Extension A, blockRangeEnd: '0x4DBF', blockRangeStart: '0x3400'}
+- {blockName: Yijing Hexagram Symbols, blockRangeEnd: '0x4DFF', blockRangeStart: '0x4DC0'}
+- {blockName: CJK Unified Ideographs, blockRangeEnd: '0x9FFF', blockRangeStart: '0x4E00'}
+- {blockName: Yi Syllables, blockRangeEnd: '0xA48F', blockRangeStart: '0xA000'}
+- {blockName: Yi Radicals, blockRangeEnd: '0xA4CF', blockRangeStart: '0xA490'}
+- {blockName: Lisu, blockRangeEnd: '0xA4FF', blockRangeStart: '0xA4D0'}
+- {blockName: Vai, blockRangeEnd: '0xA63F', blockRangeStart: '0xA500'}
+- {blockName: Cyrillic Extended-B, blockRangeEnd: '0xA69F', blockRangeStart: '0xA640'}
+- {blockName: Bamum, blockRangeEnd: '0xA6FF', blockRangeStart: '0xA6A0'}
+- {blockName: Modifier Tone Letters, blockRangeEnd: '0xA71F', blockRangeStart: '0xA700'}
+- {blockName: Latin Extended-D, blockRangeEnd: '0xA7FF', blockRangeStart: '0xA720'}
+- {blockName: Syloti Nagri, blockRangeEnd: '0xA82F', blockRangeStart: '0xA800'}
+- {blockName: Common Indic Number Forms, blockRangeEnd: '0xA83F', blockRangeStart: '0xA830'}
+- {blockName: Phags-pa, blockRangeEnd: '0xA87F', blockRangeStart: '0xA840'}
+- {blockName: Saurashtra, blockRangeEnd: '0xA8DF', blockRangeStart: '0xA880'}
+- {blockName: Devanagari Extended, blockRangeEnd: '0xA8FF', blockRangeStart: '0xA8E0'}
+- {blockName: Kayah Li, blockRangeEnd: '0xA92F', blockRangeStart: '0xA900'}
+- {blockName: Rejang, blockRangeEnd: '0xA95F', blockRangeStart: '0xA930'}
+- {blockName: Hangul Jamo Extended-A, blockRangeEnd: '0xA97F', blockRangeStart: '0xA960'}
+- {blockName: Javanese, blockRangeEnd: '0xA9DF', blockRangeStart: '0xA980'}
+- {blockName: Cham, blockRangeEnd: '0xAA5F', blockRangeStart: '0xAA00'}
+- {blockName: Myanmar Extended-A, blockRangeEnd: '0xAA7F', blockRangeStart: '0xAA60'}
+- {blockName: Tai Viet, blockRangeEnd: '0xAADF', blockRangeStart: '0xAA80'}
+- {blockName: Ethiopic Extended-A, blockRangeEnd: '0xAB2F', blockRangeStart: '0xAB00'}
+- {blockName: Meetei Mayek, blockRangeEnd: '0xABFF', blockRangeStart: '0xABC0'}
+- {blockName: Hangul Syllables, blockRangeEnd: '0xD7AF', blockRangeStart: '0xAC00'}
+- {blockName: Hangul Jamo Extended-B, blockRangeEnd: '0xD7FF', blockRangeStart: '0xD7B0'}
+- {blockName: High Surrogates, blockRangeEnd: '0xDB7F', blockRangeStart: '0xD800'}
+- {blockName: High Private Use Surrogates, blockRangeEnd: '0xDBFF', blockRangeStart: '0xDB80'}
+- {blockName: Low Surrogates, blockRangeEnd: '0xDFFF', blockRangeStart: '0xDC00'}
+- {blockName: Private Use Area, blockRangeEnd: '0xF8FF', blockRangeStart: '0xE000'}
+- {blockName: CJK Compatibility Ideographs, blockRangeEnd: '0xFAFF', blockRangeStart: '0xF900'}
+- {blockName: Alphabetic Presentation Forms, blockRangeEnd: '0xFB4F', blockRangeStart: '0xFB00'}
+- {blockName: Arabic Presentation Forms-A, blockRangeEnd: '0xFDFF', blockRangeStart: '0xFB50'}
+- {blockName: Variation Selectors, blockRangeEnd: '0xFE0F', blockRangeStart: '0xFE00'}
+- {blockName: Vertical Forms, blockRangeEnd: '0xFE1F', blockRangeStart: '0xFE10'}
+- {blockName: Combining Half Marks, blockRangeEnd: '0xFE2F', blockRangeStart: '0xFE20'}
+- {blockName: CJK Compatibility Forms, blockRangeEnd: '0xFE4F', blockRangeStart: '0xFE30'}
+- {blockName: Small Form Variants, blockRangeEnd: '0xFE6F', blockRangeStart: '0xFE50'}
+- {blockName: Arabic Presentation Forms-B, blockRangeEnd: '0xFEFF', blockRangeStart: '0xFE70'}
+- {blockName: Halfwidth and Fullwidth Forms, blockRangeEnd: '0xFFEF', blockRangeStart: '0xFF00'}
+- {blockName: Specials, blockRangeEnd: '0xFFFF', blockRangeStart: '0xFFF0'}
+- {blockName: Linear B Syllabary, blockRangeEnd: '0x1007F', blockRangeStart: '0x10000'}
+- {blockName: Linear B Ideograms, blockRangeEnd: '0x100FF', blockRangeStart: '0x10080'}
+- {blockName: Aegean Numbers, blockRangeEnd: '0x1013F', blockRangeStart: '0x10100'}
+- {blockName: Ancient Greek Numbers, blockRangeEnd: '0x1018F', blockRangeStart: '0x10140'}
+- {blockName: Ancient Symbols, blockRangeEnd: '0x101CF', blockRangeStart: '0x10190'}
+- {blockName: Phaistos Disc, blockRangeEnd: '0x101FF', blockRangeStart: '0x101D0'}
+- {blockName: Lycian, blockRangeEnd: '0x1029F', blockRangeStart: '0x10280'}
+- {blockName: Carian, blockRangeEnd: '0x102DF', blockRangeStart: '0x102A0'}
+- {blockName: Old Italic, blockRangeEnd: '0x1032F', blockRangeStart: '0x10300'}
+- {blockName: Gothic, blockRangeEnd: '0x1034F', blockRangeStart: '0x10330'}
+- {blockName: Ugaritic, blockRangeEnd: '0x1039F', blockRangeStart: '0x10380'}
+- {blockName: Old Persian, blockRangeEnd: '0x103DF', blockRangeStart: '0x103A0'}
+- {blockName: Deseret, blockRangeEnd: '0x1044F', blockRangeStart: '0x10400'}
+- {blockName: Shavian, blockRangeEnd: '0x1047F', blockRangeStart: '0x10450'}
+- {blockName: Osmanya, blockRangeEnd: '0x104AF', blockRangeStart: '0x10480'}
+- {blockName: Cypriot Syllabary, blockRangeEnd: '0x1083F', blockRangeStart: '0x10800'}
+- {blockName: Imperial Aramaic, blockRangeEnd: '0x1085F', blockRangeStart: '0x10840'}
+- {blockName: Phoenician, blockRangeEnd: '0x1091F', blockRangeStart: '0x10900'}
+- {blockName: Lydian, blockRangeEnd: '0x1093F', blockRangeStart: '0x10920'}
+- {blockName: Kharoshthi, blockRangeEnd: '0x10A5F', blockRangeStart: '0x10A00'}
+- {blockName: Old South Arabian, blockRangeEnd: '0x10A7F', blockRangeStart: '0x10A60'}
+- {blockName: Avestan, blockRangeEnd: '0x10B3F', blockRangeStart: '0x10B00'}
+- {blockName: Inscriptional Parthian, blockRangeEnd: '0x10B5F', blockRangeStart: '0x10B40'}
+- {blockName: Inscriptional Pahlavi, blockRangeEnd: '0x10B7F', blockRangeStart: '0x10B60'}
+- {blockName: Old Turkic, blockRangeEnd: '0x10C4F', blockRangeStart: '0x10C00'}
+- {blockName: Rumi Numeral Symbols, blockRangeEnd: '0x10E7F', blockRangeStart: '0x10E60'}
+- {blockName: Brahmi, blockRangeEnd: '0x1107F', blockRangeStart: '0x11000'}
+- {blockName: Kaithi, blockRangeEnd: '0x110CF', blockRangeStart: '0x11080'}
+- {blockName: Cuneiform, blockRangeEnd: '0x123FF', blockRangeStart: '0x12000'}
+- {blockName: Cuneiform Numbers and Punctuation, blockRangeEnd: '0x1247F', blockRangeStart: '0x12400'}
+- {blockName: Egyptian Hieroglyphs, blockRangeEnd: '0x1342F', blockRangeStart: '0x13000'}
+- {blockName: Bamum Supplement, blockRangeEnd: '0x16A3F', blockRangeStart: '0x16800'}
+- {blockName: Kana Supplement, blockRangeEnd: '0x1B0FF', blockRangeStart: '0x1B000'}
+- {blockName: Byzantine Musical Symbols, blockRangeEnd: '0x1D0FF', blockRangeStart: '0x1D000'}
+- {blockName: Musical Symbols, blockRangeEnd: '0x1D1FF', blockRangeStart: '0x1D100'}
+- {blockName: Ancient Greek Musical Notation, blockRangeEnd: '0x1D24F', blockRangeStart: '0x1D200'}
+- {blockName: Tai Xuan Jing Symbols, blockRangeEnd: '0x1D35F', blockRangeStart: '0x1D300'}
+- {blockName: Counting Rod Numerals, blockRangeEnd: '0x1D37F', blockRangeStart: '0x1D360'}
+- {blockName: Mathematical Alphanumeric Symbols, blockRangeEnd: '0x1D7FF', blockRangeStart: '0x1D400'}
+- {blockName: Mahjong Tiles, blockRangeEnd: '0x1F02F', blockRangeStart: '0x1F000'}
+- {blockName: Domino Tiles, blockRangeEnd: '0x1F09F', blockRangeStart: '0x1F030'}
+- {blockName: Playing Cards, blockRangeEnd: '0x1F0FF', blockRangeStart: '0x1F0A0'}
+- {blockName: Enclosed Alphanumeric Supplement, blockRangeEnd: '0x1F1FF', blockRangeStart: '0x1F100'}
+- {blockName: Enclosed Ideographic Supplement, blockRangeEnd: '0x1F2FF', blockRangeStart: '0x1F200'}
+- {blockName: Miscellaneous Symbols And Pictographs, blockRangeEnd: '0x1F5FF', blockRangeStart: '0x1F300'}
+- {blockName: Emoticons, blockRangeEnd: '0x1F64F', blockRangeStart: '0x1F600'}
+- {blockName: Transport And Map Symbols, blockRangeEnd: '0x1F6FF', blockRangeStart: '0x1F680'}
+- {blockName: Alchemical Symbols, blockRangeEnd: '0x1F77F', blockRangeStart: '0x1F700'}
+- {blockName: CJK Unified Ideographs Extension B, blockRangeEnd: '0x2A6DF', blockRangeStart: '0x20000'}
+- {blockName: CJK Unified Ideographs Extension C, blockRangeEnd: '0x2B73F', blockRangeStart: '0x2A700'}
+- {blockName: CJK Unified Ideographs Extension D, blockRangeEnd: '0x2B81F', blockRangeStart: '0x2B740'}
+- {blockName: CJK Compatibility Ideographs Supplement, blockRangeEnd: '0x2FA1F', blockRangeStart: '0x2F800'}
+- {blockName: Tags, blockRangeEnd: '0xE007F', blockRangeStart: '0xE0000'}
+- {blockName: Variation Selectors Supplement, blockRangeEnd: '0xE01EF', blockRangeStart: '0xE0100'}
+- {blockName: Supplementary Private Use Area-A, blockRangeEnd: '0xFFFFF', blockRangeStart: '0xF0000'}
+- {blockName: Supplementary Private Use Area-B, blockRangeEnd: '0x10FFFF', blockRangeStart: '0x100000'}
