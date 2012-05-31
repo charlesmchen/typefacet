@@ -97,4 +97,3 @@ class TFSTest(unittest.TestCase):
 #    def assertDistanceClose(self, distance, msg=None):
 #        CLOSE_TOLERANCE = 0.0001
 #        self.assertLess(distance, CLOSE_TOLERANCE, msg=msg)
-

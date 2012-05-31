@@ -65,13 +65,11 @@ END OF TERMS AND CONDITIONS
 '''
 
 
-
-
+import locale
+import math
 import os
 import shutil
-import math
 import tempfile
-import shutil
 import zipfile
 
 import freetype
@@ -145,72 +143,6 @@ class GlyphImplementationAudit(object):
             shutil.copy(srcCssFile, dstCssFile)
 
 
-#    def subrenderGlyphContours(self, fiSvg, contours, strokeColor):
-#        from FISvg import FISvgPath
-#
-#        ON_POINT_COLOR = 0x7f7f7f7f
-#        CONTROL_POINT_COLOR = 0x7fafafaf
-#        for contour in contours:
-#            fiSvg.addItem(FISvgPath(contour).addStroke(strokeColor, 2).addPointHighlights(ON_POINT_COLOR, CONTROL_POINT_COLOR))
-#
-#
-#    def renderSvgScene(self,
-#                       filenamePrefix,
-#                       pathTuples,
-#                       hGuidelines=None):
-#        from FISvg import FISvg, FISvgPath
-#
-#        filename = '%s.svg' % ( filenamePrefix, )
-#        dstFile = os.path.abspath(os.path.join(self.svg_folder, filename))
-#
-#        CANVAS_BACKGROUND_COLOR = 0xffffffff
-#        CANVAS_BORDER_COLOR = 0x07fbfbfbf
-#        fiSvg = FISvg().withBackground(CANVAS_BACKGROUND_COLOR).withBorder(CANVAS_BORDER_COLOR)
-#
-#    #    if pathTuples:
-#        for color, contours in pathTuples:
-#            self.subrenderGlyphContours(fiSvg, contours, color)
-#
-#        if hGuidelines:
-#            for hGuideline in hGuidelines:
-#                p0 = FIPoint(hGuideline, self.fifont.info.descender)
-#                p1 = FIPoint(hGuideline, self.fifont.info.ascender)
-#                GUIDELINE_COLOR = 0x7fdfdfdf
-#                fiSvg.addItem(FISvgPath(openPathWithPoints(p0, p1)).addStroke(GUIDELINE_COLOR, 1))
-#
-#        vGuidelines = ( 0,
-#                        self.fifont.info.ascender,
-#                        self.fifont.info.descender,
-#                        )
-#        if vGuidelines:
-#            minmax = None
-#            for color, contours in pathTuples:
-#                minmax = minmaxMerge(minmax, minmaxPaths(contours))
-#
-#            for vGuideline in vGuidelines:
-#                p0 = FIPoint(0, vGuideline)
-#                p1 = FIPoint(minmax.maxX, vGuideline)
-#                GUIDELINE_COLOR = 0x7fdfdfdf
-#                fiSvg.addItem(FISvgPath(openPathWithPoints(p0, p1)).addStroke(GUIDELINE_COLOR, 1))
-#
-#        SVG_HEIGHT = 400
-#        SVG_MAX_WIDTH = 800
-#        fiSvg.renderToFile(dstFile, margin=10, height=SVG_HEIGHT, maxWidth=SVG_MAX_WIDTH)
-#        return filename
-#
-#
-#    def convertCodePoint(self, glyph):
-#        if type(glyph) is types.IntType:
-#            return glyph
-#        elif type(glyph) is types.StringType:
-#            return ord(glyph)
-#        else:
-#            raise Exception('Bad glyph: ' + str(glyph))
-#
-#
-
-
-
     def writeMustacheLog(self, mustacheFilename, dstFilename, mustacheVars, replaceMap=None):
         mustacheFile = os.path.abspath(os.path.join('..', '..', '..', 'data', mustacheFilename))
         if not (os.path.exists(mustacheFile) and os.path.isfile(mustacheFile)):
@@ -232,8 +164,8 @@ class GlyphImplementationAudit(object):
         with open(dstFile, 'wt') as f:
             # TODO: explicitly encode unicode
             f.write(logHtml)
-#
-#
+
+
     def initMetrics(self):
         self.processedPostscriptNames = set()
         self.nonEmptyPostscriptNames = set()
@@ -275,41 +207,7 @@ class GlyphImplementationAudit(object):
             glyphColor = blendArgbColors(minGlyphColor, maxGlyphColor, phase)
             fiSvg.addItem(TFSSvgPath(path).addFill(glyphColor))
 
-#    #    if pathTuples:
-#        for color, contours in pathTuples:
-#            self.subrenderGlyphContours(fiSvg, contours, color)
-#
-#        if hGuidelines:
-#            for hGuideline in hGuidelines:
-#                p0 = FIPoint(hGuideline, self.fifont.info.descender)
-#                p1 = FIPoint(hGuideline, self.fifont.info.ascender)
-#                GUIDELINE_COLOR = 0x7fdfdfdf
-#                fiSvg.addItem(FISvgPath(openPathWithPoints(p0, p1)).addStroke(GUIDELINE_COLOR, 1))
-#
-#        vGuidelines = ( 0,
-#                        self.fifont.info.ascender,
-#                        self.fifont.info.descender,
-#                        )
-#        if vGuidelines:
-#            minmax = None
-#            for color, contours in pathTuples:
-#                minmax = minmaxMerge(minmax, minmaxPaths(contours))
-#
-#            for vGuideline in vGuidelines:
-#                p0 = FIPoint(0, vGuideline)
-#                p1 = FIPoint(minmax.maxX, vGuideline)
-#                GUIDELINE_COLOR = 0x7fdfdfdf
-#                fiSvg.addItem(FISvgPath(openPathWithPoints(p0, p1)).addStroke(GUIDELINE_COLOR, 1))
-
-#        SVG_HEIGHT = 400
-#        SVG_MAX_WIDTH = 800
-
         return fiSvg.renderRaw(None, width, height)
-
-#        filename = '%s.svg' % ( filenamePrefix, )
-#        dstFile = os.path.abspath(os.path.join(self.svg_folder, filename))
-#        fiSvg.renderToFile(dstFile, margin=10, height=SVG_HEIGHT, maxWidth=SVG_MAX_WIDTH)
-#        return filename
 
 
     def dumpMetrics(self):
@@ -328,23 +226,46 @@ class GlyphImplementationAudit(object):
             glyph.count = count
             glyphs.append(glyph)
 
-        glyphs.sort(lambda glyph0, glyph1:cmp(glyph0.count, glyph1.count), reverse=True)
+        def glyphCountSort(glyph0, glyph1):
+            # Negate; we want reverse order for count.
+            result = -cmp(glyph0.count, glyph1.count)
+            if result != 0:
+                return result
+
+            return cmp(glyph0.codePoint, glyph1.codePoint)
+
+        glyphs.sort(glyphCountSort)
 
         print 'Most common glyph:', glyphs[0]
         print 'Least common glyph:', glyphs[-1]
 
+        locale.setlocale(locale.LC_ALL, 'en_US')
+
         pres = []
         for glyph in glyphs[:1000]:
-            pre = {}
-            pre['value'] = '%s %s: %d (%0.2f%%)' % ( hex(glyph.codePoint),
-                                            getUnicodeLongName(glyph.codePoint,
-                                                                    ignoreUnknown=True,
-                                                                    skipValidation=True),
-                                            glyph.count,
-                                            glyph.count / float(len(self.nonEmptyPostscriptNames)),
-                                            )
+#            pre = {}
+
+            pre = {
+#                    'glyphHex': hex(glyph.codePoint),
+                    'glyphHex': '%04X' % glyph.codePoint,
+                    'glyphName': getUnicodeLongName(glyph.codePoint,
+                                                    ignoreUnknown=True,
+                                                    skipValidation=True),
+                   'glyphCount': locale.format("%d", glyph.count, grouping=True),
+                   'glyphPercent': '%0.2f%%' % (100.0 * glyph.count / float(len(self.nonEmptyPostscriptNames))),
+#                   'glyphColor': '%06X' % glyphColor,
+                   }
+
+#            pre['value'] = '%s %s: %d (%0.2f%%)' % ( hex(glyph.codePoint),
+#                                            getUnicodeLongName(glyph.codePoint,
+#                                                                    ignoreUnknown=True,
+#                                                                    skipValidation=True),
+#                                            glyph.count,
+#                                            glyph.count / float(len(self.nonEmptyPostscriptNames)),
+#                                            )
 #            print 'pre', pre
             pres.append(pre)
+
 
         glyphs.sort(lambda glyph0, glyph1:cmp(glyph0.codePoint, glyph1.codePoint))
         headerPres = []
@@ -362,8 +283,8 @@ class GlyphImplementationAudit(object):
                     'glyphName': getUnicodeLongName(glyph.codePoint,
                                                     ignoreUnknown=True,
                                                     skipValidation=True),
-                   'glyphCount': glyph.count,
-                   'glyphPercent': (glyph.count / float(len(self.nonEmptyPostscriptNames))),
+                   'glyphCount': locale.format("%d", glyph.count, grouping=True),
+                   'glyphPercent': '%0.2f%%' % (100.0 * glyph.count / float(len(self.nonEmptyPostscriptNames))),
                    'glyphColor': '%06X' % glyphColor,
                    }
 #            pre['value'] = '%s %s: %d (%0.2f%%)' % ( hex(glyph.codePoint),
@@ -378,6 +299,7 @@ class GlyphImplementationAudit(object):
 
 #        tableSvg = self.getTableSvg(glyphs, maxGlyphCount)
 
+
         self.writeMustacheLog('gia_pre_template.txt',
                               'most_common_glyphs.html',
                               mustacheVars = { 'pres': pres,
@@ -386,8 +308,8 @@ class GlyphImplementationAudit(object):
                                               'headerTitle': 'Glyph Implementation Statistics',
                                               'statsTitle': 'Statistics',
                                               'stats': (
-                                                        { 'key': 'Total Fonts Scanned', 'value': len(self.processedPostscriptNames), },
-                                                        { 'key': 'Total Code Points Observed', 'value': len(self.glyphCountMap), },
+                                                        { 'key': 'Total Fonts Scanned', 'value': locale.format("%d", len(self.processedPostscriptNames), grouping=True), },
+                                                        { 'key': 'Total Code Points Observed', 'value': locale.format("%d", len(self.glyphCountMap), grouping=True), },
                                                         ),
                                               }
 #                              replaceMap = {'<!-- SVG Graph Placeholder -->': tableSvg,
@@ -509,5 +431,3 @@ if __name__ == "__main__":
 
     print
     print 'complete.'
-
-

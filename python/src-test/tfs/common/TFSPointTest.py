@@ -142,4 +142,3 @@ class TFSPointTest(TFSTest):
         self.assertEqual(len(testset), 2)
         testset.add(TFSPoint(0, 1.0))
         self.assertEqual(len(testset), 2)
-

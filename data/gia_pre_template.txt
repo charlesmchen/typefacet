@@ -37,6 +37,10 @@ section {
 	padding-right: 1px;
 }
 
+section pre {
+  font-size: 10px;
+}
+
 -->
 </style>
 
@@ -46,9 +50,13 @@ section {
     <div class="wrapper">
 
 <h3>
-	<< <a href="http://typefacet.com/">TypeFacet Blog</a>
-	<< <a href="http://charlesmchen.github.com/typefacet/">TypeFacet on GitHub</a>
+	&lt;&lt; <a href="http://typefacet.com/">TypeFacet Blog</a>
+	&lt;&lt; <a href="http://charlesmchen.github.com/typefacet/">TypeFacet on GitHub</a>
 </h3>
+
+<div>
+<a href="http://typefacet.com/post/24110659154/most-commonly-implemented-font-glyphs">Blog post describing the process.</a>
+</div>
 
 <div class="social">
 
@@ -80,7 +88,7 @@ section {
 
 <div class="mini-links">
 {{#headerPres}}
-	<a style="color: #{{glyphColor}}" title="{{glyphName}} (0x{{glyphHex}}): {{glyphCount}} ({{glyphPercent}}%)">&#x{{glyphHex}};</a>
+	<a style="color: #{{glyphColor}}" title="{{glyphName}} (0x{{glyphHex}}): {{glyphCount}} ({{glyphPercent}})">&#x{{glyphHex}};</a>
 {{/headerPres}}
 </<div>
         
@@ -101,7 +109,7 @@ section {
       
 <pre>
 {{#pres}}
-{{value}}
+0x{{glyphHex}} &#x{{glyphHex}}; {{glyphName}}: {{glyphCount}} ({{glyphPercent}})
 {{/pres}}
 </pre>
         

@@ -65,7 +65,6 @@ END OF TERMS AND CONDITIONS
 '''
 
 
-
 import os
 
 from GlyphImplementationAudit import GlyphImplementationAudit
@@ -86,6 +85,3 @@ GlyphImplementationAudit(settings).process()
 
 print
 print 'complete.'
-
-
-

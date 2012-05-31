@@ -1327,5 +1327,3 @@ class TFSSegmentTest(TFSTest):
 #        return path.reverse()
 #    else:
 #        return path
-
-

@@ -1327,5 +1327,3 @@ class TFSPathTest(TFSTest):
 #        return path.reverse()
 #    else:
 #        return path
-
-
