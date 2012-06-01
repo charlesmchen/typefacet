@@ -116,6 +116,22 @@ class TFSPoint(object):
     def __str__(self):
         return self.description()
 
+    def closerThan(self, other, tolerance=None):
+        '''
+        Optimizes out a math.sqrt().
+        '''
+        if tolerance is None:
+            tolerance = getFloatRoundingTolerance()
+
+        distance2 = self.x * self.x + self.y * self.y
+        threshold = tolerance * tolerance
+        return distance2 <= threshold
+
+    def roundedEquals(self, other, tolerance=None):
+        if (self.x == other.x) and (self.y == other.y):
+            return True
+        return self.closerThan(other, tolerance=tolerance)
+
     def description(self):
         return '[%s, %s]' % (str(self.x), str(self.y))
 

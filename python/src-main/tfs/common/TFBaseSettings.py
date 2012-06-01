@@ -1,6 +1,6 @@
 '''
 robofont-extensions-and-scripts
-TFSFont.py
+TFBaseSettings.py
 
 https://github.com/charlesmchen/robofont-extensions-and-scripts
 
@@ -65,152 +65,138 @@ END OF TERMS AND CONDITIONS
 '''
 
 
+import argparse
 import os
-import robofab.world
-from TFSGlyph import TFSGlyph
+
+from tfs.common.TFSMap import TFSMap
 
 
-class TFSFont(object):
+class TFBaseSettings(object):
 
-    def __init__(self, rffont):
-        self.rffont = rffont
+    def __init__(self, target=None):
+        self.target = target
 
-    def update(self):
-        self.rffont.update()
+    def withTarget(self, target):
+        self.target = target
+        return self
 
-    def save(self, filepath):
-        self.rffont.save(filepath)
+    def cleanupPath(self, value):
+        value = os.path.expanduser(value)
+        value = os.path.abspath(value)
+        return value
 
-    def close(self):
-        self.rffont.close()
+    def assertExists(self, value):
+        value = self.cleanupPath(value)
+        if not os.path.exists(value):
+            msg = "%s does not exist" % value
+            raise argparse.ArgumentTypeError(msg)
 
-    def glyphNames(self):
-        return self.rffont.keys()
+    def assertIsFolder(self, value):
+        value = self.cleanupPath(value)
+        self.assertExists(value)
+        if not os.path.isdir(value):
+            msg = "%s is not a folder" % value
+            raise argparse.ArgumentTypeError(msg)
 
-    def glyphCodePoints(self):
-        result = [glyph.unicode for glyph in self.rffont]
-        return result
+    def folderType(self, value):
+        value = self.cleanupPath(value)
+        self.assertIsFolder(value)
+        return value
 
-    def getGlyphByName(self, key):
-        rfglyph = self.rffont.getGlyph(key)
-        return TFSGlyph(rfglyph)
+    def fileType(self, value):
+        value = self.cleanupPath(value)
+        self.assertExists(value)
+        if os.path.isfile(value):
+            msg = "%s is not a file" % value
+            raise argparse.ArgumentTypeError(msg)
+        return value
 
-    def getGlyphByCodePoint(self, value):
-        for glyph in self.rffont:
-            if glyph.unicode == value:
-                return TFSGlyph(glyph)
-        return None
-#        raise Exception('Unknown code point: ' + str(value))
-#        return None
+    def fileOrfolderType(self, value):
+        value = self.cleanupPath(value)
+        self.assertExists(value)
+        if not (os.path.isdir(value) or os.path.isfile(value)):
+            msg = "%s is not a file or folder" % value
+            raise argparse.ArgumentTypeError(msg)
+        return value
 
-    def getGlyphs(self):
-        return [TFSGlyph(glyph) for glyph in self.rffont]
+    def assertParentExists(self, value):
+        value = self.cleanupPath(value)
+        if not (os.path.exists(os.path.dirname(value)) and
+                os.path.isdir(os.path.dirname(value))):
+            msg = "%s is not a valid directory" % os.path.dirname(value)
+            raise argparse.ArgumentTypeError(msg)
 
-    units_per_em = property(lambda self: self.rffont.info.unitsPerEm)
-    info = property(lambda self: self.rffont.info)
-#    ascender = property(lambda self: self.rffont.info.ascender)
-#    descender = property(lambda self: self.rffont.info.descender)
-#    xHeight = property(lambda self: self.rffont.info.xHeight)
-#    capHeight = property(lambda self: self.rffont.info.capHeight)
-#    versionMajor = property(lambda self: self.rffont.info.versionMajor)
-#    versionMinor = property(lambda self: self.rffont.info.versionMinor)
+    def assertFileExtension(self, value, extension):
+        value = self.cleanupPath(value)
+        basename = os.path.basename(value)
+        if not basename.lower().endswith(extension.lower()):
+            msg = "%s is not a %s file" % ( value, extension, )
+            raise argparse.ArgumentTypeError(msg)
 
-    def writeToFile(self, dstFile):
-        self.rffont.update()
-        self.rffont.autoUnicodes()
-        self.rffont.update()
-        self.rffont.save(dstFile)
-#        font.close()
+    def assertFileExtensions(self, value, extensions):
+        value = self.cleanupPath(value)
+        basename = os.path.basename(value)
+        for extension in extensions:
+            if basename.lower().endswith(extension.lower()):
+                return
+        msg = "%s is not a %s file" % ( value, ', '.join(extensions), )
+        raise argparse.ArgumentTypeError(msg)
 
-    def getGlyphName(self, codePoint):
-#        if codePoint is None:
-#            return  '.notdef'
+    def srcFolderType(self, value, extension=None):
+        value = self.cleanupPath(value)
+        self.assertIsFolder(value)
+        if extension is not None:
+            self.assertFileExtension(value, extension)
+        return value
 
-        import UnicodeCharacterNames
-        name = UnicodeCharacterNames.getUnicodeCharacterName(codePoint)
-        return name
+    def ufoSrcFolderType(self, value):
+        return self.srcFolderType(value, '.ufo')
 
-    def insertGlyph(self, codePoint, contours, xAdvance,
-                    glyphName=None, correctDirection=True):
-        if glyphName is None:
-            glyphName = self.getGlyphName(codePoint)
-        glyph = TFSGlyph(self.rffont.newGlyph(glyphName))
-        if codePoint is not None:
-            glyph.setUnicode(codePoint)
-        glyph.setContours(contours, correctDirection=correctDirection)
-        glyph.setXAdvance(xAdvance)
-        glyph.update()
-#        glyph.correctDirection()
-        return glyph
+    def dstFolderType(self, value, extension=None):
+        self.assertParentExists(value)
+        if extension is not None:
+            self.assertFileExtension(value, extension)
+        return value
 
+    def ufoDstFolderType(self, value):
+        return self.dstFolderType(value, '.ufo')
 
-    def insertGlyphDerivedFromGlyph(self, codePoint, contours, srcGlyph):
-        self.insertGlyph(codePoint, contours, srcGlyph.rfglyph.width)
+    def otfDstFileType(self, value):
+        self.assertParentExists(value)
+        self.assertFileExtension(value, '.otf')
+        return value
+#        return os.path.abs
 
+    def otfOrTtfOrTtxSrcFileType(self, value):
+        self.assertParentExists(value)
+        self.assertFileExtensions(value, ('.otf', '.ttf', '.ttx',) )
+        return value
+#        return os.path.abs
 
+    def createParser(self):
+        raise Exception('Not Implemented')
 
+    def getCommandLineSettings(self, *replacementValues):
 
+        parser = self.createParser()
 
+        if replacementValues:
+            args = parser.parse_args(replacementValues)
+        else:
+            args = parser.parse_args()
 
+    #    print 'args', args
 
+        if self.target is None:
+            self.target = TFSMap()
 
-
-
-
-
-
-#font.info.ascender = formatOpentypeScalar(metadata.ascender)
-#font.info.descender = formatOpentypeScalar(metadata.descender)
-#font.info.unitsPerEm = formatOpentypeScalar(metadata.unitsPerEm)
-#font.info.xHeight = formatOpentypeScalar(metadata.xHeight)
-#font.info.capHeight = formatOpentypeScalar(metadata.capHeight)
-#font.info.versionMajor = metadata.versionMajor
-#font.info.versionMinor = metadata.versionMinor
-#
-#font.info.italicAngle = metadata.italicAngle
-##font.info.openTypeHeadFlags = metadata.openTypeHeadFlags
-#font.info.openTypeHheaAscender = font.info.ascender
-#font.info.openTypeHheaDescender = font.info.descender
-#font.info.openTypeHheaCaretSlopeRise = formatOpentypeScalar(metadata.caretSlopeRise)
-#font.info.openTypeHheaCaretSlopeRun = formatOpentypeScalar(metadata.caretSlopeRun)
-#font.info.openTypeHheaCaretOffset = 0
-#
-#font.update()
-#
-#
-#font.info.styleMapFamilyName = font.info.familyName
-#font.info.openTypeNamePreferredFamilyName = font.info.familyName
-#font.info.openTypeNamePreferredSubfamilyName = font.info.styleName
-#font.info.fullName = font.info.familyName + '-' + font.info.styleName
-#font.info.fontName = font.info.fullName.replace(' ', '')
-##font.info.postscriptUniqueID = font.info.fontName
-#font.info.postscriptFontName = font.info.fontName
-#font.info.postscriptFullName = font.info.fullName
-##font.info.weightName = font.info.fullName
-##font.info.postscriptFullName = font.info.fullName
-## TODO: remove
-#font.info.menuName = font.info.fullName
-## TODO: remove
-#font.info.fondName = font.info.familyName
-#font.info.macintoshFONDName = font.info.familyName
-#
-#font.info.otFamilyName = font.info.familyName
-#font.info.otStyleName = font.info.styleName
-#font.info.otMacName = font.info.fullName
-#font.info.openTypeNameCompatibleFullName = font.info.fullName
-#
-#font.info.designer = metadata.designer
-#font.info.openTypeNameDesigner = metadata.designer
-#font.info.createdBy = metadata.designer
-#font.info.year = metadata.year
-
-def TFSFontFromFile(filepath):
-#    filepath = os.path.abspath(filepath)
-    if not (os.path.exists(filepath) and
-            os.path.isdir(filepath) and
-            os.path.basename(filepath).lower().endswith('.ufo')):
-        raise Exception('Invalid .ufo file: ' + filepath)
-
-#    print 'filepath', filepath
-    rffont = robofab.world.OpenFont(filepath)
-    return TFSFont(rffont)
+        '''
+        Copy attributes
+        '''
+        print
+        for attr in sorted(dir(args)):
+            if attr.startswith('_'):
+                continue
+            print 'arg', attr, getattr(args, attr)
+            setattr(self.target, attr, getattr(args, attr))
+        print

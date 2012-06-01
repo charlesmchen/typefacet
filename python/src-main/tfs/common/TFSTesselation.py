@@ -82,7 +82,7 @@ class TFSTesselation(object):
         def findIntersection(path0, paths):
     #        print 'findIntersection', type(paths), paths
             for index, path1 in enumerate(paths):
-                intersection = path0.intersectionWithPath_tOnly(path1, ignoreEndpoints=True, ignoreEqualSegments=True)
+                intersection = path0.intersectionWithPath_tOnly(path1, maxEndpoints=1, ignoreEqualSegments=True)
                 if intersection:
                     index0, index1, segment0, segment1, t0, t1, p = intersection
                     if DEBUG_SUBDIVIDE:
@@ -102,32 +102,41 @@ class TFSTesselation(object):
                     print '\t\t', segment.description()
 
         processed = []
-        unprocessed = list(paths)
+#        unprocessed = list(paths)
+        '''
+        Decompose all paths into single-segment paths.
+        This simplifies the subdivision algorithm.
+        It doesn't matter; paths will be re-composed later
+        by simplifySubpaths() and buildMinimumShapes().
+        '''
+        unprocessed = []
+        for path in paths:
+            unprocessed.extend(path.decompose())
         intersections = []
         while unprocessed:
-    #        print 'subdividePathWithPaths iteration', 'processed', len(processed), 'unprocessed', len(unprocessed)
+#            print 'subdividePathWithPaths iteration', 'processed', len(processed), 'unprocessed', len(unprocessed)
             path0 = unprocessed.pop()
 
-            # First try to intersect path with itself.
-            intersection = path0.intersectionWithPath_tOnly(path0, ignoreEndpoints=True, ignoreEqualSegments=True)
-            if intersection:
-                index0, index1, segment0, segment1, t0, t1, p = intersection
-
-                if DEBUG_SUBDIVIDE:
-                    print 'index0, index1', index0, index1, 't0, t1', t0, t1
-
-                subpaths = path0.doubleSplit(index0, index1, t0, t1, p, p)
-
-                if DEBUG_SUBDIVIDE:
-                    print 'self-cut', path0.description()
-                    for subpath in subpaths:
-                        print '\t', subpath.description()
-                        for segment in subpath:
-                            print '\t\t', segment.description()
-
-                unprocessed.extend(subpaths)
-                intersections.append(p)
-                continue
+#            # First try to intersect path with itself.
+#            intersection = path0.intersectionWithPath_tOnly(path0, maxEndpoints=1, ignoreEqualSegments=True)
+#            if intersection:
+#                index0, index1, segment0, segment1, t0, t1, p = intersection
+#
+#                if DEBUG_SUBDIVIDE:
+#                    print 'index0, index1', index0, index1, 't0, t1', t0, t1
+#
+#                subpaths = path0.doubleSplit(index0, index1, t0, t1, p, p)
+#
+#                if DEBUG_SUBDIVIDE:
+#                    print 'self-cut', path0.description()
+#                    for subpath in subpaths:
+#                        print '\t', subpath.description()
+#                        for segment in subpath:
+#                            print '\t\t', segment.description()
+#
+#                unprocessed.extend(subpaths)
+#                intersections.append(p)
+#                continue
 
             if not unprocessed:
                 processed += [path0,]
@@ -462,7 +471,7 @@ class TFSTesselation(object):
                 emptyAngle = hasEmptyAngle(path)
                 if emptyAngle is None:
                     return path
-                print 'culling an empty angle', emptyAngle
+#                print 'culling an empty angle', emptyAngle
                 index0, index1, newSegments = emptyAngle
                 if index1 < index0:
                     newSegments = list(path[index1 + 1:index0]) + list(newSegments)
@@ -474,18 +483,20 @@ class TFSTesselation(object):
                 path = TFSPath(True, *newSegments)
             pass
 
-        debugPaths('cullEmptyAngles.0', paths)
+#        debugPaths('cullEmptyAngles.0', paths)
 
         result = []
         for path in paths:
             path = removeEmptyAngles(path)
             if path is not None:
                 result.append(path)
-        debugPaths('cullEmptyAngles.1', result)
+#        debugPaths('cullEmptyAngles.1', result)
         return result
 
 
-    def tesselateContours(self, paths, reorientPaths=True, ignoreStrayEdges=False, debugMode=False):
+    def tesselateContours(self, paths,
+                          reorientPaths=True,
+                          ignoreStrayEdges=False, debugMode=False):
         DEBUG_TESSELATE = False
         TIME_TESSELATE = False
         if debugMode:

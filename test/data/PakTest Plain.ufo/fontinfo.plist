@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple Computer//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>ascender</key>
+	<integer>1100</integer>
+	<key>capHeight</key>
+	<integer>1000</integer>
+	<key>descender</key>
+	<integer>-300</integer>
+	<key>familyName</key>
+	<string>PakTest</string>
+	<key>italicAngle</key>
+	<integer>0</integer>
+	<key>macintoshFONDName</key>
+	<string>PakTest</string>
+	<key>openTypeHheaAscender</key>
+	<integer>1100</integer>
+	<key>openTypeHheaCaretOffset</key>
+	<integer>0</integer>
+	<key>openTypeHheaCaretSlopeRise</key>
+	<integer>1000</integer>
+	<key>openTypeHheaCaretSlopeRun</key>
+	<integer>0</integer>
+	<key>openTypeHheaDescender</key>
+	<integer>-300</integer>
+	<key>openTypeNameCompatibleFullName</key>
+	<string>PakTest-Plain</string>
+	<key>openTypeNameDesigner</key>
+	<string>Charles Matthew Chen</string>
+	<key>openTypeNameManufacturer</key>
+	<string>Charles Matthew Chen</string>
+	<key>openTypeNamePreferredFamilyName</key>
+	<string>PakTest</string>
+	<key>openTypeNamePreferredSubfamilyName</key>
+	<string>Plain</string>
+	<key>postscriptFontName</key>
+	<string>PakTest-Plain</string>
+	<key>postscriptFullName</key>
+	<string>PakTest-Plain</string>
+	<key>styleMapFamilyName</key>
+	<string>PakTest-Plain</string>
+	<key>styleName</key>
+	<string>Plain</string>
+	<key>unitsPerEm</key>
+	<integer>1600</integer>
+	<key>versionMajor</key>
+	<integer>1</integer>
+	<key>versionMinor</key>
+	<integer>0</integer>
+	<key>xHeight</key>
+	<integer>650</integer>
+	<key>year</key>
+	<integer>2012</integer>
+</dict>
+</plist>

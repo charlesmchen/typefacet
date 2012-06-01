@@ -75,6 +75,7 @@ pseudo_argv = ('--src-paths',
                '~/Library/Fonts/',
                '/Users/charleschen/code/workspace/LivelyType resources/',
                '/Volumes/HDD/migration/mac workspace/Fontemplation resources',
+               '/Volumes/HDD/@fonts',
                '--log-dst=' + os.path.abspath(os.path.join('..', '..', '..', 'logs')) + '',
                )
 print 'pseudo_argv', ' '.join(pseudo_argv)

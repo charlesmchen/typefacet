@@ -75,7 +75,9 @@ class TFSGlyph(object):
         self.rfglyph = rfglyph
 
     unicode = property(lambda self: self.rfglyph.unicode)
-
+    name = property(lambda self: self.rfglyph.name)
+    width = property(lambda self: self.rfglyph.width)
+    xAdvance = property(lambda self: self.rfglyph.width)
 
     def getContours(self, setSelected=False):
 
@@ -135,7 +137,7 @@ class TFSGlyph(object):
 #        return PAGlyph(rfglyph)
 
 
-    def setContours(self, paths):
+    def setContours(self, paths, correctDirection=True):
         self.rfglyph.clearContours()
 
         glyphPen = self.rfglyph.getPen()
@@ -182,34 +184,47 @@ class TFSGlyph(object):
 
             glyphPen.closePath()
 
-        self.rfglyph.update()
-#        self.rfglyph.correctDirection()
 #        self.rfglyph.update()
+        if correctDirection:
+            self.rfglyph.correctDirection(trueType=True)
+        self.rfglyph.update()
 
 
+    def setXAdvance(self, value):
+        self.rfglyph.width = int(round(value))
 
-    def updateDerivedFromGlyph(self, codePoint, contours, srcGlyph):
-        opentype_multiplier = 1
-        def formatOpentypeScalar(value):
-            return int(round(opentype_multiplier * value))
+    def setUnicode(self, value):
+        self.rfglyph.unicode = value
 
-        self.rfglyph.unicode = codePoint
-#        #        glyph.leftMargin = 0
-#        #        glyph.rightMargin = 900
-        # TODO:
-        self.rfglyph.width = formatOpentypeScalar(srcGlyph.rfglyph.width)
-        #glyph.advance = formatOpentypeScalar(glyphAdvance)
-#        self.rfglyph.rightMargin = formatOpentypeScalar(srcGlyph.rfglyph.rightMargin)
+    def update(self):
+        self.rfglyph.update()
 
-#        print 'self.rfglyph.rightMargin', self.rfglyph.rightMargin, type(self.rfglyph.rightMargin)
-#        print 'srcGlyph.rfglyph.rightMargin', srcGlyph.rfglyph.rightMargin, type(srcGlyph.rfglyph.rightMargin)
-#        print 'self.rfglyph.width', self.rfglyph.width, type(self.rfglyph.width)
-#        print 'srcGlyph.rfglyph.width', srcGlyph.rfglyph.width, type(srcGlyph.rfglyph.width)
-        #print 'glyphAdvance', glyphAdvance, formatOpentypeScalar(glyphAdvance)
-        #print 'glyphWidth', glyphWidth, formatOpentypeScalar(glyphWidth)
-        #print 'glyphWidth', sideBearing, formatOpentypeScalar(sideBearing)
-        #print 'glyph.width', glyph.width
-        #print 'glyph.advance', glyph.advance
-        #print 'glyph.rightMargin', glyph.rightMargin
+    def correctDirection(self):
+        self.rfglyph.correctDirection(trueType=True)
+        self.rfglyph.update()
 
-        self.setContours(contours)
+#    def updateDerivedFromGlyph(self, codePoint, contours, srcGlyph):
+#        opentype_multiplier = 1
+#        def formatOpentypeScalar(value):
+#            return int(round(opentype_multiplier * value))
+#
+#        self.rfglyph.unicode = codePoint
+##        #        glyph.leftMargin = 0
+##        #        glyph.rightMargin = 900
+#        # TODO:
+#        self.rfglyph.width = formatOpentypeScalar(srcGlyph.rfglyph.width)
+#        #glyph.advance = formatOpentypeScalar(glyphAdvance)
+##        self.rfglyph.rightMargin = formatOpentypeScalar(srcGlyph.rfglyph.rightMargin)
+#
+##        print 'self.rfglyph.rightMargin', self.rfglyph.rightMargin, type(self.rfglyph.rightMargin)
+##        print 'srcGlyph.rfglyph.rightMargin', srcGlyph.rfglyph.rightMargin, type(srcGlyph.rfglyph.rightMargin)
+##        print 'self.rfglyph.width', self.rfglyph.width, type(self.rfglyph.width)
+##        print 'srcGlyph.rfglyph.width', srcGlyph.rfglyph.width, type(srcGlyph.rfglyph.width)
+#        #print 'glyphAdvance', glyphAdvance, formatOpentypeScalar(glyphAdvance)
+#        #print 'glyphWidth', glyphWidth, formatOpentypeScalar(glyphWidth)
+#        #print 'glyphWidth', sideBearing, formatOpentypeScalar(sideBearing)
+#        #print 'glyph.width', glyph.width
+#        #print 'glyph.advance', glyph.advance
+#        #print 'glyph.rightMargin', glyph.rightMargin
+#
+#        self.setContours(contours)

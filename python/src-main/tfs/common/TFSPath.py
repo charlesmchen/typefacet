@@ -301,15 +301,17 @@ class TFSPath(object):
         return newPaths0 + newPaths1
 
 
-    def intersectionWithPath_tOnly(self, other, ignoreEndpoints=False, ignoreEqualSegments=False, debugMode=False):
-#        for segment0 in self.segments:
-#            for segment1 in other.segments:
+    def intersectionWithPath_tOnly(self, other, maxEndpoints, ignoreEqualSegments=False, debugMode=False):
+        '''
+        maxEndpoints == 0 means no endpoints may be involved in the intersection.
+        maxEndpoints == 1 means only endpoints may be involved in the intersection.
+        maxEndpoints == 2 means endpoints of both segments may be involved in the intersection.
+        '''
+        if maxEndpoints < 0 or maxEndpoints > 2:
+            raise Exception('Invalid maxEndpoints value: %d' % maxEndpoints)
+
         for index0, segment0 in enumerate(self.segments):
             for index1, segment1 in enumerate(other.segments):
-#        for index0 in xrange(len(self.segments)):
-#            segment0 = self.segments[index0]
-#            for index1 in xrange(len(other.segments)):
-#                segment1 = other.segments[index1]
 
                 if debugMode:
                     print 'intersectionWithPath_tOnly considering'
@@ -321,10 +323,11 @@ class TFSPath(object):
                         print 'equal.0'
                     continue
 
-#                intersection = segment0.findIntersection_recursiveClipping(segment1)
-                intersection = segment0.findIntersection_raw(segment1, debugMode=debugMode)
+                intersection = segment0.findIntersection2(segment1, maxEndpoints)
+#                intersection = segment0.findIntersection_raw(segment1, debugMode=debugMode)
                 if debugMode:
                     print 'intersection', intersection
+
                 if intersection:
                     t0, t1, p = intersection
 #                    print 't0, t1, p', t0, t1, p
@@ -335,25 +338,14 @@ class TFSPath(object):
                     due to rounding error.
                     '''
                     if self is other:
-                        INTERSECTION_ENDPOINT_THRESHOLD = getFloatRoundingTolerance()
                         if (index0 + 1) % len(self) == index1:
-                            if segment0.endPoint().distanceTo(p) <= INTERSECTION_ENDPOINT_THRESHOLD:
+                            if p.roundedEquals(segment0.endPoint()):
 #                                print '---- ignoring endPoint intersection(0)'
                                 continue
                         elif index0 == (index1 + 1) % len(self):
-                            if segment1.endPoint().distanceTo(p) <= INTERSECTION_ENDPOINT_THRESHOLD:
+                            if p.roundedEquals(segment1.endPoint()):
 #                                print '---- ignoring endPoint intersection(1)'
                                 continue
-
-                    if ignoreEndpoints:
-                        MIN_T = T_ROUNDING_TOLERANCE
-                        MAX_T = 1.0 - T_ROUNDING_TOLERANCE
-                        if ((t0 <= MIN_T) or (t0 >= MAX_T)) and ((t1 <= MIN_T) or (t1 >= MAX_T)):
-                            continue
-                        if (((self.startPoint() == p) or (self.endPoint() == p)) and
-                            ((other.startPoint() == p) or (other.endPoint() == p))):
-                            continue
-
 
 #                        if (t0 <= MIN_T) or (t0 >= MAX_T) or (t1 <= MIN_T) or (t1 >= MAX_T):
 #                            continue
@@ -469,8 +461,8 @@ class TFSPath(object):
         path3 = TFSPath(False, *((split11, ) + other.segments[index1 + 1:]))
         return path0, path1, path2, path3, p
 
-    def intersectionWithPath(self, other, ignoreEndpoints=False, ignoreEqualSegments=False):
-        intersection = self.intersectionWithPath_tOnly(other, ignoreEndpoints=ignoreEndpoints, ignoreEqualSegments=ignoreEqualSegments)
+    def intersectionWithPath(self, other, maxEndpoints, ignoreEqualSegments=False):
+        intersection = self.intersectionWithPath_tOnly(other, maxEndpoints=maxEndpoints, ignoreEqualSegments=ignoreEqualSegments)
         if intersection:
             index0, index1, segment0, segment1, t0, t1, p = intersection
             path0, path1, path2, path3, p = self.splitIntersectionWithPath(other, index0, index1, segment0, segment1, t0, t1, p)

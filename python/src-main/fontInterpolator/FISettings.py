@@ -1,6 +1,6 @@
 '''
 robofont-extensions-and-scripts
-TFSCompoundsList.py
+FISettings.py
 
 https://github.com/charlesmchen/robofont-extensions-and-scripts
 
@@ -65,163 +65,133 @@ END OF TERMS AND CONDITIONS
 '''
 
 
+import argparse
 import os
-import sys
+
+from tfs.common.TFSMap import TFSMap
 
 
-def parseHexCode(value):
-    return int('0x' + value, 16)
+def getCommandLineSettings(*replacementValues):
 
+    def assertExists(value):
+        if not os.path.exists(value):
+            msg = "%s does not exist" % value
+            raise argparse.ArgumentTypeError(msg)
 
-def getDiacriticalHexByName(glyphNameMap, diacriticalName):
-    altPattern = 'MODITFSER LETTER %s ACCENT'
-    altName = altPattern % diacriticalName
-    if altName in glyphNameMap:
-        diacriticalHexCode = glyphNameMap[altName]
-        return diacriticalHexCode
+    def assertParentExists(value):
+        if not (os.path.exists(os.path.dirname(value)) and
+                os.path.isdir(os.path.dirname(value))):
+            msg = "%s is not a valid directory" % os.path.dirname(value)
+            raise argparse.ArgumentTypeError(msg)
 
-    if diacriticalName in glyphNameMap:
-        diacriticalHexCode = glyphNameMap[diacriticalName]
-        return diacriticalHexCode
+    def assertIsFolder(value):
+        assertExists(value)
+        if not os.path.isdir(value):
+            msg = "%s is not a folder" % value
+            raise argparse.ArgumentTypeError(msg)
+
+    def folderType(value):
+        assertIsFolder(value)
+        return value
+#        return os.path.abspath(value)
+
+    def assertFileExtension(value, extension):
+        basename = os.path.basename(value)
+        if not basename.lower().endswith(extension.lower()):
+            msg = "%s is not a %s file" % ( value, extension, )
+            raise argparse.ArgumentTypeError(msg)
+
+    def ufoSrcFolderType(value):
+        assertIsFolder(value)
+        assertFileExtension(value, '.ufo')
+        return value
+#        return os.path.abspath(value)
+
+    def ufoDstFolderType(value):
+        assertParentExists(value)
+        assertFileExtension(value, '.ufo')
+#        return os.path.abspath(value)
+        return value
+
+    def otfDstFileType(value):
+        assertParentExists(value)
+        assertFileExtension(value, '.otf')
+        return value
+#        return os.path.abspath(value)
+
+    parser = argparse.ArgumentParser(description='')
+
+    parser.add_argument('--ufo-src',
+                        type=ufoSrcFolderType,
+                        help='The .ufo source file to kern.',
+#                        ) # TODO:
+                        required=True)
+    parser.add_argument('--ufo-dst',
+                        type=ufoDstFolderType,
+                        help='The .ufo destination file.',
+#                        ) # TODO:
+                        required=True)
+    parser.add_argument('--otf-dst',
+                        type=otfDstFileType,
+                        help='Optional OpenType (.otf) destination file.',
+                        ) # TODO:
+#                        required=True)
+
+    parser.add_argument('--log-dst',
+                        type=folderType,
+                        help='Optional folder in which to write HTML logs.  CAUTION: This folder will be completely overwritten.')
+
+    parser.add_argument('--default-diacritical-distance-ems',
+                        type=float,
+                        default=0.065,
+                        help='The default distance between a glyph and its diacritical in ems. 0.0 <= x <= 1.0. Default: 0.065 em')
+
+    parser.add_argument('--top-join-centers',
+                        nargs='*',
+                        help='A list of custom (unicode code point, horizontal center value) pairs used for top-aligned diacriticals.  To center the diacritical Grave (unicode: 0x60) 100 units right of its origin, use --top-join-centers 0x60 100.  Accepts an arbitrary number of pairs.')
+
+    parser.add_argument('--tail-join-centers',
+                        nargs='*',
+                        help='A list of custom (unicode code point, horizontal center value) pairs used for tail-aligned diacriticals.  To center the diacritical Ogonek (unicode: 0x2DB) 100 units right of its origin, use --tail-join-centers 0x2DB 100.  Accepts an arbitrary number of pairs.')
+
+    parser.add_argument('--middle-join-centers',
+                        nargs='*',
+                        help='A list of custom (unicode code point, horizontal center value) pairs used for middle-aligned diacriticals.  To center the diacritical Middle Dot (unicode: 0xB7) 100 units right of its origin, use --middle-join-centers 0xB7 100.  Accepts an arbitrary number of pairs.')
+
+    if replacementValues:
+        args = parser.parse_args(replacementValues)
     else:
-        diacriticalHexCode = None
-        altPatterns = (
-                       'MODITFSER LETTER %s ACCENT',
-                       '%s ACCENT',
-                       )
-        for altPattern in altPatterns:
-            altName = altPattern % diacriticalName
-            if altName in glyphNameMap:
-                diacriticalHexCode = glyphNameMap[altName]
-                return diacriticalHexCode
-    return None
+        args = parser.parse_args()
 
-DIACRITICAL_ALIGN_TOP = 'top'
-DIACRITICAL_ALIGN_TAIL = 'tail'
-DIACRITICAL_ALIGN_TAIL_FLOAT = 'tail float'
-DIACRITICAL_ALIGN_MIDDLE = 'middle'
-DIACRITICAL_ALIGN_TOP_ROTATE_FLOAT = 'DIACRITICAL_ALIGN_TOP_ROTATE_FLOAT'
-DIACRITICAL_ALIGN_TAIL_H_FLIP = 'DIACRITICAL_ALIGN_TAIL_H_FLIP'
+#    print 'args', args
 
-def getCompounds(log_dst=None):
-    srcFile = os.path.abspath(os.path.join('..', '..', 'data', 'Adobe Glyph List', 'aglfn13.txt'))
-    print 'srcFile', srcFile
-    if not os.path.exists(srcFile) and os.path.isfile(srcFile):
-        raise Exception ('Missing srcFile: ' + srcFile)
+    result = TFSMap()
+    result.ufo_src = args.ufo_src
+    result.ufo_dst = args.ufo_dst
+    result.otf_dst = args.otf_dst
+    result.log_dst = args.log_dst
+    result.default_diacritical_distance_ems = args.default_diacritical_distance_ems
 
-    with open(srcFile, 'rt') as f:
-        csvData = f.read()
+    result.top_join_centers = args.top_join_centers
+    if result.top_join_centers is not None:
+        if len(result.top_join_centers) % 2 != 0:
+            raise Exception('--top-join-centers requires an even number of values.')
 
-    glyphInfos = []
-    glyphNameMap = {}
-    for line in csvData.split('\n'):
-        line = line.strip()
-        if line.startswith('#'):
-            continue
-        if not line:
-            continue
-        hexCode, shortName, longName = line.split(';')
-        shortName = shortName.strip()
-        longName = longName.strip()
-        glyphInfos.append( (hexCode, shortName, longName,) )
-        glyphNameMap[longName] = hexCode
+    result.tail_join_centers = args.tail_join_centers
+    if result.tail_join_centers is not None:
+        if len(result.tail_join_centers) % 2 != 0:
+            raise Exception('--tail-join-centers requires an even number of values.')
 
-    # Hack
-#    glyphNameMap['MODITFSER LETTER MACRON ACCENT'] = '02C9'
-    glyphNameMap['MODITFSER LETTER TILDE ACCENT'] = '02DC'
+    result.middle_join_centers = args.middle_join_centers
+    if result.middle_join_centers is not None:
+        if len(result.middle_join_centers) % 2 != 0:
+            raise Exception('--middle-join-centers requires an even number of values.')
 
-    yamlMaps = []
-    unknownBaseNames = set()
-    unknownDiacriticalNames = set()
-    knownDiacriticalNames = set()
-    for hexCode, shortName, longName in glyphInfos:
-        DELIMITER = ' WITH '
-        if DELIMITER not in longName:
-            continue
-        index = longName.index(DELIMITER)
-        baseName = longName[:index]
-        diacriticalName = longName[index + len(DELIMITER):]
-    #    print 'longName "%s", baseName "%s", diacriticalName "%s", ' % ( longName, baseName, diacriticalName, )
-
-        if baseName in glyphNameMap:
-            baseHexCode = glyphNameMap[baseName]
-        else:
-            unknownBaseNames.add(baseName)
-            continue
-
-        diacriticalHexCode = getDiacriticalHexByName(glyphNameMap, diacriticalName)
-        if diacriticalHexCode is None:
-            unknownDiacriticalNames.add(diacriticalName)
-            continue
-        knownDiacriticalNames.add(diacriticalName)
+#    print 'args.top_join_centers', args.custom_glyph_centers
+#    import sys
+#    sys.exit(0)
 
 
-        diacriticalMap = { 'glyph': parseHexCode(diacriticalHexCode), }
-        if parseHexCode(diacriticalHexCode) in ( 0xb7, # Middle dot
-                                                 ):
-            diacriticalMap['align'] = DIACRITICAL_ALIGN_MIDDLE
-        elif parseHexCode(diacriticalHexCode) in ( 0x2DB, # ogonek
-                                                 ):
-            diacriticalMap['align'] = DIACRITICAL_ALIGN_TAIL
-        elif parseHexCode(diacriticalHexCode) in ( 0xB8, # cedilla
-                                                 ):
-            diacriticalMap['align'] = DIACRITICAL_ALIGN_TAIL_FLOAT
-        else:
-            diacriticalMap['align'] = DIACRITICAL_ALIGN_TOP
+    return result
 
-        # An exception
-        if parseHexCode(hexCode) in ( 0x123, # g cedilla
-                                                 ):
-            diacriticalMap['align'] = DIACRITICAL_ALIGN_TOP_ROTATE_FLOAT
-        elif parseHexCode(hexCode) in ( 0x162, # T cedilla
-                                        0x163, # t cedilla
-                                        ):
-            diacriticalMap['align'] = DIACRITICAL_ALIGN_TAIL_H_FLIP
-            diacriticalMap['glyph'] = 0x2DB # ogonek
-
-        yamlMap = {
-                   'glyph': parseHexCode(hexCode),
-                   'baseGlyph': parseHexCode(baseHexCode),
-                   'diacriticals': ( diacriticalMap, ),
-                   }
-        yamlMaps.append(yamlMap)
-    #- glyph: 220
-    #  baseGlyph: 'U'
-    #  diacriticals:
-    #    - glyph: 168
-
-        pass
-
-    print
-    print 'Compound glyph schema results:'
-    print 'unknownBaseNames', sorted(unknownBaseNames)
-    print 'unknownBaseNames', sorted(unknownDiacriticalNames)
-    print 'knownDiacriticalNames', sorted(knownDiacriticalNames)
-    print 'unknownBaseNames', len(unknownBaseNames)
-    print 'unknownBaseNames', len(unknownDiacriticalNames)
-    print 'knownDiacriticalNames', len(knownDiacriticalNames)
-    print
-
-#    print 'yamlMaps', yamlMaps
-
-    yamlMaps = sorted(yamlMaps, lambda yamlMap0, yamlMap1: cmp(yamlMap0['glyph'], yamlMap1['glyph']))
-
-    if log_dst is not None:
-        import yaml
-        dstFile = os.path.abspath(os.path.join(log_dst, 'compounds.yaml'))
-        print 'dstFile', dstFile
-        yamlData = yaml.safe_dump(yamlMaps)
-        with open(dstFile, 'wt') as f:
-            f.write(yamlData)
-
-    return yamlMaps
-
-
-
-if __name__ == "__main__":
-    yamlMaps = getCompounds()
-    for yamlMap in yamlMaps:
-        print 'yamlMap', yamlMap
-
-    print
-    print 'complete.'
+#getCommandLineSettings()

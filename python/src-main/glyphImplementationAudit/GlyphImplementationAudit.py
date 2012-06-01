@@ -86,6 +86,7 @@ from tfs.common.TFSPath import polygonWithPoints
 from tfs.common.TFSMap import TFSMap
 from tfs.common.UnicodeCharacterNames import getUnicodeCharacterName, getUnicodeLongName
 
+
 class GlyphImplementationAudit(object):
 
     def __init__(self, settings = None):
@@ -138,13 +139,15 @@ class GlyphImplementationAudit(object):
             self.css_folder = makeLogSubfolder(self.html_folder, 'stylesheets')
             self.svg_folder = makeLogSubfolder(self.html_folder, 'svg')
 
-            srcCssFile = os.path.abspath(os.path.join('..', '..', '..', 'data', 'styles.css'))
+            import tfs.common.TFSProject as TFSProject
+            srcCssFile = os.path.abspath(os.path.join(TFSProject.findProjectRootFolder(), 'data', 'styles.css'))
             dstCssFile = os.path.abspath(os.path.join(self.css_folder, os.path.basename(srcCssFile)))
             shutil.copy(srcCssFile, dstCssFile)
 
 
     def writeMustacheLog(self, mustacheFilename, dstFilename, mustacheVars, replaceMap=None):
-        mustacheFile = os.path.abspath(os.path.join('..', '..', '..', 'data', mustacheFilename))
+        import tfs.common.TFSProject as TFSProject
+        mustacheFile = os.path.abspath(os.path.join(TFSProject.findProjectRootFolder(), 'data', mustacheFilename))
         if not (os.path.exists(mustacheFile) and os.path.isfile(mustacheFile)):
             raise Exception('Invalid mustacheFile: ' + mustacheFile)
         with open(mustacheFile, 'rt') as f:
@@ -309,7 +312,7 @@ class GlyphImplementationAudit(object):
                                               'statsTitle': 'Statistics',
                                               'stats': (
                                                         { 'key': 'Total Fonts Scanned', 'value': locale.format("%d", len(self.processedPostscriptNames), grouping=True), },
-                                                        { 'key': 'Total Code Points Observed', 'value': locale.format("%d", len(self.glyphCountMap), grouping=True), },
+                                                        { 'key': 'Distinct Code Points Observed', 'value': locale.format("%d", len(self.glyphCountMap), grouping=True), },
                                                         ),
                                               }
 #                              replaceMap = {'<!-- SVG Graph Placeholder -->': tableSvg,

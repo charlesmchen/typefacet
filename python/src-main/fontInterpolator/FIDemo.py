@@ -1,6 +1,6 @@
 '''
 robofont-extensions-and-scripts
-TFSFont.py
+FIDemo.py
 
 https://github.com/charlesmchen/robofont-extensions-and-scripts
 
@@ -66,151 +66,58 @@ END OF TERMS AND CONDITIONS
 
 
 import os
-import robofab.world
-from TFSGlyph import TFSGlyph
+import shutil
 
+from FontInterpolator import FontInterpolator
+from FISettings import getCommandLineSettings
 
-class TFSFont(object):
+#pseudo_argv = ('--ufo-src=' + os.path.abspath(os.path.join('..', '..', 'data-ignore', 'theleagueof-league-gothic-4f9ff8d', 'source', 'League Gothic.ufo')) + '',
+pseudo_argv = ('--ufo-src=' + os.path.abspath(os.path.join('..', '..', '..', 'data-ignore', 'League Gothic.modified.ufo')) + '',
+               '--ufo-dst=' + os.path.abspath(os.path.join('..', '..', '..', 'out', 'League Gothic.ufo')) + '',
+               '--log-dst=' + os.path.abspath(os.path.join('..', '..', '..', 'logs')) + '',
+               '--otf-dst=' + os.path.abspath(os.path.join('..', '..', '..', 'out', 'League Gothic.otf')) + '',
+               '--top-join-centers',
+               '0x60', '261', # Grave
+               '0xB4', '239', # Acute
+               '0x6A', '87.5', # j
+               '0x4A', '118', # J
+               '0x67', '157', # g
+               '0x47', '177', # G
+               '0x2DD', '218', # hungarumlaut
+               '0x52', '148', # R
+               '0x72', '130', # r
+               '0x74', '111.5', # t
+               '0x4C', '94.0', # L
+               '0x44', '175.0', # D
+               '0x64', '140.0', #
 
-    def __init__(self, rffont):
-        self.rffont = rffont
+               '--tail-join-centers',
+               '0xAF', '260.0', # ogonek
+               '0x41', '311.5,0', # A
+               '0x61', '253.0,0', # a
+               '0x45', '230,0', # E
+               '0x65', '162,0', # e
 
-    def update(self):
-        self.rffont.update()
+#Base Glyph: L (L, 0x4C)
 
-    def save(self, filepath):
-        self.rffont.save(filepath)
+#D, 0x44)
+# d (d, 0x64)
+ #               '--top-join-centers 0x60 261',
 
-    def close(self):
-        self.rffont.close()
+               )
+print 'pseudo_argv', ' '.join(pseudo_argv)
 
-    def glyphNames(self):
-        return self.rffont.keys()
+# d with caron is super wrong.
+# should i use dotless i?
 
-    def glyphCodePoints(self):
-        result = [glyph.unicode for glyph in self.rffont]
-        return result
+settings = getCommandLineSettings(*pseudo_argv)
+#settings = getCommandLineSettings()
+#settings.ufo_src = os.path.abspath(os.path.join('..', '..', 'data-ignore', 'theleagueof-league-gothic-4f9ff8d', 'source', 'League Gothic.ufo'))
+#settings.ufo_dst = os.path.abspath(os.path.join('..', '..', 'out', 'League Gothic.ufo'))
+#settings.log_dst = os.path.abspath(os.path.join('..', '..', 'logs'))
+#settings.otf_dst = os.path.abspath(os.path.join('..', '..', 'out', 'League Gothic.otf'))
 
-    def getGlyphByName(self, key):
-        rfglyph = self.rffont.getGlyph(key)
-        return TFSGlyph(rfglyph)
+FontInterpolator(settings).process()
 
-    def getGlyphByCodePoint(self, value):
-        for glyph in self.rffont:
-            if glyph.unicode == value:
-                return TFSGlyph(glyph)
-        return None
-#        raise Exception('Unknown code point: ' + str(value))
-#        return None
-
-    def getGlyphs(self):
-        return [TFSGlyph(glyph) for glyph in self.rffont]
-
-    units_per_em = property(lambda self: self.rffont.info.unitsPerEm)
-    info = property(lambda self: self.rffont.info)
-#    ascender = property(lambda self: self.rffont.info.ascender)
-#    descender = property(lambda self: self.rffont.info.descender)
-#    xHeight = property(lambda self: self.rffont.info.xHeight)
-#    capHeight = property(lambda self: self.rffont.info.capHeight)
-#    versionMajor = property(lambda self: self.rffont.info.versionMajor)
-#    versionMinor = property(lambda self: self.rffont.info.versionMinor)
-
-    def writeToFile(self, dstFile):
-        self.rffont.update()
-        self.rffont.autoUnicodes()
-        self.rffont.update()
-        self.rffont.save(dstFile)
-#        font.close()
-
-    def getGlyphName(self, codePoint):
-#        if codePoint is None:
-#            return  '.notdef'
-
-        import UnicodeCharacterNames
-        name = UnicodeCharacterNames.getUnicodeCharacterName(codePoint)
-        return name
-
-    def insertGlyph(self, codePoint, contours, xAdvance,
-                    glyphName=None, correctDirection=True):
-        if glyphName is None:
-            glyphName = self.getGlyphName(codePoint)
-        glyph = TFSGlyph(self.rffont.newGlyph(glyphName))
-        if codePoint is not None:
-            glyph.setUnicode(codePoint)
-        glyph.setContours(contours, correctDirection=correctDirection)
-        glyph.setXAdvance(xAdvance)
-        glyph.update()
-#        glyph.correctDirection()
-        return glyph
-
-
-    def insertGlyphDerivedFromGlyph(self, codePoint, contours, srcGlyph):
-        self.insertGlyph(codePoint, contours, srcGlyph.rfglyph.width)
-
-
-
-
-
-
-
-
-
-
-
-
-
-#font.info.ascender = formatOpentypeScalar(metadata.ascender)
-#font.info.descender = formatOpentypeScalar(metadata.descender)
-#font.info.unitsPerEm = formatOpentypeScalar(metadata.unitsPerEm)
-#font.info.xHeight = formatOpentypeScalar(metadata.xHeight)
-#font.info.capHeight = formatOpentypeScalar(metadata.capHeight)
-#font.info.versionMajor = metadata.versionMajor
-#font.info.versionMinor = metadata.versionMinor
-#
-#font.info.italicAngle = metadata.italicAngle
-##font.info.openTypeHeadFlags = metadata.openTypeHeadFlags
-#font.info.openTypeHheaAscender = font.info.ascender
-#font.info.openTypeHheaDescender = font.info.descender
-#font.info.openTypeHheaCaretSlopeRise = formatOpentypeScalar(metadata.caretSlopeRise)
-#font.info.openTypeHheaCaretSlopeRun = formatOpentypeScalar(metadata.caretSlopeRun)
-#font.info.openTypeHheaCaretOffset = 0
-#
-#font.update()
-#
-#
-#font.info.styleMapFamilyName = font.info.familyName
-#font.info.openTypeNamePreferredFamilyName = font.info.familyName
-#font.info.openTypeNamePreferredSubfamilyName = font.info.styleName
-#font.info.fullName = font.info.familyName + '-' + font.info.styleName
-#font.info.fontName = font.info.fullName.replace(' ', '')
-##font.info.postscriptUniqueID = font.info.fontName
-#font.info.postscriptFontName = font.info.fontName
-#font.info.postscriptFullName = font.info.fullName
-##font.info.weightName = font.info.fullName
-##font.info.postscriptFullName = font.info.fullName
-## TODO: remove
-#font.info.menuName = font.info.fullName
-## TODO: remove
-#font.info.fondName = font.info.familyName
-#font.info.macintoshFONDName = font.info.familyName
-#
-#font.info.otFamilyName = font.info.familyName
-#font.info.otStyleName = font.info.styleName
-#font.info.otMacName = font.info.fullName
-#font.info.openTypeNameCompatibleFullName = font.info.fullName
-#
-#font.info.designer = metadata.designer
-#font.info.openTypeNameDesigner = metadata.designer
-#font.info.createdBy = metadata.designer
-#font.info.year = metadata.year
-
-def TFSFontFromFile(filepath):
-#    filepath = os.path.abspath(filepath)
-    if not (os.path.exists(filepath) and
-            os.path.isdir(filepath) and
-            os.path.basename(filepath).lower().endswith('.ufo')):
-        raise Exception('Invalid .ufo file: ' + filepath)
-
-#    print 'filepath', filepath
-    rffont = robofab.world.OpenFont(filepath)
-    return TFSFont(rffont)
+print
+print 'complete.'

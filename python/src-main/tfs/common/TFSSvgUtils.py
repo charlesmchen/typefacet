@@ -73,7 +73,6 @@ from TFSFont import *
 from TFSMap import *
 #from TFSSvg import *
 from TFSSettings import getCommandLineSettings
-import TFSCompoundsList
 from TFSPoint import TFSPoint, minmaxMerge, minmaxPoints
 from TFSPath import minmaxPaths, openPathWithPoints
 

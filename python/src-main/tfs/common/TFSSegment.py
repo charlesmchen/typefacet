@@ -78,6 +78,10 @@ onJython = sys.platform.startswith('java')
 
 
 def inferTValue(minValue, maxValue, value):
+    if value == minValue:
+        return 0.0
+    if value == maxValue:
+        return 1.0
     return clamp01((value - minValue) / float(maxValue - minValue))
 
 
@@ -267,6 +271,13 @@ class TFSSegment(object):
     def endTangent(self):
         return self.points[-1].minus(self.points[-2]).normalize()
 
+    def naiveEndpointTangent(self):
+        try:
+            return self.endPoint().minus(self.startPoint()).normalize()
+        except ZeroDivisionError, e:
+            print 'Segment.normalize() ZeroDivisionError', self.description()
+            raise e
+
     def startVector(self):
         return self.points[1].minus(self.points[0])
 
@@ -289,6 +300,118 @@ class TFSSegment(object):
     def evaluateWithMaxPrecision(self, precision):
         # Backward compatability
         return self.evaluateRangeWithPrecision(precision)
+
+
+    def isColinear2_linear(self, p):
+        '''
+        returns t if colinear, None otherwise.
+        '''
+
+        '''
+        Trivial discard case.
+        '''
+        minmax = self.minmax()
+        if ((p.x < minmax.minX) or
+            (minmax.maxX < p.x) or
+            (p.y < minmax.minY) or
+            (minmax.maxY < p.y)):
+            return None
+
+        p0 = self.startPoint()
+        p1 = self.endPoint()
+
+        '''
+        Trivial endpoint cases.
+        '''
+        if p.roundedEquals(p0):
+            return 0.0
+        if p.roundedEquals(p1):
+            return 1.0
+
+        if p0.x == p1.x:
+            '''
+            Vertical case.
+            '''
+            if p0.x == p.x:
+                t = inferTValue(p0.y, p1.y, p.y)
+                return t
+            else:
+                return None
+        if p0.y == p1.y:
+            '''
+            Horizontal case.
+            '''
+            if p0.y == p.y:
+                t = inferTValue(p0.x, p1.x, p.x)
+                return t
+            else:
+                return None
+
+        '''
+        General case
+        '''
+        tx = inferTValue(p0.x, p1.x, p.x)
+        ty = inferTValue(p0.y, p1.y, p.y)
+        if abs(tx - ty) > getFloatRoundingTolerance():
+            return None
+        t = (tx + ty) * 0.5
+        return t
+
+
+    def isColinear2_recursiveClipping(self, p):
+        '''
+        Trivial endpoint cases.
+        '''
+        if p.roundedEquals(self.startPoint()):
+            return self.startT
+        if p.roundedEquals(self.endPoint()):
+            return self.endT
+
+        '''
+        Trivial discard case.
+        '''
+        bbox = self.boundingBox()
+        if not bbox.containsPoint(p):
+            return None
+
+        try:
+            scaleFactor = max(bbox.width, bbox.height)
+            SCALE_FACTOR_THRESHOLD = getFloatRoundingTolerance() * 2
+            if scaleFactor > SCALE_FACTOR_THRESHOLD:
+                left, right = self.split(0.5)
+                left.startT = self.startT
+                left.endT = right.startT = self.startT + (self.endT - self.startT) * 0.5
+                right.endT = self.endT
+                for subsegment in (left, right,):
+                    t = subsegment.isColinear2_recursiveClipping(p)
+                    if t is not None:
+                        return t
+                return None
+        except TFSValidationException, e:
+            '''
+            Due to rounding error, we may get validation errors
+            when slicing bezier curves very finely.
+            '''
+            pass
+
+        # Default to not splitting
+        t = self.isColinear2_linear(p)
+        if t is None:
+            return None
+        return self.startT + (self.endT - self.startT) * t
+
+
+    def isColinear2(self, p):
+        '''
+        returns t if colinear, None otherwise.
+        '''
+        if len(self.points) == 2:
+            return self.isColinear2_linear(p)
+        elif len(self.points) in (3, 4,):
+            return self.isColinear2_recursiveClipping(p)
+        else:
+            raise Exception('evaluatePointsWithT(): Invalid segment point count: %d' % len(self.points))
+
 
     def isColinear_linear(self, p):
         bBox = self.boundingBox()
@@ -400,10 +523,10 @@ class TFSSegment(object):
 
     def findIntersection_naive(self, other_segment, debugMode=False):
         point = TFSIntersection.calculateIntersectPoint(self.startPoint(),
-                                                         self.endPoint(),
-                                                         other_segment.startPoint(),
-                                                         other_segment.endPoint(),
-                                                         debugMode=debugMode)
+                                                        self.endPoint(),
+                                                        other_segment.startPoint(),
+                                                        other_segment.endPoint(),
+                                                        debugMode=debugMode)
 #        print 'findIntersection_naive', '', self.startPoint(), self.endPoint(), other_segment.startPoint(), other_segment.endPoint()
 #        print 'findIntersection_naive', 'point', point
         if debugMode:
@@ -416,13 +539,18 @@ class TFSSegment(object):
         def findT(p0, p1, p):
             if p0.x == p1.x:
                 return inferTValue(p0.y, p1.y, p.y)
-            else:
+            elif p0.y == p1.y:
                 return inferTValue(p0.x, p1.x, p.x)
+            else:
+                tx = inferTValue(p0.x, p1.x, p.x)
+                ty = inferTValue(p0.y, p1.y, p.y)
+                return (tx + ty) * 0.5
 
         def interpolateT(startT, endT, t):
             result = startT + (endT - startT) * t
 #            print 'interpolateT', startT, endT, 't', t, '->', result
             return result
+
         selfT = findT(self.startPoint(), self.endPoint(), point)
         selfT = interpolateT(self.startT, self.endT, selfT)
         otherT = findT(other_segment.startPoint(), other_segment.endPoint(), point)
@@ -498,6 +626,88 @@ class TFSSegment(object):
         for point in self.points:
             newPoints.append(point.plus(offset))
         return TFSSegment(*newPoints)
+
+    def findIntersection2_raw(self, other_segment, debugMode=False):
+        '''
+        Given two segments, return _any_ intersection, including endpoint and co-linear intersections.
+
+        returns selfT, otherT, point of intersection
+            or None.
+        '''
+        debugMode = False
+        if debugMode:
+            print 'findIntersection considering', self.description(), other_segment.description()
+
+#        '''
+#        Trivial endpoint case.
+#        '''
+#        if self.startPoint() == other_segment.startPoint():
+#            return 0.0, 0.0, self.startPoint()
+#        if self.startPoint() == other_segment.endPoint():
+#            return 0.0, 1.0, self.startPoint()
+#        if self.endPoint() == other_segment.startPoint():
+#            return 1.0, 0.0, self.endPoint()
+#        if self.endPoint() == other_segment.endPoint():
+#            return 1.0, 1.0, self.endPoint()
+
+        '''
+        Trivial bounding-box case.
+        '''
+        minmax0 = self.minmax()
+        minmax1 = other_segment.minmax()
+        if ((minmax0.maxX < minmax1.minX) or
+            (minmax1.maxX < minmax0.minX) or
+            (minmax0.maxY < minmax1.minY) or
+            (minmax1.maxY < minmax0.minY)):
+            if debugMode:
+                print 'findIntersection2_raw.0'
+            return None
+
+        selfT = self.isColinear2(other_segment.startPoint())
+        if selfT is not None:
+            if debugMode:
+                print 'colinear1', selfT
+            if debugMode:
+                print 'findIntersection2_raw.1'
+            return selfT, 0.0, other_segment.startPoint()
+        selfT = self.isColinear2(other_segment.endPoint())
+        if selfT is not None:
+            if debugMode:
+                print 'colinear2', selfT
+            if debugMode:
+                print 'findIntersection2_raw.2'
+            return selfT, 1.0, other_segment.endPoint()
+
+        otherT = other_segment.isColinear2(self.startPoint())
+        if otherT is not None:
+            if debugMode:
+                print 'colinear3', otherT
+            if debugMode:
+                print 'findIntersection2_raw.3'
+            return 0.0, otherT, self.startPoint()
+        otherT = other_segment.isColinear2(self.endPoint())
+        if otherT is not None:
+            if debugMode:
+                print 'colinear4', otherT
+            if debugMode:
+                print 'findIntersection2_raw.4'
+            return 1.0, otherT, self.endPoint()
+
+        if self.isStraight() and other_segment.isStraight():
+#        if self.isStraight() and other_segment.isStraight() and False:
+            intersection = self.findIntersection_naive(other_segment, debugMode=debugMode)
+        else:
+            intersection = self.findIntersection_recursiveClipping(other_segment)
+
+        if intersection:
+            selfT, otherT, point = intersection
+            if debugMode:
+                print 'findIntersection2_raw.7'
+            return selfT, otherT, point
+        if debugMode:
+            print 'findIntersection2_raw.8'
+        return None
+
 
     def findIntersection_raw(self, other_segment, debugMode=False):
         DEBUG = False
@@ -579,6 +789,34 @@ class TFSSegment(object):
         if intersection:
             selfT, otherT, point = intersection
             return self, other_segment, selfT, otherT, point
+        return None
+
+    def findIntersection2(self, other_segment, maxEndpoints):
+        '''
+        maxEndpoints == 0 means no endpoints may be involved in the intersection.
+        maxEndpoints == 1 means only endpoints may be involved in the intersection.
+        maxEndpoints == 2 means endpoints of both segments may be involved in the intersection.
+        '''
+        if maxEndpoints < 0 or maxEndpoints > 2:
+            raise Exception('Invalid maxEndpoints value: %d' % maxEndpoints)
+
+        intersection = self.findIntersection2_raw(other_segment)
+        if intersection:
+            selfT, otherT, point = intersection
+            if maxEndpoints == 0:
+                if ( point.roundedEquals(self.startPoint()) or
+                     point.roundedEquals(self.endPoint()) or
+                     point.roundedEquals(other_segment.startPoint()) or
+                     point.roundedEquals(other_segment.endPoint())):
+                    return None
+            elif maxEndpoints == 1:
+                if ( ( point.roundedEquals(self.startPoint()) or
+                       point.roundedEquals(self.endPoint())) and
+                     ( point.roundedEquals(other_segment.startPoint()) or
+                       point.roundedEquals(other_segment.endPoint()))):
+                    return None
+            return selfT, otherT, point
+#            return self, other_segment, selfT, otherT, point
         return None
 
     def tangentToSegment(self, other):
@@ -760,3 +998,10 @@ class TFSSegment(object):
 
     def endPointDistance(self):
         return self.startPoint().distanceTo(self.endPoint())
+
+
+def debugSegments(name, segments):
+    print
+    print name, len(segments)
+    for index, segment in enumerate(segments):
+        print '\t', index, segment.description() if segment is not None else 'None'

@@ -71,6 +71,46 @@ import yaml
 from TFSMap import TFSMap
 
 
+def toNameKey(characterCode):
+    key = '0x%04X' % characterCode
+    return key
+
+
+def readNameYaml(filename, dstMap):
+    import tfs.common.TFSProject as TFSProject
+    srcFile = os.path.abspath(os.path.join(TFSProject.findProjectRootFolder(), 'data', filename))
+    print 'srcFile', srcFile
+    if not os.path.exists(srcFile) and os.path.isfile(srcFile):
+        raise Exception ('Missing srcFile: ' + srcFile)
+
+    with open(srcFile, 'rt') as f:
+        yamlData = f.read()
+
+    yamlMap = yaml.load(yamlData)
+    for hexCode, longName in yamlMap.items():
+        hexCode = toNameKey(hexCode)
+        dstMap[hexCode] = longName
+
+
+controlCharacterNameMap = {}
+
+def readControlCharacterNames():
+    readNameYaml('ControlCharacterNames.yaml', controlCharacterNameMap)
+
+trueTypeGlyphNameMap = {}
+
+def readTrueTypeGlyphNames():
+    '''
+    See: https://developer.apple.com/fonts/ttrefman/rm06/Chap6post.html
+    '''
+    readNameYaml('TrueTypeGlyphNames.yaml', trueTypeGlyphNameMap)
+
+hexToLongNameMap2 = {}
+
+def readGlyphNames2():
+    readNameYaml('UnicodeGlyphLongNames.yaml', hexToLongNameMap2)
+
+
 validNameLetters = []
 for letter in xrange(ord('a'), ord('z') + 1):
     validNameLetters.append(chr(letter))
@@ -86,103 +126,170 @@ hexToShortNameMap = {}
 hexToLongNameMap = {}
 
 def readGlyphNames():
-	srcFile = os.path.abspath(os.path.join('..', '..', '..', 'data', 'Adobe Glyph List', 'aglfn13.txt'))
-	print 'srcFile', srcFile
-	if not os.path.exists(srcFile) and os.path.isfile(srcFile):
-	    raise Exception ('Missing srcFile: ' + srcFile)
+    import tfs.common.TFSProject as TFSProject
+    srcFile = os.path.abspath(os.path.join(TFSProject.findProjectRootFolder(), 'data', 'Adobe Glyph List', 'aglfn13.txt'))
+    print 'srcFile', srcFile
+    if not os.path.exists(srcFile) and os.path.isfile(srcFile):
+        raise Exception ('Missing srcFile: ' + srcFile)
 
-	with open(srcFile, 'rt') as f:
-	    csvData = f.read()
+    with open(srcFile, 'rt') as f:
+        csvData = f.read()
 
-	for line in csvData.split('\n'):
-		line = line.strip()
-		if line.startswith('#'):
-			continue
-		if not line:
-			continue
-		hexCode, shortName, longName = line.split(';')
-#		print 'line', line, 'hexCode, shortName, longName', hexCode, shortName, longName
-		hexCode = '0x' + hexCode
-		hexToShortNameMap[hexCode] = shortName
-		hexToLongNameMap[hexCode] = longName
+    for line in csvData.split('\n'):
+        line = line.strip()
+        if line.startswith('#'):
+            continue
+        if not line:
+            continue
+        hexCode, shortName, longName = line.split(';')
+        #        print 'line', line, 'hexCode, shortName, longName', hexCode, shortName, longName
+        hexCode = toNameKey(int(hexCode, 16))
+        hexToShortNameMap[hexCode] = shortName
+        hexToLongNameMap[hexCode] = longName
 
-readGlyphNames()
 
 unicodeCodeBlocks = []
 
 def readCodeBlocks():
-	srcFile = os.path.abspath(os.path.join('..', '..', '..', 'data', 'UnicodeCodeBlocks.yaml'))
-	print 'srcFile', srcFile
-	if not os.path.exists(srcFile) and os.path.isfile(srcFile):
-	    raise Exception ('Missing srcFile: ' + srcFile)
+    import tfs.common.TFSProject as TFSProject
+    srcFile = os.path.abspath(os.path.join(TFSProject.findProjectRootFolder(), 'data', 'UnicodeCodeBlocks.yaml'))
+    print 'srcFile', srcFile
+    if not os.path.exists(srcFile) and os.path.isfile(srcFile):
+        raise Exception ('Missing srcFile: ' + srcFile)
 
-	with open(srcFile, 'rt') as f:
-	    data = f.read()
-	maps = yaml.load(data)
+    with open(srcFile, 'rt') as f:
+        data = f.read()
+    maps = yaml.load(data)
 
-	for map in maps:
-		unicodeCodeBlock = TFSMap()
-		unicodeCodeBlock.blockName = map['blockName']
-		unicodeCodeBlock.blockRangeStart = int(map['blockRangeStart'][2:], 16)
-		unicodeCodeBlock.blockRangeEnd = int(map['blockRangeEnd'][2:], 16)
-		unicodeCodeBlocks.append(unicodeCodeBlock)
+    for map in maps:
+        unicodeCodeBlock = TFSMap()
+        unicodeCodeBlock.blockName = map['blockName']
+        unicodeCodeBlock.blockRangeStart = int(map['blockRangeStart'][2:], 16)
+        unicodeCodeBlock.blockRangeEnd = int(map['blockRangeEnd'][2:], 16)
+        unicodeCodeBlocks.append(unicodeCodeBlock)
 
-readCodeBlocks()
+_data_loaded = False
+def _loadDataIfNecessary():
+    global _data_loaded
+    if _data_loaded:
+        return
+    readControlCharacterNames()
+    readTrueTypeGlyphNames()
+    readGlyphNames2()
+    readGlyphNames()
+    readCodeBlocks()
+    _data_loaded = True
+
 
 def getUnicodeCodeBlock(characterCode):
-	for unicodeCodeBlock in unicodeCodeBlocks:
-		if unicodeCodeBlock.blockRangeStart <= characterCode <= unicodeCodeBlock.blockRangeEnd:
-			return unicodeCodeBlock
-	return None
+    for unicodeCodeBlock in unicodeCodeBlocks:
+        if unicodeCodeBlock.blockRangeStart <= characterCode <= unicodeCodeBlock.blockRangeEnd:
+            return unicodeCodeBlock
+    return None
 
 
 def validateName(name):
-	result = []
-	for c in name:
-		if c == ' ':
-			result.append('_')
-		elif c in validNameLetters:
-			result.append(c)
-		else:
-			raise Exception('Invalid name: ' + name)
-	return ''.join(result)
+    result = []
+    for c in name:
+        if c == ' ':
+            result.append('_')
+        elif c in validNameLetters:
+            result.append(c)
+        else:
+            raise Exception('Invalid name: ' + name)
+    return ''.join(result)
 
 
 def getUnicodeLongName(characterCode,
-						ignoreUnknown=False,
-						skipValidation=False):
-	key = '0x%04X' % characterCode
-	if key not in hexToLongNameMap and ignoreUnknown:
-		unicodeCodeBlock = getUnicodeCodeBlock(characterCode)
-		if unicodeCodeBlock is not None:
-			return '[Unknown %s]' % unicodeCodeBlock.blockName
+                        ignoreUnknown=False,
+                        skipValidation=False):
 
-		return '[Unknown]'
+    _loadDataIfNecessary()
 
-	basename = hexToLongNameMap[key]
-	basename = basename.title()
-	if skipValidation:
-		return basename
-	return validateName(basename)
+    key = toNameKey(characterCode)
+    if key in controlCharacterNameMap:
+        return '[Control: %s]' % controlCharacterNameMap[key]
+
+    basename = None
+    if key in hexToLongNameMap:
+        basename = hexToLongNameMap[key]
+    elif key in hexToLongNameMap2:
+        basename = hexToLongNameMap2[key]
+    elif ignoreUnknown:
+        unicodeCodeBlock = getUnicodeCodeBlock(characterCode)
+        if unicodeCodeBlock is not None:
+            return '[Unknown %s]' % unicodeCodeBlock.blockName
+
+        return '[Unknown]'
+    else:
+        raise Exception('Unknown glyph: 0x%X' % characterCode)
+
+    basename = basename.title()
+    if skipValidation:
+        return basename
+    return validateName(basename)
 
 
 def getUnicodeShortName(characterCode,
-						ignoreUnknown=False,
-						skipValidation=False):
-	key = '0x%04X' % characterCode
-	if key not in hexToShortNameMap and ignoreUnknown:
-		return '[Unknown]'
+                        ignoreUnknown=False,
+                        skipValidation=False):
 
-	basename = hexToShortNameMap[key]
-	basename = basename.title()
-	if skipValidation:
-		return basename
-	return validateName(basename)
+    _loadDataIfNecessary()
+
+    key = toNameKey(characterCode)
+    if key in controlCharacterNameMap:
+        return '[Control: %s]' % controlCharacterNameMap[key]
+
+    if key not in hexToShortNameMap and ignoreUnknown:
+        return '[Unknown]'
+
+    basename = hexToShortNameMap[key]
+    basename = basename.title()
+    if skipValidation:
+        return basename
+    return validateName(basename)
 
 
 def getUnicodeCharacterName(characterCode,
-							ignoreUnknown=False,
-							skipValidation=False):
-	return getUnicodeLongName(characterCode,
-							ignoreUnknown=ignoreUnknown,
-							skipValidation=skipValidation)
+                            ignoreUnknown=False,
+                            skipValidation=False):
+
+    magicCharacterNameMap = { 0x0000: '.notdef',
+                              0x0001: '.null',
+                              0x000D: 'nonmarkingreturn',
+                             }
+    if characterCode in magicCharacterNameMap:
+        return magicCharacterNameMap[characterCode]
+
+    _loadDataIfNecessary()
+
+    key = toNameKey(characterCode)
+#    if key in trueTypeGlyphNameMap:
+#        '''
+#        Always prefer the "TrueType" name.
+#        '''
+#        basename = trueTypeGlyphNameMap[key]
+#    el
+    if key in hexToShortNameMap:
+        '''
+        Try the "Adobe Glyph List" short name.
+        '''
+        basename = hexToShortNameMap[key]
+    elif key in hexToLongNameMap2:
+        '''
+        Try the alternate name list.
+        '''
+        basename = hexToLongNameMap2[key]
+        # TODO: should we add a prefix?
+        basename = basename.lower().replace(' ', '_')
+    elif ignoreUnknown:
+        return None
+    else:
+        raise Exception('Unknown glyph: 0x%X' % characterCode)
+
+    if skipValidation:
+        return basename
+    return validateName(basename)
+
+
+#print getUnicodeLongName(0x01AB)

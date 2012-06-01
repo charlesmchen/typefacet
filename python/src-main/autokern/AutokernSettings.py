@@ -1,6 +1,6 @@
 '''
 robofont-extensions-and-scripts
-TFSFont.py
+AutokernSettings.py
 
 https://github.com/charlesmchen/robofont-extensions-and-scripts
 
@@ -65,152 +65,79 @@ END OF TERMS AND CONDITIONS
 '''
 
 
+import argparse
 import os
-import robofab.world
-from TFSGlyph import TFSGlyph
+
+from tfs.common.TFSMap import TFSMap
 
 
-class TFSFont(object):
+def getCommandLineSettings():
 
-    def __init__(self, rffont):
-        self.rffont = rffont
+    def folderType(value):
+        if not os.path.exists(value):
+            msg = "%r does not exist" % value
+            raise argparse.ArgumentTypeError(msg)
+        if not os.path.isdir(value):
+            msg = "%r is not a folder" % value
+            raise argparse.ArgumentTypeError(msg)
+        return value
+#        return os.path.abspath(value)
 
-    def update(self):
-        self.rffont.update()
+    def ufoFolderType(value):
+        if not os.path.exists(value):
+            msg = "%r does not exist" % value
+            raise argparse.ArgumentTypeError(msg)
+        if not os.path.isdir(value):
+            msg = "%r is not a valid UFO file" % value
+#            msg = "%r is not a folder" % value
+            raise argparse.ArgumentTypeError(msg)
+        basename = os.path.basename(value)
+        if not basename.lower().endswith('.ufo'):
+            msg = "%r is not a UFO file" % value
+            raise argparse.ArgumentTypeError(msg)
+        return value
+#        return os.path.abspath(value)
 
-    def save(self, filepath):
-        self.rffont.save(filepath)
+    parser = argparse.ArgumentParser(description='Process some integers.')
 
-    def close(self):
-        self.rffont.close()
+    parser.add_argument('--ufo-src',
+                        type=ufoFolderType,
+                        help='The UFO source file to kern.',
+                        ) # TODO:
+#                        required=True)
+    parser.add_argument('--ufo-dst',
+                        type=ufoFolderType,
+                        help='The UFO destination file.',
+                        ) # TODO:
+#                        required=True)
+    parser.add_argument('--log-dst',
+                        type=folderType,
+                        help='Optional folder in which to write HTML logs.  CAUTION: This folder will be completely overwritten.')
 
-    def glyphNames(self):
-        return self.rffont.keys()
+    parser.add_argument('--min-distance-ems',
+                        type=float,
+                        default=0.1,
+                        help='The absolute minimum distance between glyphs in ems. 0.0 <= x <= 1.0. Default: 0.1')
+    parser.add_argument('--max-distance-ems',
+                        type=float,
+                        default=0.3,
+                        help='The absolute maximum distance between glyphs in ems. 0.0 <= x <= 1.0. Default: 0.3')
+    parser.add_argument('--rounding-ems',
+                        type=float,
+                        default=0.2,
+                        help='The rounding factor used to erode sharp angles. 0.0 <= x <= 1.0. Default: 0.3')
 
-    def glyphCodePoints(self):
-        result = [glyph.unicode for glyph in self.rffont]
-        return result
+    args = parser.parse_args()
 
-    def getGlyphByName(self, key):
-        rfglyph = self.rffont.getGlyph(key)
-        return TFSGlyph(rfglyph)
+#    print 'args', args
 
-    def getGlyphByCodePoint(self, value):
-        for glyph in self.rffont:
-            if glyph.unicode == value:
-                return TFSGlyph(glyph)
-        return None
-#        raise Exception('Unknown code point: ' + str(value))
-#        return None
+    result = TFSMap()
+    result.ufo_src = args.ufo_src
+    result.ufo_dst = args.ufo_dst
+    result.log_dst = args.log_dst
+    result.min_distance_ems = args.min_distance_ems
+    result.max_distance_ems = args.max_distance_ems
+    result.rounding_ems = args.rounding_ems
+    return result
 
-    def getGlyphs(self):
-        return [TFSGlyph(glyph) for glyph in self.rffont]
-
-    units_per_em = property(lambda self: self.rffont.info.unitsPerEm)
-    info = property(lambda self: self.rffont.info)
-#    ascender = property(lambda self: self.rffont.info.ascender)
-#    descender = property(lambda self: self.rffont.info.descender)
-#    xHeight = property(lambda self: self.rffont.info.xHeight)
-#    capHeight = property(lambda self: self.rffont.info.capHeight)
-#    versionMajor = property(lambda self: self.rffont.info.versionMajor)
-#    versionMinor = property(lambda self: self.rffont.info.versionMinor)
-
-    def writeToFile(self, dstFile):
-        self.rffont.update()
-        self.rffont.autoUnicodes()
-        self.rffont.update()
-        self.rffont.save(dstFile)
-#        font.close()
-
-    def getGlyphName(self, codePoint):
-#        if codePoint is None:
-#            return  '.notdef'
-
-        import UnicodeCharacterNames
-        name = UnicodeCharacterNames.getUnicodeCharacterName(codePoint)
-        return name
-
-    def insertGlyph(self, codePoint, contours, xAdvance,
-                    glyphName=None, correctDirection=True):
-        if glyphName is None:
-            glyphName = self.getGlyphName(codePoint)
-        glyph = TFSGlyph(self.rffont.newGlyph(glyphName))
-        if codePoint is not None:
-            glyph.setUnicode(codePoint)
-        glyph.setContours(contours, correctDirection=correctDirection)
-        glyph.setXAdvance(xAdvance)
-        glyph.update()
-#        glyph.correctDirection()
-        return glyph
-
-
-    def insertGlyphDerivedFromGlyph(self, codePoint, contours, srcGlyph):
-        self.insertGlyph(codePoint, contours, srcGlyph.rfglyph.width)
-
-
-
-
-
-
-
-
-
-
-
-
-
-#font.info.ascender = formatOpentypeScalar(metadata.ascender)
-#font.info.descender = formatOpentypeScalar(metadata.descender)
-#font.info.unitsPerEm = formatOpentypeScalar(metadata.unitsPerEm)
-#font.info.xHeight = formatOpentypeScalar(metadata.xHeight)
-#font.info.capHeight = formatOpentypeScalar(metadata.capHeight)
-#font.info.versionMajor = metadata.versionMajor
-#font.info.versionMinor = metadata.versionMinor
-#
-#font.info.italicAngle = metadata.italicAngle
-##font.info.openTypeHeadFlags = metadata.openTypeHeadFlags
-#font.info.openTypeHheaAscender = font.info.ascender
-#font.info.openTypeHheaDescender = font.info.descender
-#font.info.openTypeHheaCaretSlopeRise = formatOpentypeScalar(metadata.caretSlopeRise)
-#font.info.openTypeHheaCaretSlopeRun = formatOpentypeScalar(metadata.caretSlopeRun)
-#font.info.openTypeHheaCaretOffset = 0
-#
-#font.update()
-#
-#
-#font.info.styleMapFamilyName = font.info.familyName
-#font.info.openTypeNamePreferredFamilyName = font.info.familyName
-#font.info.openTypeNamePreferredSubfamilyName = font.info.styleName
-#font.info.fullName = font.info.familyName + '-' + font.info.styleName
-#font.info.fontName = font.info.fullName.replace(' ', '')
-##font.info.postscriptUniqueID = font.info.fontName
-#font.info.postscriptFontName = font.info.fontName
-#font.info.postscriptFullName = font.info.fullName
-##font.info.weightName = font.info.fullName
-##font.info.postscriptFullName = font.info.fullName
-## TODO: remove
-#font.info.menuName = font.info.fullName
-## TODO: remove
-#font.info.fondName = font.info.familyName
-#font.info.macintoshFONDName = font.info.familyName
-#
-#font.info.otFamilyName = font.info.familyName
-#font.info.otStyleName = font.info.styleName
-#font.info.otMacName = font.info.fullName
-#font.info.openTypeNameCompatibleFullName = font.info.fullName
-#
-#font.info.designer = metadata.designer
-#font.info.openTypeNameDesigner = metadata.designer
-#font.info.createdBy = metadata.designer
-#font.info.year = metadata.year
-
-def TFSFontFromFile(filepath):
-#    filepath = os.path.abspath(filepath)
-    if not (os.path.exists(filepath) and
-            os.path.isdir(filepath) and
-            os.path.basename(filepath).lower().endswith('.ufo')):
-        raise Exception('Invalid .ufo file: ' + filepath)
-
-#    print 'filepath', filepath
-    rffont = robofab.world.OpenFont(filepath)
-    return TFSFont(rffont)
+#getCommandLineSettings()

@@ -74,6 +74,7 @@ from TFSTesselation import TFSTesselation as FTesselation
 from TFSMath import *
 from TFSOval import TFSOval as TFSOval
 from TFSContoursException import TFSContoursException
+from TFSValidationException import TFSValidationException
 
 
 def inflateSegmentLeft(segment, hDistance, vDistance):
@@ -121,13 +122,315 @@ def inflateSegmentLeft(segment, hDistance, vDistance):
         return None
 
 
-def inflatePaths(paths, hDistance, vDistance=None, debugMode=False):
-    return inflateDeflatePaths(paths, reversePaths=False, hDistance=hDistance, vDistance=vDistance, debugMode=debugMode)
+def _flateSegmentLeft(segment, hDistance, vDistance=None):
+    '''
+    '''
+    if vDistance is None:
+        vDistance = hDistance
 
-inflatePathsLeft = inflatePaths
+    if (segment.startVector().length() == 0 or
+        segment.endVector().length() == 0):
+        raise Exception('Cannot flate a segment without valid tangents: ' + segment.description())
 
-def deflatePaths(paths, hDistance, vDistance=None, debugMode=False):
-    return inflateDeflatePaths(paths, reversePaths=True, hDistance=hDistance, vDistance=vDistance, debugMode=debugMode)
+
+    p0 = segment.startPoint()
+    p1 = segment.endPoint()
+    startTangent = segment.startTangent()
+
+    if len(segment) == 2:
+        offset = scaleVectorHV(startTangent.rotate(math.pi * 0.5), hDistance, vDistance)
+        p0 = p0.plus(offset)
+        p1 = p1.plus(offset)
+        newPoints = (p0, p1)
+    elif len(segment) == 3:
+        endTangent = segment.endTangent()
+        startOffset = scaleVectorHV(startTangent.rotate(math.pi * 0.5), hDistance, vDistance)
+        endOffset = scaleVectorHV(endTangent.rotate(math.pi * 0.5), hDistance, vDistance)
+        p0 = p0.plus(startOffset)
+        p1 = p1.plus(endOffset)
+        cp0 = TFSntersection.intersectionWithTangents(p0, startTangent, p1, endTangent.invert())
+        newPoints = (p0, cp0, p1)
+    elif len(segment) == 4:
+        endTangent = segment.endTangent()
+        startOffset = scaleVectorHV(startTangent.rotate(math.pi * 0.5), hDistance, vDistance)
+        endOffset = scaleVectorHV(endTangent.rotate(math.pi * 0.5), hDistance, vDistance)
+        oldScale = p0.distanceTo(p1)
+        p0 = p0.plus(startOffset)
+        p1 = p1.plus(endOffset)
+        newScale = p0.distanceTo(p1)
+        cp0 = p0.plus(segment.startVector().scale(newScale / oldScale))
+        cp1 = p1.minus(segment.endVector().scale(newScale / oldScale))
+        newPoints = (p0, cp0, cp1, p1)
+    else:
+        raise Exception('Invalid segment')
+
+    try:
+        result = TFSSegment(*newPoints).roundWithDefaultPrecision()
+
+        '''
+        Segments can be turned "inside out" when deflating.
+        For example, deflating an arc by more than its "radius".
+        We want to discard these segments.
+        We can detect them by checking whether the naive endpoint tangent has reversed.
+        '''
+        affinity = result.naiveEndpointTangent().dotProduct(segment.naiveEndpointTangent())
+        if affinity < 0:
+            return None
+
+        return result
+    except TFSValidationException, e:
+        '''
+        flating a segment can result in an empty or otherwise invalid segment.
+        In fact, this will happen often since we'll be deflating previously
+        inflated rounding curves.
+        That's fine; ignore them.
+        '''
+        return None
+
+
+def _flatePathLeft(path, hDistance, vDistance=None, debugMode=False):
+    '''
+    Input paths may be clockwise (fill) or counter-clockwise (hole) if we are inflating.
+    And they are reversed if we are deflating.
+
+    Edge case: What happens if we inflate an oval curve beyond it's center?
+    Edge case: What happens if segment has a start or end vector of zero length?
+        Should be fine.
+    '''
+
+    for segment in path:
+        if (segment.startVector().length() == 0 or
+            segment.endVector().length() == 0):
+            raise Exception('Cannot flate a segment without valid tangents: ' + segment.description())
+
+    if vDistance is None:
+        vDistance = hDistance
+    if hDistance <= 0 or vDistance <= 0:
+        raise Exception('Invalid flate distances, hDistance: %f, vDistance: %f ' % ( hDistance, vDistance, ) )
+
+    TIME_INFLATE_DEFLATE_PATHS = False
+#    debugMode = True
+
+    if TIME_INFLATE_DEFLATE_PATHS:
+        import time
+        time0 = time.time()
+
+#    raise TFSContoursException('argh', [path,])
+
+    if debugMode:
+        print 'flatePathLeft input'
+        for index, segment in enumerate(path):
+            print '\t', 'segment', index, segment.description()
+        print
+
+    '''
+    Phase 1: Naively "flate" segments left.
+    '''
+    offsetSegments = []
+    for index, segment in enumerate(path):
+        newSegment = _flateSegmentLeft(segment, hDistance, vDistance)
+        '''
+        Inflating a segment can result in an empty or otherwise invalid segment.
+        In fact, this will happen often since we'll be deflating previously
+        inflated rounding curves.
+        That's fine; ignore them.
+        '''
+        if newSegment is not None:
+            if debugMode:
+                print 'inflating segment'
+                print '\t', 'from', index, segment.description()
+                print '\t', 'to', index, newSegment.description()
+
+        offsetSegments.append(newSegment)
+    del segment
+
+#    print 'hDistance', hDistance
+#    print 'vDistance', vDistance
+
+    debugSegments('offsetSegments', offsetSegments)
+
+#    if debugMode:
+#        raise TFSContoursException('argh', [TFSPath(False, segment) for segment in offsetSegments if segment is not None])
+
+    '''
+    Phase 2: Add rounding segments as necessary.
+    '''
+    roundingPaths = [None,] * len(path)
+    lastSegmentInvalid = False
+#    for index, segment in enumerate(offsetSegments):
+    for index, srcSegment in enumerate(path):
+        lastSrcSegment = path[(index + len(path) - 1) % len(path)]
+        offsetSegment = offsetSegments[index]
+        lastOffsetSegment = offsetSegments[(index + len(path) - 1) % len(path)]
+
+        if debugMode:
+            print 'checking join'
+            print '\t', 'offsetSegment', index, offsetSegment.description() if offsetSegment is not None else ''
+            print '\t', 'lastOffsetSegment', index, lastOffsetSegment.description() if lastOffsetSegment is not None else ''
+            print '\t', 'srcSegment', index, srcSegment.description() if srcSegment is not None else ''
+            print '\t', 'srcSegment', index, srcSegment.description() if srcSegment is not None else ''
+#            print '\t', 'to', index, segment.description()
+
+        if ((offsetSegment is not None) and
+            (lastOffsetSegment is not None) and
+            offsetSegment.startPoint().roundedEquals(lastOffsetSegment.endPoint())):
+#            (offsetSegment.startPoint() == lastOffsetSegment.endPoint())):
+            '''
+            No join necessary if inflated segments that align perfectly.
+            '''
+            if debugMode:
+                print 'No join necessary (segments aligned)'
+
+            '''
+            Heal the join.
+            '''
+            endpoint = offsetSegment.startPoint().midpoint(lastOffsetSegment.endPoint())
+            offsetSegment.setStartPoint(endpoint)
+            lastOffsetSegment.setEndPoint(endpoint)
+
+            continue
+
+        lastTangent = lastSrcSegment.endTangent()
+        nextTangent = srcSegment.startTangent()
+        lastAngle = lastTangent.atan2()
+        nextAngle = nextTangent.atan2()
+        angleDiff = normalizeRadiansDiff(nextAngle - lastAngle)
+        if debugMode:
+            print 'lastTangent', lastTangent
+            print 'nextTangent', nextTangent
+            print 'lastAngle', lastAngle
+            print 'nextAngle', nextAngle
+            print 'angleDiff', angleDiff
+
+        if angleDiff < 0 or angleDiff == math.pi:
+            if debugMode:
+                print 'rounding join'
+
+#                if lastSegmentInvalid and not deflating:
+            if lastSegmentInvalid:
+                '''
+                No join necessary if last segment was invalid.
+                '''
+                if debugMode:
+                    print 'No join necessary (last segment invalid)'
+            else:
+                roundingCenter = srcSegment.startPoint()
+                roundingc = TFSOval(roundingCenter, hDistance, vDistance)
+#                    roundingStartAngle = offsetSegment.startPoint().minus(roundingCenter).atan2()
+#                    roundingEndAngle = lastOffsetSegment.endPoint().minus(roundingCenter).atan2()
+                roundingStartAngle = srcSegment.startTangent().atan2() + math.pi * 0.5
+                roundingEndAngle = lastSrcSegment.endTangent().atan2() + math.pi * 0.5
+
+                if debugMode:
+#                        print 'angleDiff', angleDiff
+#                        print 'segment', segment.description()
+#                        print 'lastSegment', lastSegment.description()
+                    print 'roundingCenter', roundingCenter
+                    print 'roundingStartAngle', roundingStartAngle
+                    print 'roundingEndAngle', roundingEndAngle
+
+                try:
+                    roundingPath = roundingc.createArc(roundingStartAngle, roundingEndAngle).reverse()
+                except TFSValidationException, e:
+                    '''
+                    If its too short to round, just use a straight segment.
+                    '''
+                    continue
+
+                # Make sure the rounding endpoints exactly align.
+                if lastOffsetSegment is not None:
+                    roundingPath[0].setStartPoint(lastOffsetSegment.endPoint())
+                if offsetSegment is not None:
+                    roundingPath[-1].setEndPoint(offsetSegment.startPoint())
+#                    if debugMode:
+#                        rounding = openPathWithPoints(rounding.startPoint(), roundingCenter, rounding.endPoint())
+                if debugMode:
+                    debugPath('roundingPath', roundingPath)
+
+                roundingPaths[index] = roundingPath
+                if debugMode:
+                    print 'inserting join'
+                    for value in roundingPath.segments:
+                        print '\t', '*', index, value.description()
+        else:
+            if debugMode:
+                print 'cross join'
+            if ((offsetSegment is not None) and
+                (lastOffsetSegment is not None)):
+                joinTangent0 = offsetSegment.startPoint().minus(lastOffsetSegment.endPoint())
+                joinTangent1 = offsetSegment.endPoint().minus(lastOffsetSegment.endPoint())
+                joinAffinity0 = joinTangent0.dotProduct(nextTangent)
+                joinAffinity1 = joinTangent1.dotProduct(nextTangent)
+#                if debugMode:
+    #            print 'nextTangent', nextTangent
+    #            print 'joinTangent0', joinTangent0
+    #            print 'joinTangent1', joinTangent1
+    #            print 'joinAffinity0', joinAffinity0
+    #            print 'joinAffinity1', joinAffinity1
+                if (joinAffinity0 < 0) and (joinAffinity1 < 0):
+                    if debugMode:
+                        print 'invalid segment'
+#                        lastSegment = segment
+                    lastSegmentInvalid = True
+                    continue
+
+        lastSegmentInvalid = False
+
+#    if debugMode:
+#        raise TFSContoursException('argh', [TFSPath(False, segment) for segment in newSegments])
+
+    if not(len(offsetSegments) ==
+           len(roundingPaths) ==
+           len(path)):
+        print 'offsetSegments, roundingPaths, path', len(offsetSegments), len(roundingPaths), len(path)
+        raise Exception('Unexpected segments')
+    newSegments = []
+    for offsetSegment, roundingPath in zip(offsetSegments, roundingPaths):
+        if roundingPath is not None:
+            newSegments.extend(roundingPath.segments)
+        if offsetSegment is not None:
+            newSegments.append(offsetSegment)
+    newSegments = [segment.roundWithDefaultPrecision() for segment in newSegments]
+    newPaths = [TFSPath(False, segment) for segment in newSegments]
+
+    if debugMode:
+        debugPaths('newPaths', newPaths)
+
+    debugPaths('_flatePathLeft midpoint newPaths', newPaths)
+#    newPath = concatenatePath(True, *newSegments)
+
+#    raise TFSContoursException('argh', newPaths)
+
+    if TIME_INFLATE_DEFLATE_PATHS:
+        time1 = time.time()
+        print '\t', 'TFSSilhouette.deflatePaths.core', time1 - time0
+
+#    unTesselatedPaths = newPaths
+#    if debugMode:
+#        raise TFSContoursException('argh', unTesselatedPaths)
+
+    if TIME_INFLATE_DEFLATE_PATHS:
+        time0 = time.time()
+#    newPaths, intersections = FTesselation().tesselateContours(newPaths, reorientPaths=False, ignoreStrayEdges=deflating)
+#    newPaths, intersections = FTesselation().tesselateContours(newPaths, reorientPaths=False, ignoreStrayEdges=deflating, debugMode=debugMode)
+    tesselatedPaths, intersections = FTesselation().tesselateContours(newPaths, reorientPaths=False, ignoreStrayEdges=True, debugMode=debugMode)
+#    newPaths, intersections = FTesselation().tesselateContours(newPaths, reorientPaths=False, ignoreStrayEdges=True, debugMode=debugMode)
+#    newPaths, intersections = FTesselation().tesselateContours(newPaths, reorientPaths=False, debugMode=True)
+
+    debugPaths('_flatePathLeft tesselatedPaths', tesselatedPaths)
+
+    if TIME_INFLATE_DEFLATE_PATHS:
+        time1 = time.time()
+        print '\t', 'TFSSilhouette.deflatePaths.tesselateContours', time1 - time0
+
+#    raise TFSContoursException('argh', newPaths)
+
+    if TIME_INFLATE_DEFLATE_PATHS:
+        time1 = time.time()
+        print '\t', 'TFSSilhouette.deflatePaths.cleanup', time1 - time0
+
+    return tesselatedPaths
+
 
 def inflateDeflatePath(path, deflating, hDistance, vDistance=None, debugMode=False):
     '''
@@ -353,19 +656,32 @@ def inflateDeflatePaths(paths, reversePaths, hDistance, vDistance=None, debugMod
 
     '''
 
-    newPaths = []
+    allFlatedPaths = []
     for path in paths:
-        inflatedPaths = inflateDeflatePath(path, reversePaths, hDistance, vDistance, debugMode)
+        print 'reversePaths', reversePaths
+        debugPath('path', path)
+        if reversePaths:
+            srcPath = path.reverse()
+        else:
+            srcPath = path
+        debugPath('srcPath', srcPath)
+        flatedPaths = _flatePathLeft(srcPath, hDistance, vDistance, debugMode)
+        debugPaths('flatedPaths', flatedPaths)
+        if reversePaths:
+            flatedPaths = [flatedPath.reverse() for flatedPath in flatedPaths]
+        debugPaths('flatedPaths.1', flatedPaths)
 
-        for inflatedPath in inflatedPaths:
-            if isClosedPathClockwise(inflatedPath) == isClosedPathClockwise(path):
+        for flatedPath in flatedPaths:
+            if isClosedPathClockwise(flatedPath) == isClosedPathClockwise(path):
                 '''
                 If deflating path has reversed its orientation, discard it.
                 It is a hole that has collapsed on itself.
                 '''
-                newPaths.append(inflatedPath)
+                allFlatedPaths.append(flatedPath)
 
-        newPaths.extend(inflatedPaths)
+    debugPaths('all flatedPaths', allFlatedPaths)
+
+#        newPaths.extend(inflatedPaths)
 
 #    raise TFSContoursException('argh', newPaths)
 
@@ -374,12 +690,21 @@ def inflateDeflatePaths(paths, reversePaths, hDistance, vDistance=None, debugMod
     if TIME_INFLATE_DEFLATE_PATHS:
         import time
         time0 = time.time()
-    newPaths, intersections = FTesselation().tesselateContours(newPaths, reorientPaths=False, debugMode=debugMode)
+    tesselatePaths, intersections = FTesselation().tesselateContours(allFlatedPaths, reorientPaths=False, debugMode=debugMode)
     if TIME_INFLATE_DEFLATE_PATHS:
         time1 = time.time()
         print '\t', 'TFSSilhouette.inflateDeflatePaths.tesselateContours', time1 - time0
 
-    return newPaths
+    return tesselatePaths
+
+
+def inflatePaths(paths, hDistance, vDistance=None, debugMode=False):
+    return inflateDeflatePaths(paths, reversePaths=False, hDistance=hDistance, vDistance=vDistance, debugMode=debugMode)
+
+inflatePathsLeft = inflatePaths
+
+def deflatePaths(paths, hDistance, vDistance=None, debugMode=False):
+    return inflateDeflatePaths(paths, reversePaths=True, hDistance=hDistance, vDistance=vDistance, debugMode=debugMode)
 
 
 def resolveSilhouette(rawSilhouette, minEvalY, maxEvalY, minMaxFunction):

@@ -78,13 +78,111 @@ import math
 from TFSTest import TFSTest
 from tfs.common.TFSPoint import TFSPoint, TFSPoint0
 from tfs.common.TFSSegment import TFSSegment
-from tfs.common.TFSPath import TFSPath
+from tfs.common.TFSPath import *
 
 
 class TFSPathTest(TFSTest):
 
     def setUp(self):
         pass
+
+
+    def test_intersectionWithPath_tOnly(self):
+        '''
+          X
+          X
+        XXXXX
+          X
+          X
+        '''
+        path0 = openPathWithPoints(TFSPoint(0, 2),
+                                   TFSPoint(4, 2))
+        path1 = openPathWithPoints(TFSPoint(2, 0),
+                                   TFSPoint(2, 4))
+        intersection = path0.intersectionWithPath_tOnly(path1, maxEndpoints=2)
+        self.assertIsNotNone(intersection)
+        index0, index1, segment0, segment1, t0, t1, p = intersection
+        self.assertEqual(p, TFSPoint(2, 2))
+
+
+    def test_intersectionWithPath_tOnly_endpoint0(self):
+        '''
+          XXX
+          X
+          X
+        '''
+        path0 = openPathWithPoints(TFSPoint(2, 2),
+                                   TFSPoint(4, 2))
+        path1 = openPathWithPoints(TFSPoint(2, 2),
+                                   TFSPoint(2, 4))
+        intersection = path0.intersectionWithPath_tOnly(path1, maxEndpoints=0)
+        self.assertIsNone(intersection)
+
+        intersection = path0.intersectionWithPath_tOnly(path1, maxEndpoints=1)
+        self.assertIsNone(intersection)
+
+        intersection = path0.intersectionWithPath_tOnly(path1, maxEndpoints=2)
+        self.assertIsNotNone(intersection)
+        index0, index1, segment0, segment1, t0, t1, p = intersection
+        self.assertEqual(p, TFSPoint(2, 2))
+
+
+    def test_intersectionWithPath_tOnly_endpoint1(self):
+        '''
+        XXXXX
+          X
+          X
+        '''
+        path0 = openPathWithPoints(TFSPoint(0, 2),
+                                   TFSPoint(4, 2))
+        path1 = openPathWithPoints(TFSPoint(2, 2),
+                                   TFSPoint(2, 4))
+        intersection = path0.intersectionWithPath_tOnly(path1, maxEndpoints=0)
+        self.assertIsNone(intersection)
+
+        intersection = path0.intersectionWithPath_tOnly(path1, maxEndpoints=1)
+        self.assertIsNotNone(intersection)
+        index0, index1, segment0, segment1, t0, t1, p = intersection
+        self.assertEqual(p, TFSPoint(2, 2))
+
+        intersection = path0.intersectionWithPath_tOnly(path1, maxEndpoints=2)
+        self.assertIsNotNone(intersection)
+        index0, index1, segment0, segment1, t0, t1, p = intersection
+        self.assertEqual(p, TFSPoint(2, 2))
+
+
+#    def test_intersectionWithPath_tOnly_endpoint0(self):
+#        '''
+#        XXXXX
+#          X
+#          X
+#        '''
+#        path0 = openPathWithPoints(TFSPoint(0, 2),
+#                                   TFSPoint(4, 2))
+#        path1 = openPathWithPoints(TFSPoint(2, 0),
+#                                   TFSPoint(2, 4))
+#        intersection = path0.intersectionWithPath_tOnly(path1)
+#        self.assertIsNotNone(intersection)
+#        index0, index1, segment0, segment1, t0, t1, p = intersection
+#        self.assertEqual(p, TFSPoint(2, 2))
+
+        '''
+        divided, intersections = openPathWithPoints
+        TFSTesselation().subdividePathWithPaths([openPathWithPoints(TFSPoint(-2, 2),
+                                                                                             TFSPoint(4, 2),
+                                                                                             TFSPoint(4, 4),
+                                                                                             TFSPoint(0, 4),
+                                                                                             TFSPoint(0, 0),
+                                                                                             ),
+                                                                          ])
+#        debugPaths('divided', divided)
+        self.assertEqual(len(divided), 3)
+        self.assertEqual(len(intersections), 1)
+                    return index0, index1, segment0, segment1, t0, t1, p
+        return None
+        '''
+
+#    def intersectionWithPath_tOnly(self, other, ignoreEndpoints=False, ignoreEqualSegments=False, debugMode=False):
 
 #    def test_init(self):
 #        try:

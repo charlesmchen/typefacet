@@ -69,7 +69,7 @@ import math
 from TFSTest import TFSTest
 from tfs.common.TFSPoint import TFSPoint, TFSPoint0
 from tfs.common.TFSSegment import TFSSegment
-from tfs.common.TFSPath import TFSPath, openPathWithPoints, debugPaths
+from tfs.common.TFSPath import *
 from tfs.common.TFSTesselation import TFSTesselation
 
 
@@ -141,11 +141,16 @@ class TFSTesselationTest(TFSTest):
         self.assertEqual(len(intersections), 0)
 
     def test_subdividePathWithPaths_selfIntersect0(self):
+        '''
+        XXXXX
+        X   X
+        XXXXX
+        '''
         divided, intersections = TFSTesselation().subdividePathWithPaths([openPathWithPoints(TFSPoint(0, 2),
                                                                                              TFSPoint(4, 2),
                                                                                              TFSPoint(4, 4),
                                                                                              TFSPoint(0, 4),
-                                                                                             TFSPoint(0, 4),
+                                                                                             TFSPoint(0, 2),
                                                                                              ),
                                                                           ])
 #        debugPaths('divided', divided)
@@ -153,6 +158,13 @@ class TFSTesselationTest(TFSTest):
         self.assertEqual(len(intersections), 0)
 
     def test_subdividePathWithPaths_selfIntersect1(self):
+        '''
+        XXXXX
+        X   X
+        XXXXX
+        X
+        X
+        '''
         divided, intersections = TFSTesselation().subdividePathWithPaths([openPathWithPoints(TFSPoint(0, 2),
                                                                                              TFSPoint(4, 2),
                                                                                              TFSPoint(4, 4),
@@ -162,9 +174,16 @@ class TFSTesselationTest(TFSTest):
                                                                           ])
 #        debugPaths('divided', divided)
         self.assertEqual(len(divided), 2)
-        self.assertEqual(len(intersections), 0)
+        self.assertEqual(len(intersections), 1)
 
     def test_subdividePathWithPaths_selfIntersect2(self):
+        '''
+          XXXXX
+          X   X
+        XXXXXXX
+          X
+          X
+        '''
         divided, intersections = TFSTesselation().subdividePathWithPaths([openPathWithPoints(TFSPoint(-2, 2),
                                                                                              TFSPoint(4, 2),
                                                                                              TFSPoint(4, 4),
@@ -174,7 +193,7 @@ class TFSTesselationTest(TFSTest):
                                                                           ])
 #        debugPaths('divided', divided)
         self.assertEqual(len(divided), 3)
-        self.assertEqual(len(intersections), 0)
+        self.assertEqual(len(intersections), 1)
 
 
 #        try:
@@ -190,114 +209,6 @@ class TFSTesselationTest(TFSTest):
 #            pass
 
 
-#from collections import defaultdict
-#
-#from TFSPath import *
-#from TFSMath import *
-#from TFSContoursException import TFSContoursException
-#
-#
-#class TFSTesselation(object):
-#
-#    def subdividePathWithPaths(self, paths):
-#
-#        DEBUG_SUBDIVIDE = False
-##        DEBUG_SUBDIVIDE = True
-#
-#        def findIntersection(path0, paths):
-#    #        print 'findIntersection', type(paths), paths
-#            for index, path1 in enumerate(paths):
-#                intersection = path0.intersectionWithPath_tOnly(path1, ignoreEndpoints=True, ignoreEqualSegments=True)
-#                if intersection:
-#                    index0, index1, segment0, segment1, t0, t1, p = intersection
-#                    if DEBUG_SUBDIVIDE:
-#                        print 'index0, index1', index0, index1
-#                        print 't0, t1', t0, t1
-#                    subpaths0 = path0.singleSplit(index0, t0, p)
-#                    subpaths1 = path1.singleSplit(index1, t1, p)
-#
-#                    return subpaths0, subpaths1, index, p
-#
-#            return None
-#
-#        if DEBUG_SUBDIVIDE:
-#            for path in paths:
-#                print 'input path', path.description()
-#                for segment in path:
-#                    print '\t\t', segment.description()
-#
-#        processed = []
-#        unprocessed = list(paths)
-#        intersections = []
-#        while unprocessed:
-#    #        print 'subdividePathWithPaths iteration', 'processed', len(processed), 'unprocessed', len(unprocessed)
-#            path0 = unprocessed.pop()
-#
-#            # First try to intersect path with itself.
-#            intersection = path0.intersectionWithPath_tOnly(path0, ignoreEndpoints=True, ignoreEqualSegments=True)
-#            if intersection:
-#                index0, index1, segment0, segment1, t0, t1, p = intersection
-#
-#                if DEBUG_SUBDIVIDE:
-#                    print 'index0, index1', index0, index1, 't0, t1', t0, t1
-#
-#                subpaths = path0.doubleSplit(index0, index1, t0, t1, p, p)
-#
-#                if DEBUG_SUBDIVIDE:
-#                    print 'self-cut', path0.description()
-#                    for subpath in subpaths:
-#                        print '\t', subpath.description()
-#                        for segment in subpath:
-#                            print '\t\t', segment.description()
-#
-#                unprocessed.extend(subpaths)
-#                intersections.append(p)
-#                continue
-#
-#            if not unprocessed:
-#                processed += [path0,]
-#                break
-#
-##            print 'subdividePathWithPaths', 'paths', type(paths), paths
-#    #        print 'subdividePathWithPaths', 'unprocessed', type(unprocessed), unprocessed
-#    #        print 'path0', type(path0)
-#            intersection = findIntersection(path0, unprocessed)
-#            if intersection:
-#                subpaths0, subpaths1, index, p = intersection
-#
-#                if DEBUG_SUBDIVIDE:
-#                    print 'index', index, 'p', p
-#
-#                path1 = unprocessed.pop(index)
-#
-#                if DEBUG_SUBDIVIDE:
-#                    print 'classic cut'
-#                    print '\t', 'path0', path0.description()
-#                    print '\t', 'path1', path1.description()
-#                    for subpath0 in subpaths0:
-#                        print '\t', 'subpath0', subpath0.description()
-#                        for segment in subpath0:
-#                            print '\t\t', segment.description()
-#                    for subpath1 in subpaths1:
-#                        print '\t', 'subpath1', subpath1.description()
-#                        for segment in subpath1:
-#                            print '\t\t', segment.description()
-#
-#                unprocessed.extend(subpaths0 + subpaths1)
-#                intersections.append(p)
-#            else:
-#                processed += [path0,]
-#
-#        return processed, intersections
-#
-#
-#    def buildEndpointSubpathMap(self, paths):
-#        result = defaultdict(list)
-#        for path in paths:
-#            result[path.startPoint()].append(path)
-#        return result
-#
-#
 #    def simplifySubpaths(self, paths):
 #        '''
 #        During the path subdivision process, some subpaths can be trivially combined.
@@ -535,7 +446,20 @@ class TFSTesselationTest(TFSTest):
 ##            result.extend(shapes)
 #
 #        return result
-#
+
+    def test_cullEmptyAngles(self):
+        paths = TFSTesselation().cullEmptyAngles([polygonWithPoints(TFSPoint(0, 0),
+                                                                    TFSPoint(0, 2),
+                                                                    TFSPoint(2, 2),
+                                                                    TFSPoint(2, 4),
+                                                                    TFSPoint(2, 2),
+                                                                    TFSPoint(4, 2)),
+                                                  ])
+        self.assertEqual(len(paths), 1)
+        path = paths[0]
+        self.assertEqual(len(path), 4)
+
+
 #    def cullEmptyAngles(self, paths):
 #        '''
 #        We may end up with degenerate geometry in which a path has an "empty"
