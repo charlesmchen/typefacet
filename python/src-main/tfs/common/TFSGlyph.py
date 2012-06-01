@@ -169,7 +169,7 @@ class TFSGlyph(object):
         #            print 'writing 3-point segment'
                     p1 = segment.points[1]
                     p2 = segment.points[2]
-                    glyphPen.curveTo(formatPoint(p1),
+                    glyphPen.qCurveTo(formatPoint(p1),
                                      formatPoint(p2))
         #            glyphPen.moveTo(formatPoint(p))
         #            glyphPen.lineTo(formatPoint(p2))

@@ -75,6 +75,8 @@ import traceback
 
 import freetype
 import freetype.ft_structs as ft_structs
+import freetype.ft_enums as ft_enums
+
 #import pystache
 import robofab.world
 
@@ -363,7 +365,13 @@ class ConvertToUfo(object):
         # Convert the magic .notdef glyph
 #        self.convertGlyph(ftFont, ufoFont, None, 0)
 
+#        print 'ft_enums.FT_ENCODING_UNICODE', ft_enums.FT_ENCODING_UNICODE, type(ft_enums.FT_ENCODING_UNICODE)
+#        import sys
+#        sys.exit(0)
+
+
         glyphToCharacterMap = {}
+        ftFont.select_charmap(ft_enums.FT_ENCODING_UNICODE)
         characterCode, glyphIndex = ftFont.get_first_char();
         while glyphIndex > 0:
             glyphToCharacterMap[glyphIndex] = characterCode
