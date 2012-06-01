@@ -340,6 +340,24 @@ class ConvertToUfo(object):
                                        glyphName=glyphName,
                                        correctDirection=False)
         print '\t', 'writing glyph', ufoGlyph.name, 'characterCode', characterCode, hex(characterCode) if characterCode is not None else '<None>'
+        return ufoGlyph
+
+
+    def convertKerning(self, ftFont, ufoFont, glyphIndexToNameMap):
+
+        if not ftFont.has_kerning:
+            return
+
+        for glyphIndex0, glyphName0 in glyphIndexToNameMap.items():
+            for glyphIndex1, glyphName1 in glyphIndexToNameMap.items():
+                kerning = freetype.FT_Vector(0,0)
+                error = freetype.FT_Get_Kerning( ftFont._FT_Face,
+                                                 glyphIndex0, glyphIndex1,
+                                                  ft_enums.FT_KERNING_UNSCALED,
+                                                   freetype.byref(kerning) )
+                if error: raise freetype.FT_Exception( error )
+                if kerning.x != 0:
+                    ufoFont.setKerningPair(glyphName0, glyphName1, kerning.x)
 
 
     def convertFont(self):
@@ -366,9 +384,6 @@ class ConvertToUfo(object):
 #        self.convertGlyph(ftFont, ufoFont, None, 0)
 
 #        print 'ft_enums.FT_ENCODING_UNICODE', ft_enums.FT_ENCODING_UNICODE, type(ft_enums.FT_ENCODING_UNICODE)
-#        import sys
-#        sys.exit(0)
-
 
         glyphToCharacterMap = {}
         ftFont.select_charmap(ft_enums.FT_ENCODING_UNICODE)
@@ -377,6 +392,7 @@ class ConvertToUfo(object):
             glyphToCharacterMap[glyphIndex] = characterCode
             characterCode, glyphIndex = ftFont.get_next_char(characterCode, 0);
 
+        glyphIndexToNameMap = {}
         if ftFont.has_glyph_names:
             for glyphIndex in xrange(ftFont.num_glyphs):
                 glyphNameBuffer = ' '*256
@@ -391,16 +407,19 @@ class ConvertToUfo(object):
                 characterCode = None
                 if glyphIndex in glyphToCharacterMap:
                     characterCode = glyphToCharacterMap[glyphIndex]
-                self.convertGlyph(ftFont, ufoFont, characterCode, glyphIndex, glyphName=glyphName)
+                ufoGlyph = self.convertGlyph(ftFont, ufoFont, characterCode, glyphIndex, glyphName=glyphName)
+                glyphIndexToNameMap[glyphIndex] = ufoGlyph.name
         else:
             for glyphIndex, characterCode in glyphToCharacterMap.items():
-                self.convertGlyph(ftFont, ufoFont, characterCode, glyphIndex)
+                ufoGlyph = self.convertGlyph(ftFont, ufoFont, characterCode, glyphIndex)
+                glyphIndexToNameMap[glyphIndex] = ufoGlyph.name
 
             glyphIndices = set(glyphToCharacterMap.keys())
             for glyphIndex in xrange(ftFont.num_glyphs):
                 if glyphIndex not in glyphIndices:
                     print 'Could not convert glyph', glyphIndex
 
+        self.convertKerning(ftFont, ufoFont, glyphIndexToNameMap)
 
         ufoFont.update()
         ufoFont.save(self.dst_file)

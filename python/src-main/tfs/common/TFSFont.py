@@ -147,15 +147,8 @@ class TFSFont(object):
     def insertGlyphDerivedFromGlyph(self, codePoint, contours, srcGlyph):
         self.insertGlyph(codePoint, contours, srcGlyph.rfglyph.width)
 
-
-
-
-
-
-
-
-
-
+    def setKerningPair(self, glyphName0, glyphName1, value):
+        self.rffont.kerning[(glyphName0, glyphName1, )] = value
 
 
 
