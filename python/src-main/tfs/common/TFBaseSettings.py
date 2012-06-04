@@ -111,7 +111,7 @@ class TFBaseSettings(object):
             raise argparse.ArgumentTypeError(msg)
         return value
 
-    def fileOrfolderType(self, value):
+    def srcFileOrfolderType(self, value):
         value = self.cleanupPath(value)
         self.assertExists(value)
         if not (os.path.isdir(value) or os.path.isfile(value)):

@@ -78,7 +78,7 @@ import pystache
 #from FIFont import *
 #from FIMap import *
 #from FISvg import *
-from GiaSettings import getCommandLineSettings
+from GiaSettings import GiaSettings
 #import FICompoundsList
 from tfs.common.TFSPoint import TFSPoint
 from tfs.common.TFSPath import polygonWithPoints
@@ -89,19 +89,10 @@ from tfs.common.UnicodeCharacterNames import getUnicodeCharacterName, getUnicode
 
 class GlyphImplementationAudit(object):
 
-    def __init__(self, settings = None):
-        if settings is None:
-            self.settings = getCommandLineSettings()
-        else:
-            self.settings = settings
-
-        self.configure()
-        self.initMetrics()
-
 
     def configure(self):
 
-        src_paths = self.settings.src_paths
+        src_paths = self.src_paths
         if src_paths is None:
             raise Exception('Missing src_paths')
         for src_path in src_paths:
@@ -115,7 +106,7 @@ class GlyphImplementationAudit(object):
 
     #    interpolation.srcCodePoints = interpolation.fifont.glyphCodePoints()
 
-        log_dst = self.settings.log_dst
+        log_dst = self.log_dst
         if log_dst is None:
             self.log_dst = None
     #        raise Exception('Missing log_dst')
@@ -367,32 +358,38 @@ class GlyphImplementationAudit(object):
 
 
     def processZip(self, filepath):
-        with zipfile.ZipFile(filepath, 'r') as zf:
-            for filename in zf.namelist():
-                basename = filename
-                if '/' in basename:
-                    basename = basename[basename.rindex('/') + 1:]
-#                print 'basename', basename, 'zip file', filename
-                if basename.startswith('.'):
-                    continue
-                if (filename.lower().endswith('.otf') or
-                    filename.lower().endswith('.ttf')):
-#                    print '\t', 'zip file', filename
+        try:
+            with zipfile.ZipFile(filepath, 'r') as zf:
+                for filename in zf.namelist():
+                    basename = filename
+                    if '/' in basename:
+                        basename = basename[basename.rindex('/') + 1:]
+    #                print 'basename', basename, 'zip file', filename
+                    if basename.startswith('.'):
+                        continue
+                    if (filename.lower().endswith('.otf') or
+                        filename.lower().endswith('.ttf')):
+    #                    print '\t', 'zip file', filename
 
-                    zf.extract(filename, self.tempdir)
+                        zf.extract(filename, self.tempdir)
 
-                    filepath = os.path.join(self.tempdir, filename)
+                        filepath = os.path.join(self.tempdir, filename)
 
-                    self.processFont(filepath)
+                        self.processFont(filepath)
 
-                    if not os.path.exists(filepath):
-                        raise Exception('Invalid temporary zip file: ' + filepath)
-                    os.unlink(filepath)
-                    if os.path.exists(filepath):
-                        raise Exception('Could not delete temporary zip file: ' + filepath)
+                        if not os.path.exists(filepath):
+                            raise Exception('Invalid temporary zip file: ' + filepath)
+                        os.unlink(filepath)
+                        if os.path.exists(filepath):
+                            raise Exception('Could not delete temporary zip file: ' + filepath)
+        except Exception, e:
+            print e.message
 
 
     def process(self):
+
+        self.configure()
+        self.initMetrics()
 
         self.tempdir = tempfile.mkdtemp()
         print 'self.tempdir', self.tempdir
@@ -428,9 +425,9 @@ if __name__ == "__main__":
     import sys
     print 'sys.argv', sys.argv
 
-    settings = getCommandLineSettings()
-    print 'settings', settings
-    GlyphImplementationAudit(settings).process()
+    gia = GlyphImplementationAudit()
+    GiaSettings(gia).getCommandLineSettings()
+    gia.process()
 
     print
     print 'complete.'

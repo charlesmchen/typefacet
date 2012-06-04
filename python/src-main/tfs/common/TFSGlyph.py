@@ -228,3 +228,6 @@ class TFSGlyph(object):
 #        #print 'glyph.rightMargin', glyph.rightMargin
 #
 #        self.setContours(contours)
+
+    def rasterize(self, cellSize, xMin=None, yMin=None, xMax=None, yMax=None):
+        return self.rfglyph.rasterize(cellSize=cellSize, xMin=xMin, yMin=yMin, xMax=xMax, yMax=yMax)

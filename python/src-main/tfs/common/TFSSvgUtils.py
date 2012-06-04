@@ -86,8 +86,7 @@ def svgRenderGlyphContours(fiSvg, contours, strokeColor):
         fiSvg.addItem(TFSSvgPath(contour).addStroke(strokeColor, 2).addPointHighlights(ON_POINT_COLOR, CONTROL_POINT_COLOR))
 
 
-def renderSvgScene(self,
-                   filenamePrefix,
+def renderSvgScene(filenamePrefix,
                    pathTuples,
                    hGuidelines=None):
     from TFSSvg import TFSSvg, TFSSvgPath

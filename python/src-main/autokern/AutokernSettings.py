@@ -65,79 +65,50 @@ END OF TERMS AND CONDITIONS
 '''
 
 
+from tfs.common.TFBaseSettings import TFBaseSettings
 import argparse
-import os
-
-from tfs.common.TFSMap import TFSMap
 
 
-def getCommandLineSettings():
+class AutokernSettings(TFBaseSettings):
 
-    def folderType(value):
-        if not os.path.exists(value):
-            msg = "%r does not exist" % value
-            raise argparse.ArgumentTypeError(msg)
-        if not os.path.isdir(value):
-            msg = "%r is not a folder" % value
-            raise argparse.ArgumentTypeError(msg)
-        return value
-#        return os.path.abspath(value)
+    def createParser(self):
 
-    def ufoFolderType(value):
-        if not os.path.exists(value):
-            msg = "%r does not exist" % value
-            raise argparse.ArgumentTypeError(msg)
-        if not os.path.isdir(value):
-            msg = "%r is not a valid UFO file" % value
-#            msg = "%r is not a folder" % value
-            raise argparse.ArgumentTypeError(msg)
-        basename = os.path.basename(value)
-        if not basename.lower().endswith('.ufo'):
-            msg = "%r is not a UFO file" % value
-            raise argparse.ArgumentTypeError(msg)
-        return value
-#        return os.path.abspath(value)
+        parser = argparse.ArgumentParser(description='...')
 
-    parser = argparse.ArgumentParser(description='Process some integers.')
+        parser.add_argument('--ufo-src',
+                            type=self.ufoSrcFolderType,
+                            help='The UFO source file to kern.',
+                            ) # TODO:
+    #                        required=True)
+        parser.add_argument('--ufo-dst',
+                            type=self.ufoDstFolderType,
+                            help='The UFO destination file.',
+                            ) # TODO:
+    #                        required=True)
+        parser.add_argument('--log-dst',
+                            type=self.dstFolderType,
+                            help='Optional folder in which to write HTML logs.  CAUTION: This folder will be completely overwritten.')
 
-    parser.add_argument('--ufo-src',
-                        type=ufoFolderType,
-                        help='The UFO source file to kern.',
-                        ) # TODO:
-#                        required=True)
-    parser.add_argument('--ufo-dst',
-                        type=ufoFolderType,
-                        help='The UFO destination file.',
-                        ) # TODO:
-#                        required=True)
-    parser.add_argument('--log-dst',
-                        type=folderType,
-                        help='Optional folder in which to write HTML logs.  CAUTION: This folder will be completely overwritten.')
+        parser.add_argument('--min-distance-ems',
+                            type=float,
+                            default=0.1,
+                            help='The absolute minimum distance between glyphs in ems. 0.0 <= x <= 1.0. Default: 0.1')
+        parser.add_argument('--max-distance-ems',
+                            type=float,
+                            default=0.3,
+                            help='The absolute maximum distance between glyphs in ems. 0.0 <= x <= 1.0. Default: 0.3')
+        parser.add_argument('--rounding-ems',
+                            type=float,
+                            default=0.2,
+                            help='The rounding factor used to erode sharp angles. 0.0 <= x <= 1.0. Default: 0.3')
 
-    parser.add_argument('--min-distance-ems',
-                        type=float,
-                        default=0.1,
-                        help='The absolute minimum distance between glyphs in ems. 0.0 <= x <= 1.0. Default: 0.1')
-    parser.add_argument('--max-distance-ems',
-                        type=float,
-                        default=0.3,
-                        help='The absolute maximum distance between glyphs in ems. 0.0 <= x <= 1.0. Default: 0.3')
-    parser.add_argument('--rounding-ems',
-                        type=float,
-                        default=0.2,
-                        help='The rounding factor used to erode sharp angles. 0.0 <= x <= 1.0. Default: 0.3')
+        parser.add_argument('--intrusion-tolerance',
+                            type=float,
+                            default=0.1,
+                            help='Intrusion tolerance as a fraction of the area defined by the --max-distance-ems value times the greater of the two glyphs\' heights.  Default: 0.1')
+        parser.add_argument('--min-non-intrusion-ems',
+                            type=float,
+                            default=0.2,
+                            help='The minimum non-intruding height in ems.  0.0 <= x <= 1.0. Default: 0.2')
 
-    args = parser.parse_args()
-
-#    print 'args', args
-
-    result = TFSMap()
-    result.ufo_src = args.ufo_src
-    result.ufo_dst = args.ufo_dst
-    result.log_dst = args.log_dst
-    result.min_distance_ems = args.min_distance_ems
-    result.max_distance_ems = args.max_distance_ems
-    result.rounding_ems = args.rounding_ems
-    return result
-
-#getCommandLineSettings()
+        return parser

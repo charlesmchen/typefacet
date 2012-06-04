@@ -68,7 +68,7 @@ END OF TERMS AND CONDITIONS
 import os
 
 from GlyphImplementationAudit import GlyphImplementationAudit
-from GiaSettings import getCommandLineSettings
+from GiaSettings import GiaSettings
 
 pseudo_argv = ('--src-paths',
                '/Library/Fonts/',
@@ -80,9 +80,9 @@ pseudo_argv = ('--src-paths',
                )
 print 'pseudo_argv', ' '.join(pseudo_argv)
 
-settings = getCommandLineSettings(*pseudo_argv)
-
-GlyphImplementationAudit(settings).process()
+gia = GlyphImplementationAudit()
+GiaSettings(gia).getCommandLineSettings(*pseudo_argv)
+gia.process()
 
 print
 print 'complete.'

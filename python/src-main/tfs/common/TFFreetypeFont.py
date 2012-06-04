@@ -1,6 +1,6 @@
 '''
 robofont-extensions-and-scripts
-ConvertToUfo.py
+TFFreetypeFont.py
 
 https://github.com/charlesmchen/robofont-extensions-and-scripts
 
@@ -65,81 +65,44 @@ END OF TERMS AND CONDITIONS
 '''
 
 
-#import locale
-#import math
-import os
-import shutil
-#import tempfile
-#import traceback
-#import zipfile
+import freetype
+import freetype.ft_enums as ft_enums
 
-#import freetype
-#import freetype.ft_structs as ft_structs
-#import freetype.ft_enums as ft_enums
-
-#import pystache
-import robofab.world
-
-from CtuSettings import CtuSettings
 from tfs.common.TFSPoint import TFSPoint
 from tfs.common.TFSPath import TFSPath
 from tfs.common.TFSSegment import TFSSegment
-
-#from tfs.common.TFSPath import polygonWithPoints, debugPaths, isClosedPathClockwise
-#from collections import defaultdict
 from tfs.common.TFSMap import TFSMap
-#from tfs.common.UnicodeCharacterNames import getUnicodeCharacterName, getUnicodeLongName
-from tfs.common.TFSFont import TFSFont
-from tfs.common.TFFreetypeFont import TFFreetypeFont
+from tfs.common.UnicodeCharacterNames import getUnicodeCharacterName
 
 
-class ConvertToUfo(object):
+class TFFreetypeFont(object):
 
-    def configure(self):
-        if self.src_file is None:
-            raise Exception('Missing src_file')
-        if not (os.path.exists(self.src_file) and os.path.isfile(self.src_file)):
-            raise Exception('Invalid src_file: %s' % self.src_file)
+    def __init__(self, src_file, ttx_index=0):
+        if src_file.lower().endswith('.otf'):
+            self.isTrueType = False
+            self.ftFont = freetype.Face(src_file)
+        elif src_file.lower().endswith('.ttf'):
+            self.isTrueType = True
+            self.ftFont = freetype.Face(src_file)
+        elif src_file.lower().endswith('.ttx'):
+            self.isTrueType = True
+            if self.ttx_index is None:
+                raise Exception('.ttx missing --ttx-index.')
+            self.ftFont = freetype.Face(src_file, index=ttx_index)
+        else:
+            raise Exception('Unrecognized file extension: %s' % self.src_file)
 
-        if self.dst_file is None:
-            raise Exception('Missing dst_file')
-        if os.path.exists(self.dst_file):
-            if os.path.isdir(self.dst_file):
-                shutil.rmtree(self.dst_file)
-            elif os.path.isfile(self.dst_file):
-                os.unlink(self.dst_file)
-            if os.path.exists(self.dst_file):
-                raise Exception('Could not overwrite: %s' % (self.dst_file,))
+    postscriptName = property(lambda self: self.ftFont.postscript_name)
+    familyName = property(lambda self: self.ftFont.family_name)
+    styleName = property(lambda self: self.ftFont.style_name)
 
+    ascender = property(lambda self: self.ftFont.ascender)
+    descender = property(lambda self: self.ftFont.descender)
+    unitsPerEm = property(lambda self: self.ftFont.units_per_EM)
 
-    def createUfo(self, ftFont):
-        familyName = ftFont.familyName
-        styleName = ftFont.styleName
-        print 'familyName', familyName
-        print 'styleName', styleName
-
-        if not familyName:
-            raise Exception('Font missing familyName')
-
-        if not styleName:
-            raise Exception('Font missing styleName')
-
-        ufoFont = robofab.world.NewFont(familyName=familyName, styleName=styleName)
-#        ufoFont.info.autoNaming()
+    has_kerning = property(lambda self: self.ftFont.has_kerning)
 
 
-#        def formatOpentypeScalar(value):
-#            return int(round(opentype_multiplier * value))
-#
-        ufoFont.info.ascender = ftFont.ascender
-        ufoFont.info.descender = ftFont.descender
-        ufoFont.info.unitsPerEm = ftFont.unitsPerEm
-
-        '''
-        TODO: there's a lot more metadata to fill in:
-
-        http://unifiedfontobject.org/versions/ufo2/fontinfo.html
-        '''
 #        ufoFont.info.xHeight = metadata.xHeight
 #        ufoFont.info.capHeight = metadata.capHeight
 #        ufoFont.info.versionMajor = metadata.versionMajor
@@ -192,72 +155,182 @@ class ConvertToUfo(object):
 #        ufoFont.save(dstFile)
 #
 #        ufoFont.close()
-        return ufoFont
 
 
-    def convertGlyph(self, ftFont, ufoFont, glyphInfo):
+    def getGlyphContours(self, glyphIndex):
 
-#        print 'convertGlyph', glyphInfo.characterCode, glyphInfo.glyphIndex
+        IRRELEVANT_CHAR_SIZE = 48*64
+        self.ftFont.set_char_size( IRRELEVANT_CHAR_SIZE )
 
-        contours, xAdvance = ftFont.getGlyphContours(glyphInfo.glyphIndex)
+        FT_LOAD_NO_SCALE = ( 1 << 0 )
+        self.ftFont.load_glyph(glyphIndex, FT_LOAD_NO_SCALE)
 
-        ufoGlyph = ufoFont.insertGlyph(glyphInfo.characterCode, contours, xAdvance,
-                                       glyphName=glyphInfo.glyphName,
-                                       correctDirection=False)
-#        print '\t', 'writing glyph', ufoGlyph.name, 'characterCode', glyphInfo.characterCode, hex(glyphInfo.characterCode) if glyphInfo.characterCode is not None else '<None>'
-        return ufoGlyph
+        ftGlyph = self.ftFont.glyph
+
+        outline = ftGlyph.outline
+
+#        print 'outline.points', outline.points
+        def convertPoint(x, y):
+            return TFSPoint(float(x),
+                            float(y))
+        points = [convertPoint(*point) for point in outline.points]
+#        print 'points', points
+#        x = [point.x for point in points]
+#        y = [point.y for point in points]
+
+        start, end = 0, 0
+#
+        paths = []
+        for i in range(len(outline.contours)):
+            end    = outline.contours[i]
+            points = outline.points[start:end+1]
+            points.append(points[0])
+            tags   = outline.tags[start:end+1]
+            tags.append(tags[0])
+
+#            print 'points', points
+#            print 'tags', tags
+
+            segments = [ [points[0],], ]
+            for j in range(1, len(points) ):
+                segments[-1].append(points[j])
+                if tags[j] & (1 << 0) and j < (len(points)-1):
+                    segments.append( [points[j],] )
+
+#            print 'contour'
+#            for segment in segments:
+#                print 'segment', segment
+
+            def convertPoint(x, y):
+                return TFSPoint(float(x),
+                                float(y))
+
+            def addSegment(points, segments):
+                '''
+                Ignore empty segments
+                '''
+                if 2 == len(points):
+                    if points[0] == points[-1]:
+                        return
+                elif len(points) == 3:
+                    if points[0] == points[1] == points[2]:
+                        return
+                elif len(points) == 4:
+                    if points[0] == points[1] == points[2] == points[3]:
+                        return
+                else:
+                    raise Exception('Invalid segment!')
+                segment = TFSSegment(*points)
+#                print 'segment', segment.description()
+                segments.append(segment)
 
 
-    def convertKerning(self, ftFont, ufoFont, glyphInfos):
+            def parseSegments(points):
+                points = [convertPoint(*point) for point in points]
+                if 2 <= len(points) <= 3:
+                    result = []
+                    addSegment(points, result)
+                    return result
+                endpoint0 = points[0]
+                remainder = points[1:]
+                result = []
+                while True:
+                    if len(remainder) == 2:
+                        controlPoint, endpoint1 = remainder
+                        addSegment((endpoint0, controlPoint, endpoint1), result)
+                        break
+                    else:
+                        controlPoint = remainder[0]
+                        nextControlPoint = remainder[1]
+                        endpoint1 = controlPoint.midpoint(nextControlPoint)
+                        addSegment((endpoint0, controlPoint, endpoint1), result)
+                        endpoint0 = endpoint1
+                        remainder.pop(0)
+                return result
 
-        if not ftFont.has_kerning:
-            return
+            tfsSegments = []
+            for segment in segments:
+                tfsSegments += parseSegments(segment)
+#            tfsSegments = [TFSSegment(*[convertPoint(*point) for point in segment]) for segment in segments]
+            if len(tfsSegments) > 0:
+                '''
+                Why are there so many empty contours?
+                '''
+                if tfsSegments[-1].endPoint() != tfsSegments[0].startPoint():
+                    tfsSegments.append(TFSSegment(tfsSegments[-1].endPoint(),
+                                                  tfsSegments[0].startPoint()))
+                paths.append(TFSPath(True, *tfsSegments))
 
-        for glyphInfo0 in glyphInfos:
-            for glyphInfo1 in glyphInfos:
-                kerning = ftFont.getKerning(glyphInfo0.glyphIndex, glyphInfo1.glyphIndex)
-                if kerning != 0:
-                    ufoFont.setKerningPair(glyphInfo0.glyphName,
-                                           glyphInfo1.glyphName, kerning)
+            start = end+1
 
+#        debugPaths('paths', paths)
+#        raise Exception('...')
 
-    def convertFont(self):
-        ftFont = TFFreetypeFont(self.src_file)
-
-        ufoFont = self.createUfo(ftFont)
-        ufoFont = TFSFont(ufoFont)
-
-        glyphInfos = ftFont.getGlyphInfos()
-
-        convertedGlyphIndices = set()
-        for glyphInfo in glyphInfos:
-            self.convertGlyph(ftFont, ufoFont, glyphInfo)
-            convertedGlyphIndices.add(glyphInfo.glyphIndex)
+        return paths, ftGlyph.advance.x
 
 
-        for glyphIndex in ftFont.getGlyphIndices():
-            if glyphIndex not in convertedGlyphIndices:
-                print 'Could not convert glyph', glyphIndex
+    def getKerning(self, glyphIndex0, glyphIndex1):
 
-        self.convertKerning(ftFont, ufoFont, glyphInfos)
-
-        ufoFont.update()
-        ufoFont.save(self.dst_file)
-        ufoFont.close()
-
-
-    def process(self):
-        self.configure()
-        self.convertFont()
+        kerning = freetype.FT_Vector(0,0)
+        error = freetype.FT_Get_Kerning( self.ftFont._FT_Face,
+                                         glyphIndex0, glyphIndex1,
+                                         ft_enums.FT_KERNING_UNSCALED,
+                                         freetype.byref(kerning) )
+        if error: raise freetype.FT_Exception( error )
+        return kerning.x
 
 
-if __name__ == "__main__":
-    import sys
-    print 'sys.argv', sys.argv
+    def getGlyphIndices(self):
+        return [glyphIndex for glyphIndex in xrange(self.ftFont.num_glyphs)]
 
-    ctu = ConvertToUfo()
-    settings = CtuSettings(ctu).getCommandLineSettings()
-    ctu.process()
 
-    print
-    print 'complete.'
+    def getGlyphIndexToCharacterMap(self):
+        glyphIndexToCharacterMap = {}
+#        self.ftFont.select_charmap(ft_enums.FT_ENCODING_UNICODE)
+        characterCode, glyphIndex = self.ftFont.get_first_char();
+        while glyphIndex > 0:
+            glyphIndexToCharacterMap[glyphIndex] = characterCode
+            characterCode, glyphIndex = self.ftFont.get_next_char(characterCode, 0)
+        return glyphIndexToCharacterMap
+
+
+    def getCharacterToGlyphIndexMap(self):
+        result = {}
+        for glyphIndex, characterCode in self.getGlyphIndexToCharacterMap().items():
+            result[characterCode] = glyphIndex
+        return result
+
+
+    def getGlyphInfos(self):
+        result = []
+#        glyphIndexToNameMap = {}
+        glyphToCharacterMap = self.getGlyphIndexToCharacterMap()
+        if self.ftFont.has_glyph_names:
+            for glyphIndex in self.getGlyphIndices():
+                glyphNameBuffer = ' '*256
+                error = freetype.FT_Get_Glyph_Name(self.ftFont._FT_Face,
+                                                   glyphIndex,
+                                                   glyphNameBuffer,
+                                                   len(glyphNameBuffer) - 1)
+                if error:
+                    raise freetype.FT_Exception(error)
+
+                glyphInfo = TFSMap()
+                glyphInfo.glyphIndex = glyphIndex
+                glyphInfo.glyphName = glyphNameBuffer.strip()[:-1]
+#                print 'glyphName', glyphIndex, glyphName, len(glyphName)
+                glyphInfo.characterCode = None
+                if glyphIndex in glyphToCharacterMap:
+                    glyphInfo.characterCode = glyphToCharacterMap[glyphIndex]
+                result.append(glyphInfo)
+
+        else:
+            for glyphIndex, characterCode in glyphToCharacterMap.items():
+                glyphInfo = TFSMap()
+                glyphInfo.glyphIndex = glyphIndex
+                glyphInfo.glyphName = getUnicodeCharacterName(characterCode)
+                glyphInfo.characterCode = characterCode
+#                glyphInfoMap[glyphIndex] = glyphInfo
+                result.append(glyphInfo)
+
+        return result

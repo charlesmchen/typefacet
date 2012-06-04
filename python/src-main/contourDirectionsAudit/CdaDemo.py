@@ -68,7 +68,7 @@ END OF TERMS AND CONDITIONS
 import os
 
 from ContourDirectionsAudit import ContourDirectionsAudit
-from CdaSettings import getCommandLineSettings
+from CdaSettings import CdaSettings
 
 pseudo_argv = ('--src-paths',
                '/Library/Fonts/',
@@ -79,9 +79,9 @@ pseudo_argv = ('--src-paths',
                )
 print 'pseudo_argv', ' '.join(pseudo_argv)
 
-settings = getCommandLineSettings(*pseudo_argv)
-
-ContourDirectionsAudit(settings).process()
+cda = ContourDirectionsAudit()
+CdaSettings(cda).getCommandLineSettings(*pseudo_argv)
+cda.process()
 
 print
 print 'complete.'

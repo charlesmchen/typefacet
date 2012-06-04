@@ -73,13 +73,13 @@ import tempfile
 import traceback
 import zipfile
 
-import freetype
+#import freetype
 import pystache
 
 #from FIFont import *
 #from FIMap import *
 #from FISvg import *
-from CdaSettings import getCommandLineSettings
+from CdaSettings import CdaSettings
 #import FICompoundsList
 from tfs.common.TFSPoint import TFSPoint
 from tfs.common.TFSPath import TFSPath
@@ -89,29 +89,17 @@ from tfs.common.TFSPath import polygonWithPoints, debugPaths, isClosedPathClockw
 #from collections import defaultdict
 from tfs.common.TFSMap import TFSMap
 from tfs.common.UnicodeCharacterNames import getUnicodeCharacterName, getUnicodeLongName
+from tfs.common.TFFreetypeFont import TFFreetypeFont
 
 
 class ContourDirectionsAudit(object):
 
-    def __init__(self, settings = None):
-        if settings is None:
-            self.settings = getCommandLineSettings()
-        else:
-            self.settings = settings
-
-        self.configure()
-        self.initMetrics()
-
-
     def configure(self):
-
-        src_paths = self.settings.src_paths
-        if src_paths is None:
+        if self.src_paths is None:
             raise Exception('Missing src_paths')
-        for src_path in src_paths:
+        for src_path in self.src_paths:
             if not (os.path.exists(src_path) and os.path.isdir(src_path)):
                 raise Exception('Invalid src_path: %s' % src_path)
-        self.src_paths = src_paths
 
 
     def initMetrics(self):
@@ -239,31 +227,37 @@ class ContourDirectionsAudit(object):
 
     def processFont(self, filepath):
 
+        extension = filepath[filepath.rindex('.'):]
+
+        ftFont = None
+
 #        print
 #        print 'filepath', filepath
 
-        extension = filepath[filepath.rindex('.'):]
-
-        face = None
 
         try:
-            face = freetype.Face(filepath)
+            ftFont = TFFreetypeFont(filepath)
 
-            postscript_name = face.postscript_name
+            postscript_name = ftFont.postscriptName
             if postscript_name in self.processedPostscriptNames:
                 return
 
 #            print '\t', 'postscript_name', postscript_name
             self.processedPostscriptNames.add(postscript_name)
+
+            characterToGlyphIndexMap = ftFont.getCharacterToGlyphIndexMap()
+
         except Exception, e:
             print 'error filepath', filepath
             print e.message
             traceback.print_exc()
-            del face
+            del ftFont
             return
 
         try:
-            LContours = self.getGlyphContours(face, 'L')
+            glyphIndex = characterToGlyphIndexMap[ord('L')]
+            LContours, xAdvance = ftFont.getGlyphContours(glyphIndex)
+#            print 'LContours', LContours
 #            debugPaths('LContours', LContours)
 
             if len(LContours) != 1:
@@ -281,8 +275,10 @@ class ContourDirectionsAudit(object):
             self.addMessage(extension, 'L exception')
 
         try:
-            OContours = self.getGlyphContours(face, 'O')
+            glyphIndex = characterToGlyphIndexMap[ord('O')]
+            OContours, xAdvance = ftFont.getGlyphContours(glyphIndex)
 #            debugPaths('OContours', OContours)
+
             if len(OContours) != 2:
                 self.addMessage(extension, 'O has unexpected number of contours: %d' % len(OContours))
             else:
@@ -342,6 +338,9 @@ class ContourDirectionsAudit(object):
 
     def process(self):
 
+        self.configure()
+        self.initMetrics()
+
         import time
 
         startTime = time.time()
@@ -383,9 +382,9 @@ if __name__ == "__main__":
     import sys
     print 'sys.argv', sys.argv
 
-    settings = getCommandLineSettings()
-    print 'settings', settings
-    ContourDirectionsAudit(settings).process()
+    cda = ContourDirectionsAudit()
+    CdaSettings(cda).getCommandLineSettings()
+    cda.process()
 
     print
     print 'complete.'

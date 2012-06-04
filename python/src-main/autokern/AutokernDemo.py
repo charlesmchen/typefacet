@@ -66,17 +66,23 @@ END OF TERMS AND CONDITIONS
 
 
 import os
-import shutil
 
-import Autokern
-from AutokernSettings import getCommandLineSettings
+from Autokern import Autokern
+from AutokernSettings import AutokernSettings
 import tfs.common.TFSProject as TFSProject
 
-settings = getCommandLineSettings()
-settings.ufo_src = os.path.abspath(os.path.join(TFSProject.findProjectRootFolder(), 'test', 'data', 'PakTest Plain.ufo'))
-settings.log_dst = os.path.abspath(os.path.join(TFSProject.findProjectRootFolder(), 'out'))
+pseudo_argv = ('--ufo-src',
+               os.path.abspath(os.path.join(TFSProject.findProjectRootFolder(), 'test', 'data', 'PakTest Plain.ufo')),
+               '--ufo-dst',
+               os.path.abspath(os.path.join(TFSProject.findProjectRootFolder(), 'out', 'PakTest Plain-kerned.ufo')),
+               '--log-dst',
+               os.path.abspath(os.path.join(TFSProject.findProjectRootFolder(), 'out')),
+               )
+print 'pseudo_argv', ' '.join(pseudo_argv)
 
-Autokern.processKerning(settings)
+autokern = Autokern()
+AutokernSettings(autokern).getCommandLineSettings(*pseudo_argv)
+autokern.process()
 
 print
 print 'complete.'

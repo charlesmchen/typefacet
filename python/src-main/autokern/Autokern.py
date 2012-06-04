@@ -70,300 +70,831 @@ import shutil
 
 from tfs.common.TFSFont import *
 from tfs.common.TFSSvg import *
-from AutokernSettings import getCommandLineSettings
+from AutokernSettings import AutokernSettings
 from tfs.common.TFSSilhouette import *
 
 from tfs.common.TFSMap import TFSMap
 import tfs.common.TFSMath as TFSMath
+from collections import defaultdict
 
 
 TFSMath.setFloatRoundingTolerance(0.1)
 TFSMath.setDefaultPrecisionDigits(1)
 
 
-class TFSKerning(TFSMap):
+class Autokern(TFSMap):
 
     def __init__(self):
         TFSMap.__init__(self)
 
 
-def subrenderGlyphContours(tfsSvg, contours, strokeColor):
-    ON_POINT_COLOR = 0x7f7f7f7f
-    CONTROL_POINT_COLOR = 0x7fafafaf
-    for contour in contours:
-        tfsSvg.addItem(TFSSvgPath(contour).addStroke(strokeColor, 2).addPointHighlights(ON_POINT_COLOR, CONTROL_POINT_COLOR))
+    def subrenderGlyphContours(self, tfsSvg, contours, strokeColor):
+        ON_POINT_COLOR = 0x7f7f7f7f
+        CONTROL_POINT_COLOR = 0x7fafafaf
+        for contour in contours:
+            tfsSvg.addItem(TFSSvgPath(contour).addStroke(strokeColor, 2).addPointHighlights(ON_POINT_COLOR, CONTROL_POINT_COLOR))
 
 
-def renderSvgScene(kerning,
-                   filenamePrefix, phase, phaseName,
-                   pathTuples,
-                   hGuidelines=None):
-    filename = '%s-phase-%d-%s.svg' % ( filenamePrefix,
-                                        phase,
-                                        phaseName, )
-    dstFile = os.path.abspath(os.path.join(kerning.svg_folder, filename))
+    def renderSvgScene(self,
+                       filenamePrefix, phase, phaseName,
+                       pathTuples,
+                       hGuidelines=None):
+        filename = '%s-phase-%d-%s.svg' % ( filenamePrefix,
+                                            phase,
+                                            phaseName, )
+        dstFile = os.path.abspath(os.path.join(self.svg_folder, filename))
 
-    CANVAS_BACKGROUND_COLOR = 0xffffffff
-    CANVAS_BORDER_COLOR = 0x07fbfbfbf
-    tfsSvg = TFSSvg().withBackground(CANVAS_BACKGROUND_COLOR).withBorder(CANVAS_BORDER_COLOR)
+        CANVAS_BACKGROUND_COLOR = 0xffffffff
+        CANVAS_BORDER_COLOR = 0x07fbfbfbf
+        tfsSvg = TFSSvg().withBackground(CANVAS_BACKGROUND_COLOR).withBorder(CANVAS_BORDER_COLOR)
 
-#    if pathTuples:
-    for color, contours in pathTuples:
-        subrenderGlyphContours(tfsSvg, contours, color)
-
-    if hGuidelines:
-        for hGuideline in hGuidelines:
-            p0 = TFSPoint(hGuideline, kerning.pafont.info.descender)
-            p1 = TFSPoint(hGuideline, kerning.pafont.info.ascender)
-            GUIDELINE_COLOR = 0x7fdfdfdf
-            tfsSvg.addItem(TFSSvgPath(openPathWithPoints(p0, p1)).addStroke(GUIDELINE_COLOR, 1))
-
-    vGuidelines = ( 0,
-                    kerning.pafont.info.ascender,
-                    kerning.pafont.info.descender,
-                    )
-    if vGuidelines:
-        minmax = None
+    #    if pathTuples:
         for color, contours in pathTuples:
-            minmax = minmaxMerge(minmax, minmaxPaths(contours))
+            self.subrenderGlyphContours(tfsSvg, contours, color)
 
-        for vGuideline in vGuidelines:
-            p0 = TFSPoint(0, vGuideline)
-            p1 = TFSPoint(minmax.maxX, vGuideline)
-            GUIDELINE_COLOR = 0x7fdfdfdf
-            tfsSvg.addItem(TFSSvgPath(openPathWithPoints(p0, p1)).addStroke(GUIDELINE_COLOR, 1))
+        if hGuidelines:
+            for hGuideline in hGuidelines:
+                p0 = TFSPoint(hGuideline, self.ufofont.info.descender)
+                p1 = TFSPoint(hGuideline, self.ufofont.info.ascender)
+                GUIDELINE_COLOR = 0x7fdfdfdf
+                tfsSvg.addItem(TFSSvgPath(openPathWithPoints(p0, p1)).addStroke(GUIDELINE_COLOR, 1))
 
-    SVG_HEIGHT = 400
-    SVG_MAX_WIDTH = 800
-    tfsSvg.renderToFile(dstFile, margin=10, height=SVG_HEIGHT, maxWidth=SVG_MAX_WIDTH)
-    return filename
+        vGuidelines = ( 0,
+                        self.ufofont.info.ascender,
+                        self.ufofont.info.descender,
+                        )
+        if vGuidelines:
+            minmax = None
+            for color, contours in pathTuples:
+                minmax = minmaxMerge(minmax, minmaxPaths(contours))
 
+            for vGuideline in vGuidelines:
+                p0 = TFSPoint(0, vGuideline)
+                p1 = TFSPoint(minmax.maxX, vGuideline)
+                GUIDELINE_COLOR = 0x7fdfdfdf
+                tfsSvg.addItem(TFSSvgPath(openPathWithPoints(p0, p1)).addStroke(GUIDELINE_COLOR, 1))
 
-def processKerningPair(kerning, paglyph0, paglyph1):
-
-    renderLog = kerning.log_dst is not None
-
-    contours0 = paglyph0.getContours()
-    contours1 = paglyph1.getContours()
-    minmax0 = minmaxPaths(contours0)
-    minmax1 = minmaxPaths(contours1)
-    naiveSpacing = minmax0.maxX - minmax1.minX
-
-    minSpacing = 0
-
-
-#    import time
-#    time0 = time.time()
-    debugPaths('contours1', contours1)
-    contours1_plusMin = inflatePaths(contours1, kerning.min_distance)
-    debugPaths('contours1_plusMin', contours1_plusMin)
-
-#    time1 = time.time()
-#    print 'inflatePathsLeft', time1 - time0
-#    time0 = time1
-    SILHOUETTE_RESOLUTION = 2.0
-    minDistanceSpacing = findSilhouetteContactSpacing(contours0, contours1_plusMin, SILHOUETTE_RESOLUTION)
-#    time1 = time.time()
-#    print 'findSilhouetteContactSpacing', time1 - time0
-#    time0 = time1
-##    minSpacing = kerning.min_distance + findSilhouetteContactSpacing(contours0, contours1_plusMin, SILHOUETTE_RESOLUTION)
-
-    contours0_midRounding = deflatePaths(contours1, kerning.rounding)
-    debugPaths('contours0_midRounding', contours0_midRounding)
-    contours0_afterRounding = inflatePaths(contours0_midRounding, kerning.rounding)
-    debugPaths('contours0_afterRounding', contours0_afterRounding)
-    roundingSpacing = findSilhouetteContactSpacing(contours0_afterRounding, contours1_plusMin, SILHOUETTE_RESOLUTION)
-#
-#    contours1_plusMin = inflatePathsLeft(contours1, kerning.min_distance)
-#    contours = FSilhouette.deflatePaths(contours, capHeight * 0.05)
-#    time1 = time.time()
-#    print ''
-
-    print 'minDistanceSpacing', minDistanceSpacing
-    debugPaths('contours0', contours0)
-    debugPaths('contours1_plusMin', contours1_plusMin)
-
-    if renderLog:
-        filenamePrefix = 'tfs-%s-%s' % ( chr(paglyph0.unicode),
-                                         chr(paglyph1.unicode), )
-        phase = 1
-
-#        for contour in contours1:
-#            print 'contour', type(contour), contour.description()
-
-        naiveSpacingSvg = renderSvgScene(kerning,
-                                         filenamePrefix, phase, 'naive-spacing',
-                                         pathTuples = (
-                                                       ( 0x7f7faf7f, contours0, ),
-                                                       ( 0x7f7f7faf, [contour.applyPlus(TFSPoint(naiveSpacing, 0)) for contour in contours1], ),
-                                                       ),
-                                         hGuidelines = ( naiveSpacing, ) )
-        phase += 1
-        minDistanceSpacingSvg = renderSvgScene(kerning,
-                                         filenamePrefix, phase, 'min-spacing',
-                                         pathTuples = (
-                                                       ( 0x7f7faf7f, contours0, ),
-                                                       ( 0x7f7f7faf, [contour.applyPlus(TFSPoint(minDistanceSpacing, 0)) for contour in contours1], ),
-                                                       ( 0x7fafafff, [contour.applyPlus(TFSPoint(minDistanceSpacing, 0)) for contour in contours1_plusMin], ),
-                                                       ),
-                                         hGuidelines = ( naiveSpacing, ) )
-        phase += 1
-        roundingSpacingSvg = renderSvgScene(kerning,
-                                         filenamePrefix, phase, 'rounding',
-                                         pathTuples = (
-                                                       ( 0x7f7faf7f, contours0, ),
-                                                       ( 0x7fafffaf, contours0_midRounding, ),
-                                                       ( 0x7fafffaf, contours0_afterRounding, ),
-                                                       ( 0x7f7f7faf, [contour.applyPlus(TFSPoint(roundingSpacing, 0)) for contour in contours1], ),
-                                                       ( 0x7fafafff, [contour.applyPlus(TFSPoint(roundingSpacing, 0)) for contour in contours1_plusMin], ),
-                                                       ),
-                                         hGuidelines = ( naiveSpacing, ) )
-        phase += 1
-
-        import tfs.common.TFSProject as TFSProject
-        mustache_template_file = os.path.abspath(os.path.join(TFSProject.findProjectRootFolder(), 'data', 'log_kerning_pair_html_mustache.txt'))
-        with open(mustache_template_file, 'rt') as f:
-            mustache_template = f.read()
-
-        def formatGlyphName(glyph):
-            return u'%s (%s)' % ( unichr(glyph),
-                                  hex(glyph), )
-
-        pageTitle = u'pyautokern Log: Kerning %s vs. %s' % ( formatGlyphName(paglyph0.unicode),
-                                                             formatGlyphName(paglyph1.unicode), )
-
-        def formatEmScalar(value):
-            return '%0.3f em' % (value / float(kerning.units_per_em))
-
-        def formatGlyphMap(glyph, glyphMinmax):
-            return {
-                       'glyphName': formatGlyphName(glyph),
-                       'minX': formatEmScalar(glyphMinmax.minX),
-                       'maxX': formatEmScalar(glyphMinmax.maxX),
-                       'minY': formatEmScalar(glyphMinmax.minY),
-                       'maxY': formatEmScalar(glyphMinmax.maxY),
-                    }
-
-        mustacheMap = {
-                       'pageTitle': pageTitle,
-                       'minmax0': minmax0,
-                       'minmax1': minmax1,
-                       'naiveSpacing': formatEmScalar(naiveSpacing),
-                       'minDistanceSpacing': formatEmScalar(minDistanceSpacing),
-                       'roundingSpacing': formatEmScalar(roundingSpacing),
-                       'min_distance': formatEmScalar(kerning.min_distance),
-                       'max_distance': formatEmScalar(kerning.max_distance),
-                       'rounding': formatEmScalar(kerning.rounding),
-
-                       'naiveSpacingSvg': naiveSpacingSvg,
-                       'minSpacingSvg': minDistanceSpacingSvg,
-                       'roundingSpacingSvg': roundingSpacingSvg,
-
-                       'glyph0': formatGlyphName(paglyph0.unicode),
-                       'glyph1': formatGlyphName(paglyph1.unicode),
-
-                       'glyphMaps': ( formatGlyphMap(paglyph0.unicode, minmax0),
-                                      formatGlyphMap(paglyph1.unicode, minmax1),
-                                      )
-                       }
-
-        for key in ( 'ascender',
-                     'descender',
-                    ):
-            mustacheMap[key] = formatEmScalar(getattr(kerning.pafont.info, key))
-
-        for key in (
-                     'unitsPerEm',
-                     'familyName',
-                     'styleName',
-                     'fullName',
-                     'fontName',
-                    ):
-            mustacheMap[key] = getattr(kerning.pafont.info, key)
-
-        import pystache
-        logHtml = pystache.render(mustache_template, mustacheMap)
-
-        logFilename = '%s.html' % ( filenamePrefix, )
-        logFile = os.path.abspath(os.path.join(kerning.html_folder, logFilename))
-        with open(logFile, 'wt') as f:
-            # TODO: explicitly encode unicode
-            f.write(logHtml)
+        SVG_HEIGHT = 400
+        SVG_MAX_WIDTH = 800
+        tfsSvg.renderToFile(dstFile, margin=10, height=SVG_HEIGHT, maxWidth=SVG_MAX_WIDTH)
+        return filename
 
 
-def processAllKerningPairs(kerning):
-    for paglyph0 in kerning.pafont.getGlyphs():
-        for paglyph1 in kerning.pafont.getGlyphs():
-            processKerningPair(kerning, paglyph0, paglyph1)
+    def processKerningPair_flate(self, ufoglyph0, ufoglyph1):
+
+        renderLog = self.log_dst is not None
+
+        contours0 = ufoglyph0.getContours()
+        contours1 = ufoglyph1.getContours()
+        minmax0 = minmaxPaths(contours0)
+        minmax1 = minmaxPaths(contours1)
+        naiveSpacing = minmax0.maxX - minmax1.minX
+
+        minSpacing = 0
+
+
+    #    import time
+    #    time0 = time.time()
+        debugPaths('contours1', contours1)
+        contours1_plusMin = inflatePaths(contours1, self.min_distance)
+        debugPaths('contours1_plusMin', contours1_plusMin)
+
+    #    time1 = time.time()
+    #    print 'inflatePathsLeft', time1 - time0
+    #    time0 = time1
+        SILHOUETTE_RESOLUTION = 2.0
+        minDistanceSpacing = findSilhouetteContactSpacing(contours0, contours1_plusMin, SILHOUETTE_RESOLUTION)
+    #    time1 = time.time()
+    #    print 'findSilhouetteContactSpacing', time1 - time0
+    #    time0 = time1
+    ##    minSpacing = kerning.min_distance + findSilhouetteContactSpacing(contours0, contours1_plusMin, SILHOUETTE_RESOLUTION)
+
+        contours0_midRounding = deflatePaths(contours1, self.rounding)
+        debugPaths('contours0_midRounding', contours0_midRounding)
+        contours0_afterRounding = inflatePaths(contours0_midRounding, self.rounding)
+        debugPaths('contours0_afterRounding', contours0_afterRounding)
+        roundingSpacing = findSilhouetteContactSpacing(contours0_afterRounding, contours1_plusMin, SILHOUETTE_RESOLUTION)
+    #
+    #    contours1_plusMin = inflatePathsLeft(contours1, kerning.min_distance)
+    #    contours = FSilhouette.deflatePaths(contours, capHeight * 0.05)
+    #    time1 = time.time()
+    #    print ''
+
+        print 'minDistanceSpacing', minDistanceSpacing
+        debugPaths('contours0', contours0)
+        debugPaths('contours1_plusMin', contours1_plusMin)
+
+        if renderLog:
+            filenamePrefix = 'tfs-%s-%s' % ( chr(ufoglyph0.unicode),
+                                             chr(ufoglyph1.unicode), )
+            phase = 1
+
+    #        for contour in contours1:
+    #            print 'contour', type(contour), contour.description()
+
+            naiveSpacingSvg = self.renderSvgScene(
+                                             filenamePrefix, phase, 'naive-spacing',
+                                             pathTuples = (
+                                                           ( 0x7f7faf7f, contours0, ),
+                                                           ( 0x7f7f7faf, [contour.applyPlus(TFSPoint(naiveSpacing, 0)) for contour in contours1], ),
+                                                           ),
+                                             hGuidelines = ( naiveSpacing, ) )
+            phase += 1
+            minDistanceSpacingSvg = self.renderSvgScene(
+                                             filenamePrefix, phase, 'min-spacing',
+                                             pathTuples = (
+                                                           ( 0x7f7faf7f, contours0, ),
+                                                           ( 0x7f7f7faf, [contour.applyPlus(TFSPoint(minDistanceSpacing, 0)) for contour in contours1], ),
+                                                           ( 0x7fafafff, [contour.applyPlus(TFSPoint(minDistanceSpacing, 0)) for contour in contours1_plusMin], ),
+                                                           ),
+                                             hGuidelines = ( naiveSpacing, ) )
+            phase += 1
+            roundingSpacingSvg = self.renderSvgScene(
+                                             filenamePrefix, phase, 'rounding',
+                                             pathTuples = (
+                                                           ( 0x7f7faf7f, contours0, ),
+                                                           ( 0x7fafffaf, contours0_midRounding, ),
+                                                           ( 0x7fafffaf, contours0_afterRounding, ),
+                                                           ( 0x7f7f7faf, [contour.applyPlus(TFSPoint(roundingSpacing, 0)) for contour in contours1], ),
+                                                           ( 0x7fafafff, [contour.applyPlus(TFSPoint(roundingSpacing, 0)) for contour in contours1_plusMin], ),
+                                                           ),
+                                             hGuidelines = ( naiveSpacing, ) )
+            phase += 1
+
+            import tfs.common.TFSProject as TFSProject
+            mustache_template_file = os.path.abspath(os.path.join(TFSProject.findProjectRootFolder(), 'data', 'log_kerning_pair_html_mustache.txt'))
+            with open(mustache_template_file, 'rt') as f:
+                mustache_template = f.read()
+
+            def formatGlyphName(glyph):
+                return u'%s (%s)' % ( unichr(glyph),
+                                      hex(glyph), )
+
+            pageTitle = u'pyautokern Log: Kerning %s vs. %s' % ( formatGlyphName(ufoglyph0.unicode),
+                                                                 formatGlyphName(ufoglyph1.unicode), )
+
+            def formatEmScalar(value):
+                return '%0.3f em' % (value / float(self.units_per_em))
+
+            def formatGlyphMap(glyph, glyphMinmax):
+                return {
+                           'glyphName': formatGlyphName(glyph),
+                           'minX': formatEmScalar(glyphMinmax.minX),
+                           'maxX': formatEmScalar(glyphMinmax.maxX),
+                           'minY': formatEmScalar(glyphMinmax.minY),
+                           'maxY': formatEmScalar(glyphMinmax.maxY),
+                        }
+
+            mustacheMap = {
+                           'pageTitle': pageTitle,
+                           'minmax0': minmax0,
+                           'minmax1': minmax1,
+                           'naiveSpacing': formatEmScalar(naiveSpacing),
+                           'minDistanceSpacing': formatEmScalar(minDistanceSpacing),
+                           'roundingSpacing': formatEmScalar(roundingSpacing),
+                           'min_distance': formatEmScalar(self.min_distance),
+                           'max_distance': formatEmScalar(self.max_distance),
+                           'rounding': formatEmScalar(self.rounding),
+
+                           'naiveSpacingSvg': naiveSpacingSvg,
+                           'minSpacingSvg': minDistanceSpacingSvg,
+                           'roundingSpacingSvg': roundingSpacingSvg,
+
+                           'glyph0': formatGlyphName(ufoglyph0.unicode),
+                           'glyph1': formatGlyphName(ufoglyph1.unicode),
+
+                           'glyphMaps': ( formatGlyphMap(ufoglyph0.unicode, minmax0),
+                                          formatGlyphMap(ufoglyph1.unicode, minmax1),
+                                          )
+                           }
+
+            for key in ( 'ascender',
+                         'descender',
+                        ):
+                mustacheMap[key] = formatEmScalar(getattr(self.ufofont.info, key))
+
+            for key in (
+                         'unitsPerEm',
+                         'familyName',
+                         'styleName',
+                         'fullName',
+                         'fontName',
+                        ):
+                mustacheMap[key] = getattr(self.ufofont.info, key)
+
+            import pystache
+            logHtml = pystache.render(mustache_template, mustacheMap)
+
+            logFilename = '%s.html' % ( filenamePrefix, )
+            logFile = os.path.abspath(os.path.join(self.html_folder, logFilename))
+            with open(logFile, 'wt') as f:
+                # TODO: explicitly encode unicode
+                f.write(logHtml)
+
+
+    def getGlyphContours(self, ufoglyph):
+        if ufoglyph.unicode in self.contoursCache:
+            return self.contoursCache[ufoglyph.unicode]
+        contours = ufoglyph.getContours()
+        self.contoursCache[ufoglyph.unicode] = contours
+        return contours
+
+
+    def dumpPixelBlock(self, name, pixels):
+        if not pixels:
+            print name, '[No pixels]'
+            return
+        print name, len(pixels), 'pixel rows'
+        for row in pixels:
+            buffer = []
+            for pixel in row:
+                buffer.append('1' if pixel else '0')
+            print '\t', ''.join(buffer)
+        print
+
+
+    def padPixels(self, pixels, padding):
+        hPadding = (False,) * padding
+        rowLength = len(pixels[0]) + 2 * padding
+        vPadding = (False,) * rowLength
+        result = []
+        for _ in xrange(padding):
+            result.append(vPadding)
+        for row in pixels:
+            result.append(hPadding + tuple(row) + hPadding)
+        for _ in xrange(padding):
+            result.append(vPadding)
+        return result
+
+    def convertToPixelUnits(self, value, RASTERIZE_CELL_SIZE):
+        return int(math.ceil(value / float(RASTERIZE_CELL_SIZE)))
+
+    def inflatePixelBlock(self, pixels, radius, RASTERIZE_CELL_SIZE):
+#        radius = 100
+
+        maskScale = self.convertToPixelUnits(radius, RASTERIZE_CELL_SIZE)
+        maskSize = 1 + 2 * maskScale
+        mask = []
+        for y in xrange(maskSize):
+            maskRow = []
+            for x in xrange(maskSize):
+                xOffset = x - maskScale
+                yOffset = y - maskScale
+                xDiff = xOffset * RASTERIZE_CELL_SIZE
+                yDiff = yOffset * RASTERIZE_CELL_SIZE
+                maskValue = (radius * radius) > (xDiff * xDiff) + (yDiff * yDiff)
+#                xDiff = x * RASTERIZE_CELL_SIZE - radius
+#                yDiff = y * RASTERIZE_CELL_SIZE - radius
+#                maskValue = (radius * radius) > (xDiff * xDiff) + (yDiff * yDiff)
+#                print 'x', x, 'y', y, 'radius', radius, 'xDiff', xDiff, 'yDiff', yDiff, 'maskValue', maskValue
+                maskRow.append(maskValue)
+            mask.append(maskRow)
+
+
+
+        result = []
+        for row in pixels:
+            result.append(list(row))
+
+#        result = []
+        for y1, row1 in enumerate(pixels):
+            for x1, pixel1 in enumerate(row1):
+                if not pixel1:
+                    continue
+                # Inflate pixel
+                for y2, row2 in enumerate(mask):
+                    for x2, pixel2 in enumerate(row2):
+                        if not pixel2:
+                            continue
+                        x = x1 + x2 - maskScale
+                        y = y1 + y2 - maskScale
+                        if 0 <= y < len(result):
+                            if 0 <= x < len(result[y]):
+                                result[y][x] = True
+
+        return result
+
+
+    def rasterizeGlyph(self, ufoglyph, RASTERIZE_CELL_SIZE):
+        if ufoglyph.unicode in self.rasterCache:
+            return self.rasterCache[ufoglyph.unicode]
+        pixels = ufoglyph.rasterize(cellSize=RASTERIZE_CELL_SIZE,
+                                   xMin=self.minmax.minX,
+                                   yMin=self.minmax.minY,
+                                   xMax=self.minmax.maxX,
+                                   yMax=self.minmax.maxY)
+        self.rasterCache[ufoglyph.unicode] = pixels
+        return pixels
+
+#    def findMinAdvance(self, pixels0, pixels1, tolerancePixels=0):
+    def findMinAdvance(self, pixels0, pixels1, intrusionTolerancePixels=0, minNonIntrusionCount=0):
+        if len(pixels0) != len(pixels1):
+            raise Exception('pixel heights do not match. %d != %d', len(pixels0), len(pixels1))
+
+        def makeRowProfile(row, func):
+            result = None
+            for index, pixel in enumerate(row):
+                if pixel:
+                    if result is not None:
+                        result = func(result, index)
+                    else:
+                        result = index
+            return result
+
+        def makePixelProfile(pixels, func):
+            result = []
+            for row in pixels:
+                result.append(makeRowProfile(row, func))
+            return result
+
+        profile0 = makePixelProfile(pixels0, max)
+        profile1 = makePixelProfile(pixels1, min)
+#        print 'profile0', profile0
+#        print 'profile1', profile1
+        contactAdvance = None
+        for edge0, edge1 in zip(profile0, profile1):
+            if edge0 is None or edge1 is None:
+                continue
+            diff = 1 + edge0 - edge1
+#            print 'diff', diff
+            if contactAdvance is None:
+                contactAdvance = diff
+            else:
+                contactAdvance = min(contactAdvance, diff)
+
+        if contactAdvance is None or intrusionTolerancePixels == 0:
+            return contactAdvance
+
+        def getProfileOverlap(advance):
+#            print
+#            print 'getProfileOverlap'
+            intrusionTotal = 0
+            extrusionTotal = 0
+            nonIntrusionCount = 0
+            for edge0, edge1 in zip(profile0, profile1):
+                if edge0 is None or edge1 is None:
+                    continue
+                diff = 1 + edge0 - edge1
+                rowIntrusion = max(0, advance - diff)
+                rowExtrusion = min(0, advance - diff)
+#                print 'diff', diff, 'advance', advance, 'rowOverlap', rowOverlap
+                intrusionTotal += rowIntrusion
+                extrusionTotal += rowExtrusion
+                if rowIntrusion <= 0:
+                    nonIntrusionCount += 1
+            return intrusionTotal, extrusionTotal, nonIntrusionCount
+
+
+        width0 = len(pixels0[0])
+        width1 = len(pixels1[0])
+#        print 'contactAdvance', contactAdvance
+#        print 'tolerancePixels', tolerancePixels
+        offsetAdvance = contactAdvance
+        for offset in xrange(1, min(width0, width1)):
+            advance = contactAdvance + offset
+            intrusionTotal, extrusionTotal, nonIntrusionCount = getProfileOverlap(advance)
+            if intrusionTotal > extrusionTotal:
+                return offsetAdvance
+            if intrusionTotal > intrusionTolerancePixels:
+                return offsetAdvance
+            minNonIntrusionCount
+            if nonIntrusionCount < minNonIntrusionCount:
+                return offsetAdvance
+
+#            overlapPixels = getProfileOverlap(advance)
+##            print 'overlapPixels', overlapPixels
+#            if overlapPixels > tolerancePixels:
+#                return offsetAdvance
+
+#            return offsetAdvance
+
+            offsetAdvance = advance
+
+        return offsetAdvance
+
+
+    def processKerningPair(self, ufoglyph0, ufoglyph1):
+        '''
+        TODO: handle empty glyphs with no contours
+        '''
+
+#        print 'processKerningPair'
+
+        debugKerning = True
+        debugKerning = False
+
+        renderLog = self.log_dst is not None
+
+        RASTERIZE_CELL_SIZE = 10
+        RASTERIZE_CELL_SIZE = 25
+
+        contours0 = self.getGlyphContours(ufoglyph0)
+        contours1 = self.getGlyphContours(ufoglyph1)
+        if (not contours0) or (not contours1):
+            return
+        minmax0 = minmaxPaths(contours0)
+        minmax1 = minmaxPaths(contours1)
+
+        pixels0 = self.rasterizeGlyph(ufoglyph0, RASTERIZE_CELL_SIZE)
+        pixels1 = self.rasterizeGlyph(ufoglyph1, RASTERIZE_CELL_SIZE)
+
+        if (pixels0 is None) or (pixels1 is None):
             return
 
+        if debugKerning:
+            self.dumpPixelBlock('pixels0', pixels0)
+            self.dumpPixelBlock('pixels1', pixels1)
 
-def configureKerning(kerning, settings):
+        def convertToPixelUnits(value):
+            return int(math.ceil(value / float(RASTERIZE_CELL_SIZE)))
 
-    ufo_src = settings.ufo_src
-    if ufo_src is None:
-        raise Exception('Missing ufo_src')
-    if not (os.path.exists(ufo_src) and os.path.isdir(ufo_src) and os.path.basename(ufo_src).lower().endswith('.ufo')):
-        raise Exception('Invalid ufo_src: %s' % ufo_src)
-    kerning.ufo_src = ufo_src
+        min_distance = self.min_distance_ems * self.ufofont.units_per_em
+        if debugKerning:
+            print 'min_distance', min_distance
+#        min_distance_pixels = self.convertToPixelUnits(min_distance, RASTERIZE_CELL_SIZE)
+#        if debugKerning:
+#            print 'min_distance_pixels', min_distance_pixels
 
-#    testFont = os.path.abspath(os.path.join('..', '..', 'data', 'TFSTest Plain.ufo'))
-    kerning.pafont = TFSFontFromFile(ufo_src)
+        max_distance = self.max_distance_ems * self.ufofont.units_per_em
+        if debugKerning:
+            print 'max_distance', max_distance
+#        max_distance_pixels = self.convertToPixelUnits(max_distance, RASTERIZE_CELL_SIZE)
+#        if debugKerning:
+#            print 'max_distance_pixels', max_distance_pixels
 
-    log_dst = settings.log_dst
-    if log_dst is None:
-        kerning.log_dst = None
-#        raise Exception('Missing log_dst')
-        pass
-    else:
-        if os.path.exists(log_dst):
-            shutil.rmtree(log_dst)
-        os.mkdir(log_dst)
-        if not (os.path.exists(log_dst) and os.path.isdir(log_dst)):
-            raise Exception('Invalid log_dst: %s' % log_dst)
-        kerning.log_dst = log_dst
+        pixels0 = self.padPixels(pixels0, self.convertToPixelUnits(max_distance, RASTERIZE_CELL_SIZE))
+        pixels1 = self.padPixels(pixels1, self.convertToPixelUnits(max_distance, RASTERIZE_CELL_SIZE))
 
-        def makeLogSubfolder(parent, name):
-            subfolder = os.path.abspath(os.path.join(parent, name))
-            os.mkdir(subfolder)
-            if not (os.path.exists(subfolder) and os.path.isdir(subfolder)):
+        if debugKerning:
+            self.dumpPixelBlock('pixels0', pixels0)
+            self.dumpPixelBlock('pixels1', pixels1)
+
+        pixels1_plusMin = self.inflatePixelBlock(pixels1, min_distance, RASTERIZE_CELL_SIZE)
+        if debugKerning:
+            self.dumpPixelBlock('pixels1_plusMin', pixels1_plusMin)
+
+        minAdvancePixels = self.findMinAdvance(pixels0, pixels1_plusMin)
+        if minAdvancePixels is None:
+            '''
+            No collision between glyphs (ie. underline and hyphen).
+            Default to conservative spacing.
+            '''
+            minAdvance = minmax0.maxX + min_distance - minmax1.minX
+        else:
+            minAdvance = RASTERIZE_CELL_SIZE * minAdvancePixels
+        if debugKerning:
+            print 'minAdvance', minAdvance, 'minAdvancePixels', minAdvancePixels
+
+#        self.minAdvanceMap[(ufoglyph0.unicode,
+#                            ufoglyph1.unicode,)] = minAdvance
+
+        height0 = minmax0.maxY - minmax0.minY
+        height1 = minmax1.maxY - minmax1.minY
+        maxGlyphHeight = max(height0, height1)
+
+#        min_distance = self.min_distance_ems * self.ufofont.units_per_em
+#        if debugKerning:
+#            print 'min_distance', min_distance
+#        min_distance_pixels = self.convertToPixelUnits(min_distance, RASTERIZE_CELL_SIZE)
+#        if debugKerning:
+#            print 'min_distance_pixels', min_distance_pixels
+
+#        max_distance = self.max_distance_ems * self.ufofont.units_per_em
+#        if debugKerning:
+#            print 'max_distance', max_distance
+#        max_distance_pixels = self.convertToPixelUnits(max_distance, RASTERIZE_CELL_SIZE)
+#        if debugKerning:
+#            print 'max_distance_pixels', max_distance_pixels
+
+        pixels1_plusMax = self.inflatePixelBlock(pixels1, max_distance, RASTERIZE_CELL_SIZE)
+        if debugKerning:
+            self.dumpPixelBlock('pixels1_plusMax', pixels1_plusMax)
+
+        intrusion_tolerance = self.intrusion_tolerance * max_distance * maxGlyphHeight
+        intrusion_tolerance_pixels = int(round(float(intrusion_tolerance) / (RASTERIZE_CELL_SIZE * RASTERIZE_CELL_SIZE)))
+
+        min_non_intrusion = self.min_non_intrusion_ems * self.ufofont.units_per_em
+        min_non_intrusion_pixels = int(round(float(min_non_intrusion) / RASTERIZE_CELL_SIZE))
+        if debugKerning:
+            print 'min_non_intrusion', min_non_intrusion, 'min_non_intrusion_pixels', min_non_intrusion_pixels
+
+        maxAdvancePixels = self.findMinAdvance(pixels0, pixels1_plusMax,
+                                               intrusionTolerancePixels=intrusion_tolerance_pixels,
+                                               minNonIntrusionCount=min_non_intrusion_pixels)
+        if maxAdvancePixels is None:
+            '''
+            No collision between glyphs (ie. underline and hyphen).
+            Default to conservative spacing.
+            '''
+            maxAdvance = minmax0.maxX + max_distance - minmax1.minX
+        else:
+            maxAdvance = RASTERIZE_CELL_SIZE * maxAdvancePixels
+        if debugKerning:
+            print 'maxAdvance', maxAdvance, 'maxAdvancePixels', maxAdvancePixels
+            maxAdvanceRawPixels = self.findMinAdvance(pixels0, pixels1_plusMax)
+            maxAdvanceRaw = RASTERIZE_CELL_SIZE * maxAdvanceRawPixels
+            print 'maxAdvanceRaw', maxAdvanceRaw, 'maxAdvanceRawPixels', maxAdvanceRawPixels
+
+        advance = max(minAdvance, maxAdvance)
+
+        self.advanceMap[(ufoglyph0.unicode,
+                         ufoglyph1.unicode,)] = advance
+
+        print '\t', ufoglyph0.unicode, ufoglyph1.unicode, advance
+#        import sys
+#        sys.exit(0)
+
+
+        if renderLog:
+            filenamePrefix = 'autokern-%s-%s' % ( chr(ufoglyph0.unicode),
+                                             chr(ufoglyph1.unicode), )
+            phase = 1
+
+
+            naiveAdvancePixels = self.findMinAdvance(pixels0, pixels1)
+            if naiveAdvancePixels is None:
+                '''
+                No collision between glyphs (ie. underline and hyphen).
+                Default to conservative spacing.
+                '''
+                naiveAdvance = minmax0.maxX - minmax1.minX
+            else:
+                naiveAdvance = RASTERIZE_CELL_SIZE * naiveAdvancePixels
+
+            naiveSpacingSvg = self.renderSvgScene(
+                                             filenamePrefix, phase, 'naive-spacing',
+                                             pathTuples = (
+                                                           ( 0x7f7faf7f, contours0, ),
+                                                           ( 0x7f7f7faf, [contour.applyPlus(TFSPoint(naiveAdvance - minmax1.minX, 0)) for contour in contours1], ),
+                                                           ),
+                                             hGuidelines = ( naiveAdvance - minmax1.minX, ) )
+            phase += 1
+
+            minDistanceSpacingSvg = self.renderSvgScene(
+                                             filenamePrefix, phase, 'min-spacing',
+                                             pathTuples = (
+                                                           ( 0x7f7faf7f, contours0, ),
+                                                           ( 0x7f7f7faf, [contour.applyPlus(TFSPoint(minAdvance - minmax1.minX, 0)) for contour in contours1], ),
+                                                           ),
+                                             hGuidelines = ( minAdvance - minmax1.minX, ) )
+            phase += 1
+            maxDistanceSpacingSvg = self.renderSvgScene(
+                                             filenamePrefix, phase, 'max-spacing',
+                                             pathTuples = (
+                                                           ( 0x7f7faf7f, contours0, ),
+                                                           ( 0x7f7f7faf, [contour.applyPlus(TFSPoint(maxAdvance - minmax1.minX, 0)) for contour in contours1], ),
+                                                           ),
+                                             hGuidelines = ( maxAdvance - minmax1.minX, ) )
+            phase += 1
+#            finalKerningSvg = self.renderSvgScene(
+#                                             filenamePrefix, phase, 'ignore',
+#                                             pathTuples = (
+#                                                           ( 0x7f7faf7f, contours0, ),
+#                                                           ( 0x7f7f7faf, [contour.applyPlus(TFSPoint(advance - ufoglyph0.xAdvance, 0)) for contour in contours1], ),
+#                                                           ),
+#                                             hGuidelines = ( advance - ufoglyph0.xAdvance, ) )
+#            phase += 1
+
+            import tfs.common.TFSProject as TFSProject
+            mustache_template_file = os.path.abspath(os.path.join(TFSProject.findProjectRootFolder(), 'data', 'autokern_pair_pixel_template.txt'))
+            with open(mustache_template_file, 'rt') as f:
+                mustache_template = f.read()
+
+            def formatGlyphName(glyph):
+                return u'%s (%s)' % ( unichr(glyph),
+                                      hex(glyph), )
+
+            pageTitle = u'pyautokern Log: Kerning %s vs. %s' % ( formatGlyphName(ufoglyph0.unicode),
+                                                                 formatGlyphName(ufoglyph1.unicode), )
+
+            def formatEmScalar(value):
+                return '%0.3f em' % (value / float(self.units_per_em))
+
+            def formatGlyphMap(glyph, glyphMinmax):
+                return {
+                           'glyphName': formatGlyphName(glyph),
+                           'minX': formatEmScalar(glyphMinmax.minX),
+                           'maxX': formatEmScalar(glyphMinmax.maxX),
+                           'minY': formatEmScalar(glyphMinmax.minY),
+                           'maxY': formatEmScalar(glyphMinmax.maxY),
+                        }
+
+            mustacheMap = {
+                           'pageTitle': pageTitle,
+                           'minmax0': minmax0,
+                           'minmax1': minmax1,
+#                           'naiveSpacing': formatEmScalar(naiveSpacing),
+#                           'minDistanceSpacing': formatEmScalar(minDistanceSpacing),
+#                           'roundingSpacing': formatEmScalar(roundingSpacing),
+                           'naiveAdvance': formatEmScalar(naiveAdvance),
+                           'minAdvance': formatEmScalar(minAdvance),
+                           'maxAdvance': formatEmScalar(maxAdvance),
+#                           'maxAdvance': formatEmScalar(maxAdvance),
+                           'min_distance': formatEmScalar(self.min_distance),
+                           'max_distance': formatEmScalar(self.max_distance),
+#                           'intrusion_tolerance': formatEmScalar(self.intrusion_tolerance),
+                           'min_non_intrusion': formatEmScalar(min_non_intrusion),
+#                           'rounding': formatEmScalar(self.rounding),
+
+                           'naiveSpacingSvg': naiveSpacingSvg,
+                           'minDistanceSpacingSvg': minDistanceSpacingSvg,
+                           'maxDistanceSpacingSvg': maxDistanceSpacingSvg,
+#                           'roundingSpacingSvg': roundingSpacingSvg,
+
+                           'glyph0': formatGlyphName(ufoglyph0.unicode),
+                           'glyph1': formatGlyphName(ufoglyph1.unicode),
+
+                           'glyphMaps': ( formatGlyphMap(ufoglyph0.unicode, minmax0),
+                                          formatGlyphMap(ufoglyph1.unicode, minmax1),
+                                          )
+                           }
+
+            for key in ( 'ascender',
+                         'descender',
+                        ):
+                mustacheMap[key] = formatEmScalar(getattr(self.ufofont.info, key))
+
+            for key in (
+                         'unitsPerEm',
+                         'familyName',
+                         'styleName',
+                         'fullName',
+                         'fontName',
+                        ):
+                mustacheMap[key] = getattr(self.ufofont.info, key)
+
+            import pystache
+            logHtml = pystache.render(mustache_template, mustacheMap)
+
+            logFilename = '%s.html' % ( filenamePrefix, )
+            logFile = os.path.abspath(os.path.join(self.html_folder, logFilename))
+            with open(logFile, 'wt') as f:
+                # TODO: explicitly encode unicode
+                f.write(logHtml)
+
+#            import sys
+#            sys.exit(0)
+
+
+    def processAllKerningPairs(self):
+
+#        self.advanceMap = {(67, 79): 675, (65, 67): 575, (84, 67): 1025, (88, 69): 1063.0, (66, 65): 350, (67, 85): 675, (68, 76): 675, (69, 90): 680.0, (66, 76): 975, (69, 87): 875, (65, 84): 225, (71, 84): 300, (76, 66): 675, (85, 84): 675, (89, 67): 875, (65, 89): 300, (84, 85): 800, (85, 65): 375, (90, 73): 875, (90, 67): 875, (87, 66): 1375, (76, 88): -50, (66, 87): 975, (79, 84): 1025, (87, 79): 1375, (66, 66): 975, (73, 88): -150, (68, 65): 400, (85, 69): 875, (70, 68): 525, (85, 90): 400, (89, 79): 875, (65, 87): 575, (79, 67): 1375, (76, 71): 250, (85, 87): 1025, (84, 87): 1025, (65, 68): 575, (84, 66): 1025, (87, 84): 1025, (85, 68): 1025, (67, 73): 675, (65, 73): 575, (87, 65): 725, (84, 69): 950, (66, 88): 250, (67, 90): 250, (79, 65): 725, (73, 70): 250, (69, 67): 875, (66, 71): 650, (79, 88): 550, (68, 70): 675, (70, 65): 300, (79, 85): 1150, (90, 65): 700, (79, 79): 1375, (70, 84): 300, (79, 70): 950, (76, 68): 675, (89, 84): 525, (65, 71): 550, (76, 87): 675, (85, 71): 650, (67, 68): 675, (89, 73): 875, (73, 76): 675, (87, 68): 1375, (69, 73): 875, (67, 89): 250, (73, 65): 25, (69, 70): 880.0, (88, 73): 1375, (71, 71): 525, (70, 66): 525, (79, 69): 950, (76, 73): 675, (90, 84): 525, (89, 87): 875, (65, 66): 575, (76, 84): 325, (67, 67): 675, (89, 68): 875, (73, 79): 675, (79, 87): 1375, (69, 76): 875, (79, 89): 750, (67, 84): 350, (88, 67): 1375, (69, 89): 680.0, (90, 89): 675, (88, 87): 1375, (68, 88): 75, (70, 79): 525, (71, 87): 525, (76, 67): 675, (79, 76): 1375, (65, 88): -250, (84, 90): 600, (84, 65): 525, (84, 89): 600, (76, 89): 50, (66, 84): 625, (89, 71): 875, (90, 88): 250, (69, 79): 875, (66, 67): 975, (68, 66): 675, (84, 79): 1025, (70, 69): 530.0, (71, 73): 525, (85, 89): 400, (71, 90): 325, (84, 88): 200, (89, 88): 250, (87, 87): 1375, (85, 67): 1025, (90, 69): 880.0, (84, 70): 800, (66, 89): 350, (89, 66): 875, (73, 69): 250, (69, 66): 875, (66, 68): 975, (88, 66): 1375, (73, 90): 50, (71, 67): 525, (68, 71): 675, (89, 69): 880.0, (70, 70): 525, (71, 76): 525, (70, 85): 525, (71, 89): 325, (76, 69): 250, (85, 73): 1025, (65, 70): 350, (70, 88): -75, (87, 90): 750, (85, 70): 600, (67, 71): 525, (90, 70): 850, (87, 71): 950, (66, 90): 350, (67, 88): 75, (68, 73): 675, (69, 69): 875, (66, 73): 975, (90, 85): 850, (73, 85): 450, (71, 70): 525, (68, 68): 675, (70, 67): 525, (90, 87): 875, (68, 87): 675, (79, 68): 1375, (85, 76): 1025, (88, 84): 1150, (65, 65): 575, (87, 89): 750, (76, 85): 450, (67, 66): 675, (84, 84): 675, (67, 87): 675, (73, 67): 675, (69, 88): 150, (88, 90): 1050, (88, 65): 950, (71, 69): 780.0, (68, 89): 400, (69, 85): 650, (70, 76): 525, (88, 68): 1375, (68, 84): 350, (90, 66): 875, (90, 76): 875, (76, 79): 675, (85, 79): 1025, (67, 76): 675, (79, 66): 1375, (65, 76): 575, (76, 90): 50, (66, 85): 825, (67, 65): 275, (89, 70): 850, (73, 73): 675, (87, 73): 1375, (68, 67): 675, (66, 79): 975, (88, 85): 1350, (85, 88): 200, (65, 85): 350, (70, 73): 525, (71, 85): 525, (76, 65): 25, (85, 85): 800, (65, 90): 300, (76, 76): 675, (85, 66): 1025, (89, 76): 875, (65, 79): 575, (87, 67): 1375, (84, 71): 875, (89, 65): 700, (73, 68): 675, (87, 76): 1375, (69, 65): 225, (66, 69): 600, (73, 89): 50, (71, 66): 525, (88, 89): 1050, (70, 71): 525, (71, 79): 525, (90, 90): 675, (71, 88): -75, (76, 70): 250, (89, 90): 675, (65, 69): 800, (70, 89): 325, (87, 85): 1150, (84, 73): 1025, (79, 90): 750, (67, 70): 525, (88, 70): 1300, (90, 71): 875, (87, 70): 950, (84, 68): 1025, (73, 71): 250, (90, 79): 875, (69, 68): 875, (66, 70): 650, (73, 84): 325, (71, 65): 300, (68, 69): 500, (88, 76): 1375, (88, 79): 1375, (89, 89): 675, (88, 71): 1300, (84, 76): 1025, (70, 87): 525, (79, 71): 950, (89, 85): 850, (70, 90): 325, (87, 88): 550, (67, 69): 375, (87, 69): 950, (73, 66): 675, (68, 79): 675, (69, 71): 880.0, (73, 87): 675, (71, 68): 525, (68, 90): 400, (69, 84): 875, (88, 88): 775, (79, 73): 1375, (68, 85): 675, (90, 68): 875}
+#        return
+
+#        count = 0
+        glyphs = self.ufofont.getGlyphs()
+        glyphs.sort(lambda glyph0, glyph1:cmp(glyph0.unicode, glyph1.unicode))
+        for ufoglyph0 in glyphs:
+            for ufoglyph1 in glyphs:
+#        for ufoglyph0 in self.ufofont.getGlyphs():
+#            for ufoglyph1 in self.ufofont.getGlyphs():
+                self.processKerningPair(ufoglyph0, ufoglyph1)
+#                count += 1
+#                if count > 3:
+#                    return
+
+#        print 'self.advanceMap =', repr(self.advanceMap)
+
+
+
+    def configure(self):
+
+        ufo_src = self.ufo_src
+        if ufo_src is None:
+            raise Exception('Missing ufo_src')
+        if not (os.path.exists(ufo_src) and os.path.isdir(ufo_src) and os.path.basename(ufo_src).lower().endswith('.ufo')):
+            raise Exception('Invalid ufo_src: %s' % ufo_src)
+
+    #    testFont = os.path.abspath(os.path.join('..', '..', 'data', 'TFSTest Plain.ufo'))
+        self.ufofont = TFSFontFromFile(ufo_src)
+
+
+        if self.ufo_dst is None:
+            raise Exception('Missing ufo_dst')
+        if os.path.exists(self.ufo_dst):
+            if os.path.isdir(self.ufo_dst):
+                shutil.rmtree(self.ufo_dst)
+            elif os.path.isfile(self.ufo_dst):
+                os.unlink(self.ufo_dst)
+            if os.path.exists(self.ufo_dst):
+                raise Exception('Could not overwrite: %s' % (self.ufo_dst,))
+
+
+        log_dst = self.log_dst
+        if log_dst is None:
+            self.log_dst = None
+    #        raise Exception('Missing log_dst')
+            pass
+        else:
+            OVERWRITE_LOGS = True
+#            OVERWRITE_LOGS = False
+
+            if OVERWRITE_LOGS:
+                if os.path.exists(log_dst):
+                    shutil.rmtree(log_dst)
+                if os.path.exists(log_dst):
+                    raise Exception('Could not clear log_dst: %s' % log_dst)
+
+            if not os.path.exists(log_dst):
+                os.mkdir(log_dst)
+            if not (os.path.exists(log_dst) and os.path.isdir(log_dst)):
                 raise Exception('Invalid log_dst: %s' % log_dst)
-            return subfolder
+            self.log_dst = log_dst
 
-        kerning.html_folder = makeLogSubfolder(log_dst, 'html')
-        kerning.css_folder = makeLogSubfolder(kerning.html_folder, 'stylesheets')
-        kerning.svg_folder = makeLogSubfolder(kerning.html_folder, 'svg')
+            if OVERWRITE_LOGS:
+                def makeLogSubfolder(parent, name):
+                    subfolder = os.path.abspath(os.path.join(parent, name))
+                    os.mkdir(subfolder)
+                    if not (os.path.exists(subfolder) and os.path.isdir(subfolder)):
+                        raise Exception('Invalid log_dst: %s' % log_dst)
+                    return subfolder
 
-        import tfs.common.TFSProject as TFSProject
-        srcCssFile = os.path.abspath(os.path.join(TFSProject.findProjectRootFolder(), 'data', 'styles.css'))
-        dstCssFile = os.path.abspath(os.path.join(kerning.css_folder, os.path.basename(srcCssFile)))
-        shutil.copy(srcCssFile, dstCssFile)
+                self.html_folder = makeLogSubfolder(log_dst, 'html')
+                self.css_folder = makeLogSubfolder(self.html_folder, 'stylesheets')
+                self.svg_folder = makeLogSubfolder(self.html_folder, 'svg')
 
-    kerning.units_per_em = float(kerning.pafont.units_per_em)
-    kerning.min_distance = settings.min_distance_ems * kerning.pafont.units_per_em
-    kerning.max_distance = settings.max_distance_ems * kerning.pafont.units_per_em
-    kerning.rounding = settings.rounding_ems * kerning.pafont.units_per_em
-    print 'kerning.units_per_em', kerning.units_per_em
-    print 'kerning.min_distance', kerning.min_distance
-    print 'kerning.max_distance', kerning.max_distance
-    print 'kerning.rounding', kerning.rounding
-#    kerning.fontMetadata = kerning.pafont.info
+                import tfs.common.TFSProject as TFSProject
+                srcCssFile = os.path.abspath(os.path.join(TFSProject.findProjectRootFolder(), 'data', 'styles.css'))
+                dstCssFile = os.path.abspath(os.path.join(self.css_folder, os.path.basename(srcCssFile)))
+                shutil.copy(srcCssFile, dstCssFile)
+            else:
+                self.html_folder = os.path.join(log_dst, 'html')
+                self.css_folder = os.path.join(self.html_folder, 'stylesheets')
+                self.svg_folder = os.path.join(self.html_folder, 'svg')
+
+        self.units_per_em = float(self.ufofont.units_per_em)
+        self.min_distance = self.min_distance_ems * self.ufofont.units_per_em
+        self.max_distance = self.max_distance_ems * self.ufofont.units_per_em
+        self.rounding = self.rounding_ems * self.ufofont.units_per_em
+        print 'self.units_per_em', self.units_per_em
+        print 'self.min_distance', self.min_distance
+        print 'self.max_distance', self.max_distance
+        print 'self.rounding', self.rounding
+    #    kerning.fontMetadata = kerning.ufofont.info
+
+        self.advanceMap = {}
+#        self.minAdvanceMap = defaultdict(0)
+        self.rasterCache = {}
+        self.contoursCache = {}
+        minmax = None
+        for ufoglyph in self.ufofont.getGlyphs():
+#            print 'ufoglyph', ufoglyph.unicode
+            contours = self.getGlyphContours(ufoglyph)
+            glyphMinmax = minmaxPaths(contours)
+#            print 'glyphMinmax', glyphMinmax
+            minmax = minmaxMerge(minmax, glyphMinmax)
+        print 'minmax', minmax
+        self.minmax = minmax
+
+#            return [TFSGlyph(glyph) for glyph in self.rffont]
+
+    def updateKerning(self):
+        self.ufofont.clearKerning()
+
+        glyphs = self.ufofont.getGlyphs()
+        glyphs.sort(lambda glyph0, glyph1:cmp(glyph0.unicode, glyph1.unicode))
+        for ufoglyph0 in glyphs:
+            for ufoglyph1 in glyphs:
+                key = (ufoglyph0.unicode,
+                       ufoglyph1.unicode,)
+                if key not in self.advanceMap:
+                    continue
+                advance = self.advanceMap[key]
+
+#                contours0 = self.getGlyphContours(ufoglyph0)
+#                contours1 = self.getGlyphContours(ufoglyph1)
+#                minmax0 = minmaxPaths(contours0)
+#                minmax1 = minmaxPaths(contours1)
+
+                '''
+                TODO: add support for re-aligning glyph contours (ie. adjusting side bearings).
+                TODO: add support for "max kerning items" argument to limit the number of total kerning values.
+                TODO: add support for "min kerning value" argument to ignore small kerning values.
+                TODO: add support for controlling what glyphs are kerned (with pairs).
+                '''
+                kerningValue = advance - ufoglyph0.xAdvance
+                if kerningValue != 0:
+                    self.ufofont.setKerningPair(ufoglyph0.name,
+                                                ufoglyph1.name, kerningValue)
+#                    print 'kerning', ufoglyph0.name, ufoglyph1.name, kerningValue, 'advance, ufoglyph0.xAdvance', advance, ufoglyph0.xAdvance
 
 
-def processKerning(settings = None):
-    if settings is None:
-        settings = getCommandLineSettings()
+    def process(self):
+        self.configure()
 
-    kerning = TFSKerning()
+        self.processAllKerningPairs()
 
-    configureKerning(kerning, settings)
+        self.updateKerning()
 
-    processAllKerningPairs(kerning)
+        self.ufofont.update()
+        self.ufofont.save(self.ufo_dst)
+        self.ufofont.close()
 
 
 if __name__ == "__main__":
-    settings = getCommandLineSettings()
-    processKerning(settings)
+    autokern = AutokernSettings()
+    AutokernSettings(autokern).getCommandLineSettings()
+    autokern.process()
 
     print
     print 'complete.'

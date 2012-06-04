@@ -65,62 +65,20 @@ END OF TERMS AND CONDITIONS
 '''
 
 
+from tfs.common.TFBaseSettings import TFBaseSettings
 import argparse
-import os
-
-from tfs.common.TFSMap import TFSMap
 
 
-def getCommandLineSettings(*replacementValues):
+class CdaSettings(TFBaseSettings):
 
-    def assertExists(value):
-        if not os.path.exists(value):
-            msg = "%s does not exist" % value
-            raise argparse.ArgumentTypeError(msg)
+    def createParser(self):
 
-    def assertIsFolder(value):
-        assertExists(value)
-        if not os.path.isdir(value):
-            msg = "%s is not a folder" % value
-            raise argparse.ArgumentTypeError(msg)
+        parser = argparse.ArgumentParser(description='...')
 
-    def folderType(value):
-        value = os.path.expanduser(value)
-        value = os.path.abspath(value)
-        assertIsFolder(value)
-        return value
+        parser.add_argument('--src-paths',
+                            type=self.srcFileOrfolderType,
+                            nargs='+',
+                            help='The file or folders to scan.',
+                            required=True)
 
-    def fileOrfolderType(value):
-        value = os.path.expanduser(value)
-        value = os.path.abspath(value)
-        assertExists(value)
-        if not (os.path.isdir(value) or os.path.isfile(value)):
-            msg = "%s is not a file or folder" % value
-            raise argparse.ArgumentTypeError(msg)
-        return value
-
-    parser = argparse.ArgumentParser(description='...')
-
-    parser.add_argument('--src-paths',
-                        type=fileOrfolderType,
-                        nargs='+',
-                        help='The file or folders to scan.',
-                        required=True)
-
-#    parser.add_argument('--log-dst',
-#                        type=folderType,
-#                        help='Folder in which to write HTML logs.  CAUTION: This folder will be completely overwritten.')
-
-    if replacementValues:
-        args = parser.parse_args(replacementValues)
-    else:
-        args = parser.parse_args()
-
-#    print 'args', args
-
-    result = TFSMap()
-    result.src_paths = args.src_paths
-#    result.log_dst = args.log_dst
-    return result
-
-#getCommandLineSettings()
+        return parser
