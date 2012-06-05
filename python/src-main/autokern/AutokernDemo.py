@@ -77,8 +77,10 @@ pseudo_argv = ('--ufo-src',
                os.path.abspath(os.path.join(TFSProject.findProjectRootFolder(), 'out', 'PakTest Plain-kerned.ufo')),
                '--log-dst',
                os.path.abspath(os.path.join(TFSProject.findProjectRootFolder(), 'out')),
+               '--precision',
+               '25',
                )
-print 'pseudo_argv', ' '.join(pseudo_argv)
+print 'pseudo_argv', ' '.join([str(arg) for arg in pseudo_argv])
 
 autokern = Autokern()
 AutokernSettings(autokern).getCommandLineSettings(*pseudo_argv)

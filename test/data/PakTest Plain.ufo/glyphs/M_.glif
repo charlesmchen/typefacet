@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<glyph name="M" format="1">
+  <advance width="535"/>
+  <unicode hex="004D"/>
+  <outline>
+    <contour>
+      <point x="0" y="550" type="line"/>
+      <point x="400" y="550" type="line"/>
+      <point x="400" y="500" type="line"/>
+      <point x="0" y="500" type="line"/>
+    </contour>
+  </outline>
+</glyph>

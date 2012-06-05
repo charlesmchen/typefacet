@@ -1,6 +1,6 @@
 '''
 robofont-extensions-and-scripts
-AutokernSettings.py
+TFTiming.py
 
 https://github.com/charlesmchen/robofont-extensions-and-scripts
 
@@ -65,68 +65,33 @@ END OF TERMS AND CONDITIONS
 '''
 
 
-from tfs.common.TFBaseSettings import TFBaseSettings
-import argparse
+import time
 
 
-class AutokernSettings(TFBaseSettings):
+class TFTiming(object):
 
-    def createParser(self):
+    def __init__(self):
+        self.timingKeys = []
+        self.timingMap = {}
+        self.startTime = self.lastTime = time.time()
 
-        parser = argparse.ArgumentParser(description='...')
+    def mark(self, key):
+        value = time.time()
+        elapsed = value - self.lastTime
+        self.lastTime = value
 
-        parser.add_argument('--ufo-src',
-                            type=self.ufoSrcFolderType,
-                            help='The UFO source file to kern.',
-                            required=True)
-        parser.add_argument('--ufo-dst',
-                            type=self.ufoDstFolderType,
-                            help='The UFO destination file.',
-                            required=True)
-        parser.add_argument('--log-dst',
-                            type=self.dstFolderType,
-                            help='Optional folder in which to write HTML logs.  CAUTION: This folder will be completely overwritten.')
-        parser.add_argument('--min-distance-ems',
-                            type=float,
-                            default=0.025,
-                            help='The absolute minimum distance between glyphs in ems. 0.0 <= x <= 1.0. Default: 0.025 em')
-        parser.add_argument('--max-distance-ems',
-                            type=float,
-                            default=0.08,
-                            help='''The absolute maximum distance between glyphs in ems. 0.0 <= x <= 1.0. Default: 0.08 em''')
-#        parser.add_argument('--rounding-ems',
-#                            type=float,
-#                            default=0.2,
-#                            help='The rounding factor used to erode sharp angles. 0.0 <= x <= 1.0. Default: 0.3')
+        if key not in self.timingMap:
+#            print 'new key', key
+            self.timingMap[key] = elapsed
+            self.timingKeys.append(key)
+        else:
+            self.timingMap[key] = elapsed + self.timingMap.get(key)
 
-        parser.add_argument('--do-not-modify-side-bearings',
-                            action='store_true',
-                            help='Disables the default behavior or rewriting the side bearings.')
-
-        parser.add_argument('--slope-rise',
-                            type=float,
-                            default=1,
-                            help='The slope of oblique fonts is defined as rise/run (1.0/0.0 for non-oblique fonts).')
-        parser.add_argument('--slope-run',
-                            type=float,
-                            default=0,
-                            help='The slope of oblique fonts is defined as rise/run (1.0/0.0 for non-oblique fonts).')
-
-        parser.add_argument('--precision',
-                            type=int,
-                            default=10,
-                            help='Precision of the algorithm.  Lower values are more precise but slower. Use a precision of 10 or less for accurate results. 1 < x < 100. Default: 10')
-        parser.add_argument('--intrusion-tolerance',
-                            type=float,
-                            default=0.1,
-                            help='Intrusion tolerance as a fraction of the area defined by the --max-distance-ems value times the greater of the two glyphs\' heights.  Default: 0.1')
-        parser.add_argument('--intrusion-limit-glyph-width-fraction',
-                            type=float,
-                            default=0.5,
-                            help='Intrusion limit expressed as a fraction of the width of the narrower of the two glyphs.  Default: 0.5')
-        parser.add_argument('--min-non-intrusion-ems',
-                            type=float,
-                            default=0.2,
-                            help='The minimum non-intruding height in ems.  0.0 <= x <= 1.0. Default: 0.2 em')
-
-        return parser
+    def dump(self):
+        print
+        for key in self.timingKeys:
+            value = self.timingMap[key]
+#        for key, value in self.timingMap.items():
+            print '%s: %0.3f' % (key, value)
+        print '%s: %0.3f' % ('total', time.time() - self.startTime,)
+        print

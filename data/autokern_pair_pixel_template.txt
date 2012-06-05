@@ -79,6 +79,22 @@ Minimum Non-Intrusion: {{min_non_intrusion}}
 Maximum Advance: {{maxAdvance}}
 </pre>
 
+<h3>Intruding Advance</h3>
+<p>
+	<embed src="svg/{{intrudingAdvanceSpacingSvg}}" type="image/svg+xml" />
+</p>
+<pre>
+Intruding Advance: {{intrudingAdvance}}
+</pre>
+
+<h3>Final Advance</h3>
+<p>
+	<embed src="svg/{{finalAdvanceSpacingSvg}}" type="image/svg+xml" />
+</p>
+<pre>
+Final Advance: {{advance}}
+</pre>
+
 <!--
 -->
 

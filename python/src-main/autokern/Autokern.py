@@ -67,15 +67,18 @@ END OF TERMS AND CONDITIONS
 
 import os
 import shutil
+import math
+import time
 
 from tfs.common.TFSFont import *
-from tfs.common.TFSSvg import *
 from AutokernSettings import AutokernSettings
-from tfs.common.TFSSilhouette import *
-
+#from tfs.common.TFSSilhouette import *
+from tfs.common.TFTiming import TFTiming
 from tfs.common.TFSMap import TFSMap
 import tfs.common.TFSMath as TFSMath
-from collections import defaultdict
+from tfs.common.TFSPath import minmaxPaths, minmaxMerge, openPathWithPoints
+from tfs.common.TFSPoint import TFSPoint
+#from collections import defaultdict
 
 
 TFSMath.setFloatRoundingTolerance(0.1)
@@ -89,6 +92,7 @@ class Autokern(TFSMap):
 
 
     def subrenderGlyphContours(self, tfsSvg, contours, strokeColor):
+        from tfs.common.TFSSvg import TFSSvgPath
         ON_POINT_COLOR = 0x7f7f7f7f
         CONTROL_POINT_COLOR = 0x7fafafaf
         for contour in contours:
@@ -99,6 +103,7 @@ class Autokern(TFSMap):
                        filenamePrefix, phase, phaseName,
                        pathTuples,
                        hGuidelines=None):
+        from tfs.common.TFSSvg import TFSSvg, TFSSvgPath
         filename = '%s-phase-%d-%s.svg' % ( filenamePrefix,
                                             phase,
                                             phaseName, )
@@ -136,7 +141,9 @@ class Autokern(TFSMap):
 
         SVG_HEIGHT = 400
         SVG_MAX_WIDTH = 800
+        self.timing.mark('renderSvgScene.0')
         tfsSvg.renderToFile(dstFile, margin=10, height=SVG_HEIGHT, maxWidth=SVG_MAX_WIDTH)
+        self.timing.mark('renderSvgScene.1')
         return filename
 
 
@@ -185,6 +192,7 @@ class Autokern(TFSMap):
         debugPaths('contours1_plusMin', contours1_plusMin)
 
         if renderLog:
+#            from tfs.common.TFSSvg import *
             filenamePrefix = 'tfs-%s-%s' % ( chr(ufoglyph0.unicode),
                                              chr(ufoglyph1.unicode), )
             phase = 1
@@ -417,10 +425,13 @@ class Autokern(TFSMap):
                 continue
             diff = 1 + edge0 - edge1
 #            print 'diff', diff
+#            print 'edge0, edge1', edge0, edge1, 'diff', diff
             if contactAdvance is None:
                 contactAdvance = diff
             else:
-                contactAdvance = min(contactAdvance, diff)
+                contactAdvance = max(contactAdvance, diff)
+
+#        print 'contactAdvance', contactAdvance
 
         if contactAdvance is None or intrusionTolerancePixels == 0:
             return contactAdvance
@@ -435,9 +446,9 @@ class Autokern(TFSMap):
                 if edge0 is None or edge1 is None:
                     continue
                 diff = 1 + edge0 - edge1
-                rowIntrusion = max(0, advance - diff)
-                rowExtrusion = min(0, advance - diff)
-#                print 'diff', diff, 'advance', advance, 'rowOverlap', rowOverlap
+                rowIntrusion = max(0, diff - advance)
+                rowExtrusion = max(0, advance - diff)
+#                print 'edge0, edge1', edge0, edge1, 'diff', diff, 'advance', advance, 'rowIntrusion', rowIntrusion, 'rowExtrusion', rowExtrusion
                 intrusionTotal += rowIntrusion
                 extrusionTotal += rowExtrusion
                 if rowIntrusion <= 0:
@@ -445,14 +456,16 @@ class Autokern(TFSMap):
             return intrusionTotal, extrusionTotal, nonIntrusionCount
 
 
-        width0 = len(pixels0[0])
-        width1 = len(pixels1[0])
+#        width0 = len(pixels0[0])
+#        width1 = len(pixels1[0])
 #        print 'contactAdvance', contactAdvance
 #        print 'tolerancePixels', tolerancePixels
         offsetAdvance = contactAdvance
-        for offset in xrange(1, min(width0, width1)):
-            advance = contactAdvance + offset
+#        for offset in xrange(1, min(width0, width1)):
+        for offset in xrange(1, contactAdvance + 1):
+            advance = contactAdvance - offset
             intrusionTotal, extrusionTotal, nonIntrusionCount = getProfileOverlap(advance)
+#            print 'intrusionTotal, extrusionTotal, nonIntrusionCount', intrusionTotal, extrusionTotal, nonIntrusionCount, 'intrusionTolerancePixels', intrusionTolerancePixels, 'minNonIntrusionCount', minNonIntrusionCount
             if intrusionTotal > extrusionTotal:
                 return offsetAdvance
             if intrusionTotal > intrusionTolerancePixels:
@@ -478,6 +491,8 @@ class Autokern(TFSMap):
         TODO: handle empty glyphs with no contours
         '''
 
+        self.timing.mark('processKerningPair.0.')
+
 #        print 'processKerningPair'
 
         debugKerning = True
@@ -485,8 +500,7 @@ class Autokern(TFSMap):
 
         renderLog = self.log_dst is not None
 
-        RASTERIZE_CELL_SIZE = 10
-        RASTERIZE_CELL_SIZE = 25
+        RASTERIZE_CELL_SIZE = self.precision
 
         contours0 = self.getGlyphContours(ufoglyph0)
         contours1 = self.getGlyphContours(ufoglyph1)
@@ -578,34 +592,53 @@ class Autokern(TFSMap):
         if debugKerning:
             print 'min_non_intrusion', min_non_intrusion, 'min_non_intrusion_pixels', min_non_intrusion_pixels
 
-        maxAdvancePixels = self.findMinAdvance(pixels0, pixels1_plusMax,
+        maxAdvance = minmax0.maxX + max_distance - minmax1.minX
+        if debugKerning:
+            print 'maxAdvance', maxAdvance
+
+        intrudingAdvancePixels = self.findMinAdvance(pixels0, pixels1_plusMax,
                                                intrusionTolerancePixels=intrusion_tolerance_pixels,
                                                minNonIntrusionCount=min_non_intrusion_pixels)
-        if maxAdvancePixels is None:
+        if intrudingAdvancePixels is None:
             '''
             No collision between glyphs (ie. underline and hyphen).
             Default to conservative spacing.
             '''
-            maxAdvance = minmax0.maxX + max_distance - minmax1.minX
+            intrudingAdvance = maxAdvance
         else:
-            maxAdvance = RASTERIZE_CELL_SIZE * maxAdvancePixels
+            intrudingAdvance = RASTERIZE_CELL_SIZE * intrudingAdvancePixels
         if debugKerning:
-            print 'maxAdvance', maxAdvance, 'maxAdvancePixels', maxAdvancePixels
-            maxAdvanceRawPixels = self.findMinAdvance(pixels0, pixels1_plusMax)
-            maxAdvanceRaw = RASTERIZE_CELL_SIZE * maxAdvanceRawPixels
-            print 'maxAdvanceRaw', maxAdvanceRaw, 'maxAdvanceRawPixels', maxAdvanceRawPixels
+            print 'intrudingAdvance', intrudingAdvance, 'intrudingAdvancePixels', intrudingAdvancePixels
 
-        advance = max(minAdvance, maxAdvance)
+        '''
+        Now combine results into the final advance value.
+        1. Start with the "intruding advance."
+        2. Make sure advance is at least the "minimum advance."
+        3. Make sure advance is no greater than the "glyph width intrusion limit".
+        '''
+        advance = max(minAdvance, intrudingAdvance)
+
+        width0 = minmax0.maxX - minmax0.minX
+        width1 = minmax1.maxX - minmax1.minX
+        intrusion_limit_width = self.intrusion_limit_glyph_width_fraction * min(width0, width1)
+        advanceLimit = (minmax0.maxX - minmax1.minX) - intrusion_limit_width
+#        print 'intrusion_limit', intrusion_limit_width, 'advance', advance, 'advanceLimit', advanceLimit
+        advance = max(advance, advanceLimit)
+#        print 'advanceLimit', advanceLimit, 'advance', advance
+
 
         self.advanceMap[(ufoglyph0.unicode,
                          ufoglyph1.unicode,)] = advance
 
-        print '\t', ufoglyph0.unicode, ufoglyph1.unicode, advance
+        if debugKerning:
+            print '\t', ufoglyph0.unicode, ufoglyph1.unicode, advance
 #        import sys
 #        sys.exit(0)
 
+        self.timing.mark('processKerningPair.5')
 
         if renderLog:
+#            from tfs.common.TFSSvg import *
             filenamePrefix = 'autokern-%s-%s' % ( chr(ufoglyph0.unicode),
                                              chr(ufoglyph1.unicode), )
             phase = 1
@@ -620,31 +653,56 @@ class Autokern(TFSMap):
                 naiveAdvance = minmax0.maxX - minmax1.minX
             else:
                 naiveAdvance = RASTERIZE_CELL_SIZE * naiveAdvancePixels
+            if debugKerning:
+                print 'naiveAdvancePixels', naiveAdvancePixels, 'naiveAdvance', naiveAdvance
+
+#            intrudingAdvanceRawPixels = self.findMinAdvance(pixels0, pixels1_plusMax)
+#            intrudingAdvanceRaw = RASTERIZE_CELL_SIZE * intrudingAdvanceRawPixels
+#            print 'intrudingAdvanceRaw', intrudingAdvanceRaw, 'intrudingAdvanceRawPixels', intrudingAdvanceRawPixels
+
+            self.timing.mark('processKerningPair.6')
 
             naiveSpacingSvg = self.renderSvgScene(
                                              filenamePrefix, phase, 'naive-spacing',
                                              pathTuples = (
                                                            ( 0x7f7faf7f, contours0, ),
-                                                           ( 0x7f7f7faf, [contour.applyPlus(TFSPoint(naiveAdvance - minmax1.minX, 0)) for contour in contours1], ),
+                                                           ( 0x7f7f7faf, [contour.applyPlus(TFSPoint(naiveAdvance, 0)) for contour in contours1], ),
                                                            ),
-                                             hGuidelines = ( naiveAdvance - minmax1.minX, ) )
+                                             hGuidelines = ( naiveAdvance, ) )
             phase += 1
 
             minDistanceSpacingSvg = self.renderSvgScene(
                                              filenamePrefix, phase, 'min-spacing',
                                              pathTuples = (
                                                            ( 0x7f7faf7f, contours0, ),
-                                                           ( 0x7f7f7faf, [contour.applyPlus(TFSPoint(minAdvance - minmax1.minX, 0)) for contour in contours1], ),
+                                                           ( 0x7f7f7faf, [contour.applyPlus(TFSPoint(minAdvance, 0)) for contour in contours1], ),
                                                            ),
-                                             hGuidelines = ( minAdvance - minmax1.minX, ) )
+                                             hGuidelines = ( minAdvance, ) )
             phase += 1
+
             maxDistanceSpacingSvg = self.renderSvgScene(
                                              filenamePrefix, phase, 'max-spacing',
                                              pathTuples = (
                                                            ( 0x7f7faf7f, contours0, ),
-                                                           ( 0x7f7f7faf, [contour.applyPlus(TFSPoint(maxAdvance - minmax1.minX, 0)) for contour in contours1], ),
+                                                           ( 0x7f7f7faf, [contour.applyPlus(TFSPoint(maxAdvance, 0)) for contour in contours1], ),
                                                            ),
-                                             hGuidelines = ( maxAdvance - minmax1.minX, ) )
+                                             hGuidelines = ( maxAdvance, ) )
+            phase += 1
+            intrudingAdvanceSpacingSvg = self.renderSvgScene(
+                                             filenamePrefix, phase, 'intruding-advance',
+                                             pathTuples = (
+                                                           ( 0x7f7faf7f, contours0, ),
+                                                           ( 0x7f7f7faf, [contour.applyPlus(TFSPoint(intrudingAdvance, 0)) for contour in contours1], ),
+                                                           ),
+                                             hGuidelines = ( intrudingAdvance, ) )
+            phase += 1
+            finalAdvanceSpacingSvg = self.renderSvgScene(
+                                             filenamePrefix, phase, 'advance',
+                                             pathTuples = (
+                                                           ( 0x7f7faf7f, contours0, ),
+                                                           ( 0x7f7f7faf, [contour.applyPlus(TFSPoint(advance, 0)) for contour in contours1], ),
+                                                           ),
+                                             hGuidelines = ( advance, ) )
             phase += 1
 #            finalKerningSvg = self.renderSvgScene(
 #                                             filenamePrefix, phase, 'ignore',
@@ -654,6 +712,7 @@ class Autokern(TFSMap):
 #                                                           ),
 #                                             hGuidelines = ( advance - ufoglyph0.xAdvance, ) )
 #            phase += 1
+            self.timing.mark('processKerningPair.8')
 
             import tfs.common.TFSProject as TFSProject
             mustache_template_file = os.path.abspath(os.path.join(TFSProject.findProjectRootFolder(), 'data', 'autokern_pair_pixel_template.txt'))
@@ -689,6 +748,9 @@ class Autokern(TFSMap):
                            'naiveAdvance': formatEmScalar(naiveAdvance),
                            'minAdvance': formatEmScalar(minAdvance),
                            'maxAdvance': formatEmScalar(maxAdvance),
+                           'intrudingAdvance': formatEmScalar(intrudingAdvance),
+                           'advance': formatEmScalar(advance),
+
 #                           'maxAdvance': formatEmScalar(maxAdvance),
                            'min_distance': formatEmScalar(self.min_distance),
                            'max_distance': formatEmScalar(self.max_distance),
@@ -699,6 +761,8 @@ class Autokern(TFSMap):
                            'naiveSpacingSvg': naiveSpacingSvg,
                            'minDistanceSpacingSvg': minDistanceSpacingSvg,
                            'maxDistanceSpacingSvg': maxDistanceSpacingSvg,
+                           'intrudingAdvanceSpacingSvg': intrudingAdvanceSpacingSvg,
+                           'finalAdvanceSpacingSvg': finalAdvanceSpacingSvg,
 #                           'roundingSpacingSvg': roundingSpacingSvg,
 
                            'glyph0': formatGlyphName(ufoglyph0.unicode),
@@ -735,6 +799,8 @@ class Autokern(TFSMap):
 #            import sys
 #            sys.exit(0)
 
+        self.timing.mark('processKerningPair.9')
+
 
     def processAllKerningPairs(self):
 
@@ -742,17 +808,40 @@ class Autokern(TFSMap):
 #        return
 
 #        count = 0
+
         glyphs = self.ufofont.getGlyphs()
+        total = len(glyphs) * len(glyphs)
+        count = 0
+        startTime = time.time()
         glyphs.sort(lambda glyph0, glyph1:cmp(glyph0.unicode, glyph1.unicode))
         for ufoglyph0 in glyphs:
             for ufoglyph1 in glyphs:
+#                if ufoglyph0.unicode != 0x41 or ufoglyph1.unicode != 0x42:
+#                    continue
+#                if ufoglyph0.unicode != 0x41:
+#                    continue
+
 #        for ufoglyph0 in self.ufofont.getGlyphs():
 #            for ufoglyph1 in self.ufofont.getGlyphs():
                 self.processKerningPair(ufoglyph0, ufoglyph1)
+
+                count += 1
+                remaining = ''
+                if count % 10 == 0:
+                    elapsedTime = time.time() - startTime
+                    totalTime = elapsedTime * total / float(count)
+                    remainingTime = totalTime - elapsedTime
+                    remaining = '%0.0f seconds remaining...' % (remainingTime,)
+
+                print '\t', '0x%X vs. 0x%X (%0.2f%%)' % ( ufoglyph0.unicode,
+                                                          ufoglyph1.unicode,
+                                                          100 * count / float(total),), remaining
+
 #                count += 1
 #                if count > 3:
 #                    return
 
+#        sys.exit(0)
 #        print 'self.advanceMap =', repr(self.advanceMap)
 
 
@@ -825,13 +914,17 @@ class Autokern(TFSMap):
         self.units_per_em = float(self.ufofont.units_per_em)
         self.min_distance = self.min_distance_ems * self.ufofont.units_per_em
         self.max_distance = self.max_distance_ems * self.ufofont.units_per_em
-        self.rounding = self.rounding_ems * self.ufofont.units_per_em
+        self.min_non_intrusion  = self.min_non_intrusion_ems * self.ufofont.units_per_em
+#        self.rounding = self.rounding_ems * self.ufofont.units_per_em
         print 'self.units_per_em', self.units_per_em
         print 'self.min_distance', self.min_distance
         print 'self.max_distance', self.max_distance
-        print 'self.rounding', self.rounding
+        print 'self.intrusion_tolerance', self.intrusion_tolerance
+        print 'self.min_non_intrusion', self.min_non_intrusion
+#        print 'self.rounding', self.rounding
     #    kerning.fontMetadata = kerning.ufofont.info
 
+        self.timing = TFTiming()
         self.advanceMap = {}
 #        self.minAdvanceMap = defaultdict(0)
         self.rasterCache = {}
@@ -843,7 +936,7 @@ class Autokern(TFSMap):
             glyphMinmax = minmaxPaths(contours)
 #            print 'glyphMinmax', glyphMinmax
             minmax = minmaxMerge(minmax, glyphMinmax)
-        print 'minmax', minmax
+#        print 'minmax', minmax
         self.minmax = minmax
 
 #            return [TFSGlyph(glyph) for glyph in self.rffont]
@@ -860,6 +953,7 @@ class Autokern(TFSMap):
                 if key not in self.advanceMap:
                     continue
                 advance = self.advanceMap[key]
+                advance = int(round(advance))
 
 #                contours0 = self.getGlyphContours(ufoglyph0)
 #                contours1 = self.getGlyphContours(ufoglyph1)
@@ -879,20 +973,139 @@ class Autokern(TFSMap):
 #                    print 'kerning', ufoglyph0.name, ufoglyph1.name, kerningValue, 'advance, ufoglyph0.xAdvance', advance, ufoglyph0.xAdvance
 
 
+    def clearSideBearings(self):
+        '''
+        Removes the left and right side bearings from the glyph.
+        '''
+        glyphs = self.ufofont.getGlyphs()
+        glyphs.sort(lambda glyph0, glyph1:cmp(glyph0.unicode, glyph1.unicode))
+        for ufoglyph in glyphs:
+            contours = ufoglyph.getContours()
+            if len(contours) == 0:
+                '''
+                Do not modify width of space and other empty glyphs.
+                '''
+                continue
+            minmax = minmaxPaths(contours)
+            contours = [contour.applyPlus(TFSPoint(-minmax.minX, 0)) for contour in contours]
+            ufoglyph.setContours(contours, correctDirection=False)
+            ufoglyph.setXAdvance(minmax.maxX - minmax.minX)
+
+
+    def updateSideBearings(self):
+
+        modifiedAdvanceMap = {}
+        modifiedAdvanceMap.update(self.advanceMap)
+
+        '''
+        Removes the left and right side bearings from the glyph.
+        '''
+        glyphs = self.ufofont.getGlyphs()
+        glyphs.sort(lambda glyph0, glyph1:cmp(glyph0.unicode, glyph1.unicode))
+
+        glyphWidthMap = {}
+        for ufoglyph in glyphs:
+            glyphWidthMap[ufoglyph.unicode] = ufoglyph.xAdvance
+
+        for ufoglyph in glyphs:
+            contours = ufoglyph.getContours()
+            if len(contours) == 0:
+                '''
+                Do not modify width of space and other empty glyphs.
+                '''
+                continue
+
+            rightSpacings = []
+            rightKeys = []
+            leftSpacings = []
+            leftKeys = []
+            for key in self.advanceMap:
+                advance = self.advanceMap[key]
+                unicode0, unicode1 = key
+                if ufoglyph.unicode == unicode0:
+                    '''
+                    To get the spacing, subtract the unmodified width of the glyph on the left.
+                    '''
+                    spacing = advance - glyphWidthMap[unicode0]
+                    rightSpacings.append(spacing)
+                    rightKeys.append(key)
+                elif ufoglyph.unicode == unicode1:
+                    '''
+                    To get the spacing, subtract the unmodified width of the glyph on the left.
+                    '''
+                    spacing = advance - glyphWidthMap[unicode0]
+                    leftSpacings.append(spacing)
+                    leftKeys.append(key)
+
+            '''
+            Default sidebearings to half of the "max distance" parameter.
+            '''
+            leftSideBearing = rightSideBearing = 0.5 * self.max_distance_ems * self.ufofont.units_per_em
+            '''
+            If we have kerning values for left or right side, use half of the average as the side bearing.
+            '''
+            if len(rightSpacings) > 0:
+                rightSideBearing = 0.5 * reduce(float.__add__, [float(value) for value in rightSpacings]) / len(rightSpacings)
+            if len(leftSpacings) > 0:
+                leftSideBearing = 0.5 * reduce(float.__add__, [float(value) for value in leftSpacings]) / len(leftSpacings)
+            '''
+            Use round numbers
+            '''
+            rightSideBearing = int(round(rightSideBearing))
+            leftSideBearing = int(round(leftSideBearing))
+            '''
+            Realign the contours
+            '''
+            contours = [contour.applyPlus(TFSPoint(+leftSideBearing, 0)) for contour in contours]
+            ufoglyph.setContours(contours, correctDirection=False)
+            '''
+            Update the x advance.
+            '''
+            ufoglyph.setXAdvance(ufoglyph.xAdvance + leftSideBearing + rightSideBearing)
+
+            '''
+            Lastly, update the kerning values in the advance map.
+            '''
+            for key in leftKeys:
+                modifiedAdvanceMap[key] = self.advanceMap[key] - leftSideBearing
+            for key in rightKeys:
+                modifiedAdvanceMap[key] = self.advanceMap[key] - rightSideBearing
+
+        '''
+        Replace the advance map.
+        '''
+        self.advanceMap = modifiedAdvanceMap
+
+
     def process(self):
         self.configure()
+        self.timing.mark('configure.')
+
+        if not self.do_not_modify_side_bearings:
+            self.clearSideBearings()
+            self.timing.mark('clearSideBearings.')
 
         self.processAllKerningPairs()
+        self.timing.mark('processAllKerningPairs.')
+
+        if not self.do_not_modify_side_bearings:
+            self.updateSideBearings()
+            self.timing.mark('clearSideBearings.')
 
         self.updateKerning()
+        self.timing.mark('updateKerning.')
 
         self.ufofont.update()
         self.ufofont.save(self.ufo_dst)
         self.ufofont.close()
 
+        self.timing.mark('finished.')
+        if True:
+            self.timing.dump()
+
 
 if __name__ == "__main__":
-    autokern = AutokernSettings()
+    autokern = Autokern()
     AutokernSettings(autokern).getCommandLineSettings()
     autokern.process()
 

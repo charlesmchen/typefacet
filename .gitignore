@@ -1,6 +1,7 @@
 out
 data-ignore
 logs
+lib-ignore
 
 # pydev #
 #########

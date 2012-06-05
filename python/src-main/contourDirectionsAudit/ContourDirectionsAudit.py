@@ -255,19 +255,22 @@ class ContourDirectionsAudit(object):
             return
 
         try:
-            glyphIndex = characterToGlyphIndexMap[ord('L')]
-            LContours, xAdvance = ftFont.getGlyphContours(glyphIndex)
-#            print 'LContours', LContours
-#            debugPaths('LContours', LContours)
-
-            if len(LContours) != 1:
-                self.addMessage(extension, 'L has unexpected number of contours: %d' % len(LContours))
+            if ord('L') not in characterToGlyphIndexMap:
+                self.addMessage(extension, 'Font has no L')
             else:
-                contour = LContours[0]
-                if isClosedPathClockwise(contour):
-                    self.addMessage(extension, 'L contour is clockwise')
+                glyphIndex = characterToGlyphIndexMap[ord('L')]
+                LContours, xAdvance = ftFont.getGlyphContours(glyphIndex)
+    #            print 'LContours', LContours
+    #            debugPaths('LContours', LContours)
+
+                if len(LContours) != 1:
+                    self.addMessage(extension, 'L has unexpected number of contours: %d' % len(LContours))
                 else:
-                    self.addMessage(extension, 'L contour is not clockwise')
+                    contour = LContours[0]
+                    if isClosedPathClockwise(contour):
+                        self.addMessage(extension, 'L contour is clockwise')
+                    else:
+                        self.addMessage(extension, 'L contour is not clockwise')
         except Exception, e:
             print 'error filepath', filepath
             print e.message
@@ -275,26 +278,29 @@ class ContourDirectionsAudit(object):
             self.addMessage(extension, 'L exception')
 
         try:
-            glyphIndex = characterToGlyphIndexMap[ord('O')]
-            OContours, xAdvance = ftFont.getGlyphContours(glyphIndex)
-#            debugPaths('OContours', OContours)
-
-            if len(OContours) != 2:
-                self.addMessage(extension, 'O has unexpected number of contours: %d' % len(OContours))
+            if ord('O') not in characterToGlyphIndexMap:
+                self.addMessage(extension, 'Font has no O')
             else:
-                contour0, contour1 = OContours
-                clockwiseCount = 0
-                counterClockwiseCount = 0
-                if isClosedPathClockwise(contour0):
-                    clockwiseCount += 1
-                else:
-                    counterClockwiseCount += 1
-                if isClosedPathClockwise(contour1):
-                    clockwiseCount += 1
-                else:
-                    counterClockwiseCount += 1
+                glyphIndex = characterToGlyphIndexMap[ord('O')]
+                OContours, xAdvance = ftFont.getGlyphContours(glyphIndex)
+    #            debugPaths('OContours', OContours)
 
-                self.addMessage(extension, 'O has %d clockwise contours and %d counter-clockwise contours' % (clockwiseCount, counterClockwiseCount,))
+                if len(OContours) != 2:
+                    self.addMessage(extension, 'O has unexpected number of contours: %d' % len(OContours))
+                else:
+                    contour0, contour1 = OContours
+                    clockwiseCount = 0
+                    counterClockwiseCount = 0
+                    if isClosedPathClockwise(contour0):
+                        clockwiseCount += 1
+                    else:
+                        counterClockwiseCount += 1
+                    if isClosedPathClockwise(contour1):
+                        clockwiseCount += 1
+                    else:
+                        counterClockwiseCount += 1
+
+                    self.addMessage(extension, 'O has %d clockwise contours and %d counter-clockwise contours' % (clockwiseCount, counterClockwiseCount,))
 
         except Exception, e:
             print 'error filepath', filepath
