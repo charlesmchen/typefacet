@@ -161,6 +161,9 @@ class TFSSvgItem(object):
     def scale(self, value):
         raise NotImplementedException()
 
+    def applyFunction(self, value):
+        raise NotImplementedException()
+
     def render(self, svg_document):
         raise NotImplementedException()
 
@@ -174,6 +177,7 @@ class TFSSvgPath(TFSSvgItem):
         self.strokeWidth = None
         self.onPointColor = None
         self.controlPointColor = None
+        self.renderPath = None
 
     def addFill(self, fillColor):
         if fillColor is None:
@@ -200,22 +204,33 @@ class TFSSvgPath(TFSSvgItem):
         return self
 
     def resetRenderState(self):
-        self.renderPath = self.path.copy()
+#        self.renderPath = self.path.copy()
+        self.renderPath = None
+
+    def getRenderPath(self):
+        if self.renderPath is None:
+            return self.path
+        else:
+            return self.renderPath
 
     def minmax(self):
         PATH_PRECISION = 16
         return self.path.minmaxEvaluated(PATH_PRECISION)
 
+    def applyFunction(self, value):
+        self.renderPath = self.getRenderPath().applyFunction(value)
+
     def translate(self, value):
-        self.renderPath = self.renderPath.applyPlus(value)
+        self.renderPath = self.getRenderPath().applyPlus(value)
 
     def scale(self, value):
-        self.renderPath = self.renderPath.applyScale(value)
+        self.renderPath = self.getRenderPath().applyScale(value)
 
     def renderStrokeAndFill(self, svg_document):
+        rpath = self.getRenderPath()
         d = ''
-        d += 'M%s\n' % (formatSvgPoint(self.renderPath[0].startPoint()))
-        for segment in self.renderPath:
+        d += 'M%s\n' % (formatSvgPoint(rpath[0].startPoint()))
+        for segment in rpath:
             if len(segment) == 2:
                 d += 'L%s\n' % (formatSvgPoint(segment.endPoint()))
             elif len(segment) == 3:
@@ -249,9 +264,10 @@ class TFSSvgPath(TFSSvgItem):
 
 
     def renderPoints(self, svg_document):
+        rpath = self.getRenderPath()
         POINT_RADIUS = 2
         if self.onPointColor is not None:
-            for segment in self.renderPath:
+            for segment in rpath:
                 point = segment.startPoint()
                 drawSvgRect(svg_document,
                             point.x - POINT_RADIUS,
@@ -261,7 +277,7 @@ class TFSSvgPath(TFSSvgItem):
                             self.onPointColor,
                             1)
         if self.controlPointColor is not None:
-            for segment in self.renderPath:
+            for segment in rpath:
                 for point in segment.controlPoints():
                     drawSvgRect(svg_document,
                                 point.x - POINT_RADIUS,
@@ -323,7 +339,10 @@ class TFSSvg(object):
             return svg_document.tostring()
 
 
-    def renderToFile(self, filepath, margin, height, maxWidth):
+    def renderToFile(self, filepath, margin, height, maxWidth, timing=None):
+        if timing is not None:
+            timing.mark('TFSSvg.renderToFile.0')
+
         margin = round(margin)
         height = round(height)
         maxWidth = round(maxWidth)
@@ -353,19 +372,46 @@ class TFSSvg(object):
         if self.backgroundColor is not None:
             fillSvgRect(svg_document, 0, 0, width, height, self.backgroundColor)
 
+        def pointFunc(point):
+            return TFSPoint(margin + scaling * (point.x - minmax.minX),
+                            math.floor((height - contentHeight) / 2) + scaling * (point.y - minmax.minY))
+
+        if timing is not None:
+            timing.mark('TFSSvg.renderToFile.6')
+
         for item in self.items:
             item.resetRenderState()
-            item.translate(TFSPoint(-minmax.minX,
-                                  -minmax.minY))
-            item.scale(scaling)
-            item.translate(TFSPoint(margin,
-                                  math.floor((height - contentHeight) / 2)))
+
+            item.applyFunction(pointFunc)
+
+#            item.translate(TFSPoint(-minmax.minX,
+#                                    -minmax.minY))
+#            item.scale(scaling)
+#            item.translate(TFSPoint(margin,
+#                                  math.floor((height - contentHeight) / 2)))
+
             item.render(svg_document)
+
+        if timing is not None:
+            timing.mark('TFSSvg.renderToFile.7')
 
         if self.borderColor is not None:
             drawSvgRect(svg_document, 0, 0, width, height, self.borderColor)
 
+        if timing is not None:
+            timing.mark('TFSSvg.renderToFile.8')
         svg_document.save()
+        if timing is not None:
+            timing.mark('TFSSvg.renderToFile.9')
+
+        svg_document.tostring()
+        if timing is not None:
+            timing.mark('TFSSvg.renderToFile.9a')
+
+#        if filepath is not None:
+#            svg_document.save()
+#        else:
+#            return svg_document.tostring()
 
 
 def test_TFSSvg():

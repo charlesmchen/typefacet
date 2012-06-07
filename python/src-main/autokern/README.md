@@ -51,6 +51,7 @@ Distributed under the Apache Software License 2.0.
 * Python 2.7 or later
 * [pystache](https://github.com/defunkt/pystache) (only if using --log-dst option to write html logs).
 * [svgwrite](http://packages.python.org/svgwrite/) (only if using --log-dst option to write html logs).
+* [robofab](http://robofab.org/)
 
 ## Tested on:
 

@@ -1,6 +1,6 @@
 '''
 robofont-extensions-and-scripts
-AutokernDemo.py
+FontAuditBase.py
 
 https://github.com/charlesmchen/robofont-extensions-and-scripts
 
@@ -65,39 +65,129 @@ END OF TERMS AND CONDITIONS
 '''
 
 
+#import locale
+import math
 import os
+import shutil
+import tempfile
+import traceback
+import zipfile
+#
+##import freetype
+##import pystache
+#
+##from FIFont import *
+##from FIMap import *
+##from FISvg import *
+#from FontMetricsAuditSettings import FontMetricsAuditSettings
+##import FICompoundsList
+#from tfs.common.TFSPoint import TFSPoint
+#from tfs.common.TFSPath import TFSPath
+#from tfs.common.TFSSegment import TFSSegment
+#
+#from tfs.common.TFSPath import polygonWithPoints, debugPaths, isClosedPathClockwise
+##from collections import defaultdict
+#from tfs.common.TFSMap import TFSMap
+#from tfs.common.UnicodeCharacterNames import getUnicodeCharacterName, getUnicodeLongName
+#from tfs.common.TFFreetypeFont import TFFreetypeFont
 
-from Autokern import Autokern
-from AutokernSettings import AutokernSettings
-import tfs.common.TFSProject as TFSProject
 
-pseudo_argv = (
-#               '--assess-only',
+def statMin(values):
+    result = values[0]
+    for value in values[1:]:
+        if value.value < result.value:
+            result = value
+    return result
 
-               '--ufo-src',
-               os.path.abspath(os.path.join(TFSProject.findProjectRootFolder(), 'data-ignore', 'theleagueof', 'theleagueof-league-gothic-4f9ff8d', 'source', 'League Gothic.ufo')),
-               '--ufo-dst',
-               os.path.abspath(os.path.join(TFSProject.findProjectRootFolder(), 'out', 'League Gothic-kerned.ufo')),
-               '--min-distance-ems',
-               '0.024',
-               '--max-distance-ems',
-               '0.120',
+def statMax(values):
+    result = values[0]
+    for value in values[1:]:
+        if value.value > result.value:
+            result = value
+    return result
 
-#               '--ufo-src',
-#               os.path.abspath(os.path.join(TFSProject.findProjectRootFolder(), 'test', 'data', 'PakTest Plain.ufo')),
-#               '--ufo-dst',
-#               os.path.abspath(os.path.join(TFSProject.findProjectRootFolder(), 'out', 'PakTest Plain-kerned.ufo')),
+def statAverage(values):
+    result = reduce(float.__add__, [value.value for value in values]) / float(len(values))
+    return result
 
-#               '--log-dst',
-#               os.path.abspath(os.path.join(TFSProject.findProjectRootFolder(), 'out')),
-               '--precision',
-               '25',
-               )
-print 'pseudo_argv', ' '.join([str(arg) for arg in pseudo_argv])
+def statMedian(values):
+    values = sorted(values, lambda value0,value1:value0.value < value1.value)
+    result = sorted(values)[len(values) / 2]
+    return result
 
-autokern = Autokern()
-AutokernSettings(autokern).getCommandLineSettings(*pseudo_argv)
-autokern.process()
+def sqr(value):
+    return value * value
 
-print
-print 'complete.'
+def statStandardDeviation(values):
+    average = statAverage(values)
+    deviationSum = reduce(float.__add__, [sqr(average - value.value) for value in values])
+    deviationAverage = deviationSum / len(values)
+    standardDeviation = math.sqrt(deviationAverage)
+    return standardDeviation
+
+
+class FontAuditBase(object):
+
+    def processFont(self, filepath):
+        raise Exception('Not implemented')
+
+
+    def processZip(self, filepath):
+        try:
+            with zipfile.ZipFile(filepath, 'r') as zf:
+                for filename in zf.namelist():
+                    basename = filename
+                    if '/' in basename:
+                        basename = basename[basename.rindex('/') + 1:]
+    #                print 'basename', basename, 'zip file', filename
+                    if basename.startswith('.'):
+                        continue
+                    if (filename.lower().endswith('.otf') or
+                        filename.lower().endswith('.ttf')):
+    #                    print '\t', 'zip file', filename
+
+                        zf.extract(filename, self.tempdir)
+
+                        filepath = os.path.join(self.tempdir, filename)
+
+                        self.processFont(filepath)
+
+                        if not os.path.exists(filepath):
+                            raise Exception('Invalid temporary zip file: ' + filepath)
+                        os.unlink(filepath)
+                        if os.path.exists(filepath):
+                            raise Exception('Could not delete temporary zip file: ' + filepath)
+        except Exception, e:
+            print 'error zipfile', filepath
+            print e.message
+            traceback.print_exc()
+
+
+    def processPaths(self, src_paths, maxFonts=None):
+
+        self.tempdir = tempfile.mkdtemp()
+        print 'self.tempdir', self.tempdir
+
+        def processPath(_, dirname, names):
+            if maxFonts is not None:
+                '''
+                During development, just parse the first N fonts.
+                '''
+                if len(self.processedPostscriptNames) > maxFonts:
+                    return
+            for filename in names:
+                filepath = os.path.join(dirname, filename)
+                if filename.startswith('.'):
+                    continue
+                if (filename.lower().endswith('.otf') or
+                    filename.lower().endswith('.ttf')):
+#                    print 'filepath', filepath
+                    self.processFont(filepath)
+                elif filename.lower().endswith('.zip'):
+#                    print 'filepath', filepath
+                    self.processZip(filepath)
+
+        for src_path in src_paths:
+            os.path.walk(src_path, processPath, None)
+
+        shutil.rmtree(self.tempdir)

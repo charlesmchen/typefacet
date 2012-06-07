@@ -85,7 +85,7 @@ class AutokernSettings(TFBaseSettings):
                             required=True)
         parser.add_argument('--log-dst',
                             type=self.dstFolderType,
-                            help='Optional folder in which to write HTML logs.  CAUTION: This folder will be completely overwritten.')
+                            help='Optional folder in which to write HTML logs.  Writing the HTML logs dramatically worsens performance.  CAUTION: This folder will be completely overwritten.')
         parser.add_argument('--min-distance-ems',
                             type=float,
                             default=0.025,
@@ -99,18 +99,26 @@ class AutokernSettings(TFBaseSettings):
 #                            default=0.2,
 #                            help='The rounding factor used to erode sharp angles. 0.0 <= x <= 1.0. Default: 0.3')
 
+        parser.add_argument('--assess-only',
+                            action='store_true',
+                            help='Activates assessment mode which analyzes the input font and suggests --min-distance-ems and --max-distance-ems values.')
+
         parser.add_argument('--do-not-modify-side-bearings',
                             action='store_true',
                             help='Disables the default behavior or rewriting the side bearings.')
+        parser.add_argument('--allow-negative-side-bearings',
+                            action='store_true',
+                            help='Allows side bearings that intrude on the glyph bounds.')
 
-        parser.add_argument('--slope-rise',
-                            type=float,
-                            default=1,
-                            help='The slope of oblique fonts is defined as rise/run (1.0/0.0 for non-oblique fonts).')
-        parser.add_argument('--slope-run',
-                            type=float,
-                            default=0,
-                            help='The slope of oblique fonts is defined as rise/run (1.0/0.0 for non-oblique fonts).')
+        # TODO: not yet supported.
+#        parser.add_argument('--slope-rise',
+#                            type=float,
+#                            default=1,
+#                            help='The slope of oblique fonts is defined as rise/run (1.0/0.0 for non-oblique fonts).')
+#        parser.add_argument('--slope-run',
+#                            type=float,
+#                            default=0,
+#                            help='The slope of oblique fonts is defined as rise/run (1.0/0.0 for non-oblique fonts).')
 
         parser.add_argument('--precision',
                             type=int,

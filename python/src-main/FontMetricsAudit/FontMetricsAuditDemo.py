@@ -1,6 +1,6 @@
 '''
 robofont-extensions-and-scripts
-AutokernDemo.py
+FontMetricsAuditDemo.py
 
 https://github.com/charlesmchen/robofont-extensions-and-scripts
 
@@ -67,37 +67,23 @@ END OF TERMS AND CONDITIONS
 
 import os
 
-from Autokern import Autokern
-from AutokernSettings import AutokernSettings
+from FontMetricsAudit import FontMetricsAudit
+from FontMetricsAuditSettings import FontMetricsAuditSettings
 import tfs.common.TFSProject as TFSProject
 
-pseudo_argv = (
-#               '--assess-only',
-
-               '--ufo-src',
-               os.path.abspath(os.path.join(TFSProject.findProjectRootFolder(), 'data-ignore', 'theleagueof', 'theleagueof-league-gothic-4f9ff8d', 'source', 'League Gothic.ufo')),
-               '--ufo-dst',
-               os.path.abspath(os.path.join(TFSProject.findProjectRootFolder(), 'out', 'League Gothic-kerned.ufo')),
-               '--min-distance-ems',
-               '0.024',
-               '--max-distance-ems',
-               '0.120',
-
-#               '--ufo-src',
-#               os.path.abspath(os.path.join(TFSProject.findProjectRootFolder(), 'test', 'data', 'PakTest Plain.ufo')),
-#               '--ufo-dst',
-#               os.path.abspath(os.path.join(TFSProject.findProjectRootFolder(), 'out', 'PakTest Plain-kerned.ufo')),
-
-#               '--log-dst',
-#               os.path.abspath(os.path.join(TFSProject.findProjectRootFolder(), 'out')),
-               '--precision',
-               '25',
+pseudo_argv = ('--src-paths',
+               '/Library/Fonts/',
+#               '~/Library/Fonts/',
+#               '/Users/charleschen/code/workspace/LivelyType resources/',
+#               '/Volumes/HDD/migration/mac workspace/Fontemplation resources',
+#               '/Volumes/HDD/@fonts',
+               '/Volumes/HDD/@fonts/@celebrated',
                )
-print 'pseudo_argv', ' '.join([str(arg) for arg in pseudo_argv])
+print 'pseudo_argv', ' '.join(pseudo_argv)
 
-autokern = Autokern()
-AutokernSettings(autokern).getCommandLineSettings(*pseudo_argv)
-autokern.process()
+fontMetricsAudit = FontMetricsAudit()
+FontMetricsAuditSettings(fontMetricsAudit).getCommandLineSettings(*pseudo_argv)
+fontMetricsAudit.process()
 
 print
 print 'complete.'

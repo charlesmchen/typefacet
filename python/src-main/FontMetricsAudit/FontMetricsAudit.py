@@ -1,6 +1,6 @@
 '''
 robofont-extensions-and-scripts
-AutokernDemo.py
+FontMetricsAudit.py
 
 https://github.com/charlesmchen/robofont-extensions-and-scripts
 
@@ -65,39 +65,174 @@ END OF TERMS AND CONDITIONS
 '''
 
 
+import locale
+import math
 import os
+#import shutil
+#import tempfile
+import traceback
+#import zipfile
 
-from Autokern import Autokern
-from AutokernSettings import AutokernSettings
-import tfs.common.TFSProject as TFSProject
+#import freetype
+#import pystache
 
-pseudo_argv = (
-#               '--assess-only',
+#from FIFont import *
+#from FIMap import *
+#from FISvg import *
+from FontMetricsAuditSettings import FontMetricsAuditSettings
+#import FICompoundsList
+from tfs.common.TFSPoint import TFSPoint
+from tfs.common.TFSPath import TFSPath, minmaxPaths, polygonWithPoints, debugPaths, isClosedPathClockwise
+from tfs.common.TFSSegment import TFSSegment
+from tfs.common.TFSMap import TFSMap
 
-               '--ufo-src',
-               os.path.abspath(os.path.join(TFSProject.findProjectRootFolder(), 'data-ignore', 'theleagueof', 'theleagueof-league-gothic-4f9ff8d', 'source', 'League Gothic.ufo')),
-               '--ufo-dst',
-               os.path.abspath(os.path.join(TFSProject.findProjectRootFolder(), 'out', 'League Gothic-kerned.ufo')),
-               '--min-distance-ems',
-               '0.024',
-               '--max-distance-ems',
-               '0.120',
+#from tfs.common.TFSPath import
+#from collections import defaultdict
+#from tfs.common.UnicodeCharacterNames import getUnicodeCharacterName, getUnicodeLongName
+from tfs.common.TFFreetypeFont import TFFreetypeFont
+from FontAuditBase import FontAuditBase
 
-#               '--ufo-src',
-#               os.path.abspath(os.path.join(TFSProject.findProjectRootFolder(), 'test', 'data', 'PakTest Plain.ufo')),
-#               '--ufo-dst',
-#               os.path.abspath(os.path.join(TFSProject.findProjectRootFolder(), 'out', 'PakTest Plain-kerned.ufo')),
 
-#               '--log-dst',
-#               os.path.abspath(os.path.join(TFSProject.findProjectRootFolder(), 'out')),
-               '--precision',
-               '25',
-               )
-print 'pseudo_argv', ' '.join([str(arg) for arg in pseudo_argv])
+class FontMetricsAudit(FontAuditBase):
 
-autokern = Autokern()
-AutokernSettings(autokern).getCommandLineSettings(*pseudo_argv)
-autokern.process()
+    def configure(self):
+        if self.src_paths is None:
+            raise Exception('Missing src_paths')
+        for src_path in self.src_paths:
+            if not (os.path.exists(src_path) and os.path.isdir(src_path)):
+                raise Exception('Invalid src_path: %s' % src_path)
 
-print
-print 'complete.'
+
+    def initMetrics(self):
+        self.processedPostscriptNames = set()
+#        self.nonEmptyPostscriptNames = set()
+#        self.glyphCountMap = {}
+#        self.messageCountMap = {}
+
+        self.statMap = {}
+
+    def addStatValue(self, key, value):
+        self.statMap[key] = self.statMap.get(key, []) + [value,]
+
+    def addMessage(self, extension, msg):
+        msg = '%s: %s' % (extension.lower(), msg,)
+        self.messageCountMap[msg] = 1 + self.messageCountMap.get(msg, 0)
+
+    def dumpMetrics(self):
+
+        print
+        print 'Total fonts scanned:', len(self.processedPostscriptNames)
+        print
+        print 'Results:'
+#        for key in sorted(self.messageCountMap.keys()):
+#            value = self.messageCountMap[key]
+#            print '\t', key + ':', value
+#        print 'self.statMap.keys()', self.statMap.keys()
+        for key in sorted(self.statMap.keys()):
+            values = self.statMap[key]
+            averageValue = reduce(float.__add__, [float(value) for value in values]) / len(values)
+            print '\t', key + ': %0.3f' %( averageValue, )
+
+        print
+
+    def processFont(self, filepath):
+
+#        extension = filepath[filepath.rindex('.'):]
+
+        ftFont = None
+
+        print
+        print 'filepath', filepath
+
+        leftSideBearings = []
+        rightSideBearings = []
+
+        try:
+            ftFont = TFFreetypeFont(filepath)
+
+            postscript_name = ftFont.postscriptName
+            if postscript_name in self.processedPostscriptNames:
+                return
+
+            glyphIndexToCharacterMap = ftFont.getGlyphIndexToCharacterMap()
+
+
+#            print '\t', 'postscript_name', postscript_name
+            self.processedPostscriptNames.add(postscript_name)
+
+#            characterToGlyphIndexMap = ftFont.getCharacterToGlyphIndexMap()
+            for glyphIndex in ftFont.getGlyphIndices():
+                if glyphIndex not in glyphIndexToCharacterMap:
+                    continue
+                unicode = glyphIndexToCharacterMap[glyphIndex]
+                if unicode > 0x7f:
+                    '''
+                    ignore code points not in first code block.
+                    '''
+                    continue
+
+                contours, xAdvance = ftFont.getGlyphContours(glyphIndex)
+                if len(contours) < 1:
+                    '''
+                    Ignore empty glyphs.
+                    '''
+                    continue
+                minmax = minmaxPaths(contours)
+                leftSideBearing = minmax.minX
+                rightSideBearing = xAdvance - minmax.maxX
+                leftSideBearings.append(leftSideBearing)
+                rightSideBearings.append(rightSideBearing)
+
+        except Exception, e:
+            print 'error filepath', filepath
+            print e.message
+            traceback.print_exc()
+            del ftFont
+            return
+
+        if len(leftSideBearings) < 1 or len(rightSideBearings) < 1:
+            return
+
+        avgLeftSideBearing = reduce(float.__add__, [float(value) for value in leftSideBearings]) / len(leftSideBearings)
+        avgRightSideBearing = reduce(float.__add__, [float(value) for value in rightSideBearings]) / len(rightSideBearings)
+        self.addStatValue('avgLeftSideBearing', avgLeftSideBearing / ftFont.unitsPerEm)
+        self.addStatValue('avgRightSideBearing', avgRightSideBearing / ftFont.unitsPerEm)
+#        self.addStatValue('avgLeftSideBearing / ascender', avgLeftSideBearing / ftFont.ascender)
+#        self.addStatValue('avgRightSideBearing / ascender', avgRightSideBearing / ftFont.ascender)
+        self.addStatValue('avgLeftSideBearing / ascender', avgLeftSideBearing / ftFont.ascender)
+        self.addStatValue('avgRightSideBearing / ascender', avgRightSideBearing / ftFont.ascender)
+
+
+    def process(self):
+
+        self.configure()
+        self.initMetrics()
+
+        import time
+
+        startTime = time.time()
+
+        self.processPaths(self.src_paths)
+#        self.processPaths(self.src_paths, maxFonts=10)
+
+        self.dumpMetrics()
+
+        endTime = time.time()
+        print 'elapsed: ', endTime - startTime
+
+#        self.writeOutput()
+#
+#        self.dumpMetrics()
+
+
+if __name__ == "__main__":
+    import sys
+    print 'sys.argv', sys.argv
+
+
+    fontMetricsAudit = FontMetricsAudit()
+    FontMetricsAuditSettings(fontMetricsAudit).getCommandLineSettings()
+    fontMetricsAudit.process()
+
+    print
+    print 'complete.'

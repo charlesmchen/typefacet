@@ -1,6 +1,6 @@
 '''
 robofont-extensions-and-scripts
-AutokernDemo.py
+FontMetricsAuditSettings.py
 
 https://github.com/charlesmchen/robofont-extensions-and-scripts
 
@@ -65,39 +65,23 @@ END OF TERMS AND CONDITIONS
 '''
 
 
-import os
 
-from Autokern import Autokern
-from AutokernSettings import AutokernSettings
-import tfs.common.TFSProject as TFSProject
 
-pseudo_argv = (
-#               '--assess-only',
+from tfs.common.TFBaseSettings import TFBaseSettings
+import argparse
 
-               '--ufo-src',
-               os.path.abspath(os.path.join(TFSProject.findProjectRootFolder(), 'data-ignore', 'theleagueof', 'theleagueof-league-gothic-4f9ff8d', 'source', 'League Gothic.ufo')),
-               '--ufo-dst',
-               os.path.abspath(os.path.join(TFSProject.findProjectRootFolder(), 'out', 'League Gothic-kerned.ufo')),
-               '--min-distance-ems',
-               '0.024',
-               '--max-distance-ems',
-               '0.120',
 
-#               '--ufo-src',
-#               os.path.abspath(os.path.join(TFSProject.findProjectRootFolder(), 'test', 'data', 'PakTest Plain.ufo')),
-#               '--ufo-dst',
-#               os.path.abspath(os.path.join(TFSProject.findProjectRootFolder(), 'out', 'PakTest Plain-kerned.ufo')),
+class FontMetricsAuditSettings(TFBaseSettings):
 
-#               '--log-dst',
-#               os.path.abspath(os.path.join(TFSProject.findProjectRootFolder(), 'out')),
-               '--precision',
-               '25',
-               )
-print 'pseudo_argv', ' '.join([str(arg) for arg in pseudo_argv])
+    def createParser(self):
 
-autokern = Autokern()
-AutokernSettings(autokern).getCommandLineSettings(*pseudo_argv)
-autokern.process()
+        parser = argparse.ArgumentParser(description='...')
 
-print
-print 'complete.'
+        parser.add_argument('--src-paths',
+                            type=self.srcFileOrfolderType,
+                            nargs='+',
+                            help='The file or folders to scan.',
+                            required=True)
+
+        return parser
+

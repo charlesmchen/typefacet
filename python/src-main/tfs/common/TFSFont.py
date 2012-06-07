@@ -153,6 +153,12 @@ class TFSFont(object):
     def setKerningPair(self, glyphName0, glyphName1, value):
         self.rffont.kerning[(glyphName0, glyphName1, )] = value
 
+    def getKerningPair(self, glyphName0, glyphName1):
+        '''
+        returns None if pair does not exist.
+        '''
+        return self.rffont.kerning[(glyphName0, glyphName1, )]
+
 
 
 #font.info.ascender = formatOpentypeScalar(metadata.ascender)
