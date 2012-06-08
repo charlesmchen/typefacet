@@ -264,28 +264,25 @@ class TFSSvgPath(TFSSvgItem):
 
 
     def renderPoints(self, svg_document):
+        def drawPointBox(point, color):
+            POINT_RADIUS = 2
+            drawSvgRect(svg_document,
+                        point.x - POINT_RADIUS,
+                        point.y - POINT_RADIUS,
+                        POINT_RADIUS * 2,
+                        POINT_RADIUS * 2,
+                        color,
+                        1)
+
         rpath = self.getRenderPath()
-        POINT_RADIUS = 2
         if self.onPointColor is not None:
             for segment in rpath:
                 point = segment.startPoint()
-                drawSvgRect(svg_document,
-                            point.x - POINT_RADIUS,
-                            point.y - POINT_RADIUS,
-                            POINT_RADIUS * 2,
-                            POINT_RADIUS * 2,
-                            self.onPointColor,
-                            1)
+                drawPointBox(point, self.onPointColor)
         if self.controlPointColor is not None:
             for segment in rpath:
                 for point in segment.controlPoints():
-                    drawSvgRect(svg_document,
-                                point.x - POINT_RADIUS,
-                                point.y - POINT_RADIUS,
-                                POINT_RADIUS * 2,
-                                POINT_RADIUS * 2,
-                                self.controlPointColor,
-                                1)
+                    drawPointBox(point, self.controlPointColor)
 
     def render(self, svg_document):
         self.renderPoints(svg_document)
@@ -400,18 +397,21 @@ class TFSSvg(object):
 
         if timing is not None:
             timing.mark('TFSSvg.renderToFile.8')
-        svg_document.save()
+
+#        svg_document.save()
+#        if timing is not None:
+#            timing.mark('TFSSvg.renderToFile.9')
+#
+#        svg_document.tostring()
+
+        if filepath is not None:
+            svg_document.save()
+            result = None
+        else:
+            result = svg_document.tostring()
         if timing is not None:
             timing.mark('TFSSvg.renderToFile.9')
-
-        svg_document.tostring()
-        if timing is not None:
-            timing.mark('TFSSvg.renderToFile.9a')
-
-#        if filepath is not None:
-#            svg_document.save()
-#        else:
-#            return svg_document.tostring()
+        return result
 
 
 def test_TFSSvg():

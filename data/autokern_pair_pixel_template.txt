@@ -46,8 +46,19 @@
       
         <h2>{{{pageTitle}}}</h2>
 
+<h3>Original Kerning</h3>
 <p>
-	<embed src="svg/{{naiveSpacingSvg}}" type="image/svg+xml" />
+	{{srcSpacingSvg}}
+</p>
+<pre>
+Original Advance: {{srcAdvance}}
+Adjusted Original Advance: {{srcAdvanceAdjusted}}
+Adjusted Autokern Advance: {{advanceAdjusted}}
+</pre>
+
+<h3>Naive Advance</h3>
+<p>
+	{{{naiveSpacingSvg}}}
 </p>
 <pre>
 Naive Advance: {{naiveAdvance}}
@@ -62,7 +73,7 @@ Naive Spacing: {{naiveSpacing}}
 
 <h3>Minimum Advance</h3>
 <p>
-	<embed src="svg/{{minDistanceSpacingSvg}}" type="image/svg+xml" />
+	{{{minDistanceSpacingSvg}}}
 </p>
 <pre>
 Minimum Distance: {{min_distance}}
@@ -71,7 +82,7 @@ Minimum Advance: {{minAdvance}}
 
 <h3>Maximum Advance</h3>
 <p>
-	<embed src="svg/{{maxDistanceSpacingSvg}}" type="image/svg+xml" />
+	{{{maxDistanceSpacingSvg}}}
 </p>
 <pre>
 Maximum Distance: {{max_distance}}
@@ -81,15 +92,15 @@ Maximum Advance: {{maxAdvance}}
 
 <h3>Intruding Advance</h3>
 <p>
-	<embed src="svg/{{intrudingAdvanceSpacingSvg}}" type="image/svg+xml" />
+	{{{intrudingAdvanceSpacingSvg}}}
 </p>
 <pre>
 Intruding Advance: {{intrudingAdvance}}
 </pre>
 
-<h3>Final Advance</h3>
+<h3>Autokern Kerning</h3>
 <p>
-	<embed src="svg/{{finalAdvanceSpacingSvg}}" type="image/svg+xml" />
+	{{{finalAdvanceSpacingSvg}}}
 </p>
 <pre>
 Final Advance: {{advance}}

@@ -72,30 +72,72 @@ Next
 <a href="{{lastDisparityLink}}">Last</a>
 </p>
 
-<pre>
-{{#glyphMaps}}
-{{{glyphName}}} left: {{minX}}
-{{{glyphName}}} right: {{maxX}}
-{{/glyphMaps}}
-</pre>
 <!--
 Naive Spacing: {{naiveSpacing}}
 -->
 
-<h3>Autokern Advance</h3>
+<h3>Original Kerning</h3>
+<p>
+	<embed src="svg/{{oldAdvanceSvg}}" type="image/svg+xml" />
+</p>
+
+<h3>Autokern Kerning</h3>
 <p>
 	<embed src="svg/{{newAdvanceSvg}}" type="image/svg+xml" />
 </p>
 
-<h3>Original Advance</h3>
-<p>
-	<embed src="svg/{{oldAdvanceSvg}}" type="image/svg+xml" />
-</p>
 <pre>
-Original Advance: {{oldAdvance}}
-Autokern Advance: {{newAdvance}}
-Difference: {{advanceDifference}}
+{{#glyphMaps}}
+{{{glyphName}}} 
+	Original left extrema: {{srcMinX}}
+	Original right extrema: {{srcMaxX}}
+	No Side Bearings left extrema: {{dstMinX}}
+	No Side Bearings right extrema: {{dstMaxX}}
+
+{{/glyphMaps}}
+
+Original x-advance: {{srcXAdvance}}
+No Side Bearings x-advance: {{dstXAdvance}}
+Original kerning: {{srcKerning}}
+Autokern kerning: {{dstKerning}}
+Original Kerned Advance: {{srcAdvance}}
+No Side Bearings Kerned Advance: {{dstAdvance}}
+No Side Bearings Kerned Advance Difference: {{advanceDifference}}
+Original extrema offset: {{srcOffset}}
+Autokern extrema offset: {{dstOffset}}
+Extrema offset difference: {{offsetDifference}}
 </pre>
+
+<p>
+<a href="{{kerningLogFilename}}">Kerning Details</a>
+</p>
+<p>
+<a name="bottom"/>
+{{#prevDisparityLink}}
+<a href="{{filename}}#bottom">Previous</a>
+{{/prevDisparityLink}}
+{{^prevDisparityLink}}
+Previous
+{{/prevDisparityLink}}
+
+{{#nextDisparityLink}}
+<a href="{{filename}}#bottom">Next</a>
+{{/nextDisparityLink}}
+{{^nextDisparityLink}}
+Next
+{{/nextDisparityLink}}
+</p>
+
+<p>
+	The "No Side Bearings" values <u>cannot</u> be compared, since the side bearings may have been changed by Autokern.
+	Likewise, the "Kerning" values are relative to values that may be different.
+</p>
+<p>
+	Instead, the key value to look at here is the "Extrema offset difference."  
+	It is the difference between the "extrema offsets", ie. the difference between the x-extrema of the two glyphs.
+	Although not significant in and of themselves, the "extrema offsets" are independent of the side bearings
+	and reflect the distance between the glyph contours.
+</p>
 
 <!--
 -->

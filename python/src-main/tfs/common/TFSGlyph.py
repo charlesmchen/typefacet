@@ -97,7 +97,8 @@ class TFSGlyph(object):
                 fiPoints = [lastPoint,] + [rfPointToTFSPoint(rfpoint) for rfpoint in rfsegment.points]
                 lastPoint = fiPoints[-1]
                 if (len(fiPoints) == 2) and fiPoints[0] == fiPoints[-1]:
-                    print 'ignoring empty contour segment in: ' + hex(self.rfglyph.unicode)
+                    print 'ignoring empty contour segment in: ' + self.rfglyph.name
+#                    print 'ignoring empty contour segment in: ' + hex(self.rfglyph.unicode)
                     continue
 
                 rfendpoint = rfsegment.points[-1]

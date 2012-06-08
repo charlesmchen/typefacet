@@ -126,7 +126,7 @@ class AutokernSettings(TFBaseSettings):
                             help='Precision of the algorithm.  Lower values are more precise but slower. Use a precision of 10 or less for accurate results. 1 < x < 100. Default: 10')
         parser.add_argument('--intrusion-tolerance',
                             type=float,
-                            default=0.1,
+                            default=0.05,
                             help='Intrusion tolerance as a fraction of the area defined by the --max-distance-ems value times the greater of the two glyphs\' heights.  Default: 0.1')
         parser.add_argument('--intrusion-limit-glyph-width-fraction',
                             type=float,

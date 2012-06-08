@@ -84,21 +84,96 @@ from tfs.common.TFSPoint import TFSPoint
 TFSMath.setFloatRoundingTolerance(0.1)
 TFSMath.setDefaultPrecisionDigits(1)
 
+def formatGlyphUnicode(glyph):
+    if glyph.unicode is None:
+        return 'None'
+    else:
+        return u'%d %s' % ( glyph.unicode,
+                                 hex(glyph.unicode), )
+
+def formatUnicode(value):
+    if value is None:
+        return 'None'
+    else:
+        return '0x%X' % ( value, )
+
 def formatGlyphName(glyph):
-    if glyph.name == unichr(glyph.unicode):
+    if glyph.unicode is None:
+        name = glyph.name
+    elif glyph.name == unichr(glyph.unicode):
         name = glyph.name
     else:
         name = u'%s &#%d;' % ( glyph.name,
                                glyph.unicode, )
-    return u'%s (%d %s)' % ( name,
-                             glyph.unicode,
-                             hex(glyph.unicode), )
+    return u'%s (%s)' % ( name,
+                          formatGlyphUnicode(glyph), )
+
+def getCachedMinmax(contours):
+    return minmaxPaths(contours)
 
 class Autokern(TFSMap):
 
     def __init__(self):
         TFSMap.__init__(self)
 
+    def isCombiningGlyph(self, glyph):
+        names = ('dieresis_acutecomb',
+                 'dieresis_gravecomb',
+                 'hungarumlaut',
+                'ring',
+                'dotaccent',
+
+                 'dieresistonos',
+
+                'acutecomb',
+                'dotbelowcomb',
+                'gravecomb',
+                'hookabovecomb',
+                'tildecomb',
+
+                'acute',
+                'base',
+                'breve',
+                'caron',
+                'cedilla',
+                'circumflex',
+                'comma below',
+                'corner leftwards',
+                'diaeresis',
+                'dialytika',
+                'dialytika and tonos',
+                'dot above',
+                'double acute',
+                'grave',
+                'hamza above',
+                'hamza below',
+                'hook',
+                'hook symbol',
+                'horn',
+                'macron',
+                'madda above',
+                'middle dot',
+                'ogonek',
+                'rays',
+                'ring above',
+                'ring above and acute',
+                'stroke',
+                'stroke and acute',
+                'tilde',
+                'tonos',
+                'upturn',
+
+                 )
+        if glyph.name in names:
+            return True
+        '''
+        Look for variations like 'breve.cap' or 'breve.cyr'.
+        '''
+        if '.' in glyph.name[1:]:
+            shortName = glyph.name[:glyph.name.index('.')]
+            if shortName in names:
+                return True
+        return False
 
     def subrenderGlyphContours(self, tfsSvg, contours, strokeColor):
         from tfs.common.TFSSvg import TFSSvgPath
@@ -109,14 +184,15 @@ class Autokern(TFSMap):
 
 
     def renderSvgScene(self,
-                       filenamePrefix, phase, phaseName,
+                       filename,
                        pathTuples,
                        hGuidelines=None):
         from tfs.common.TFSSvg import TFSSvg, TFSSvgPath
-        filename = '%s-phase-%d-%s.svg' % ( filenamePrefix,
-                                            phase,
-                                            phaseName, )
-        dstFile = os.path.abspath(os.path.join(self.svg_folder, filename))
+        if filename is None:
+            dstFile = filename
+        else:
+            filename = '%s.svg' % ( filename, )
+            dstFile = os.path.abspath(os.path.join(self.svg_folder, filename))
 
         CANVAS_BACKGROUND_COLOR = 0xffffffff
         CANVAS_BORDER_COLOR = 0x07fbfbfbf
@@ -128,14 +204,14 @@ class Autokern(TFSMap):
 
         if hGuidelines:
             for hGuideline in hGuidelines:
-                p0 = TFSPoint(hGuideline, self.ufofont.info.descender)
-                p1 = TFSPoint(hGuideline, self.ufofont.info.ascender)
+                p0 = TFSPoint(hGuideline, self.dstUfoFont.info.descender)
+                p1 = TFSPoint(hGuideline, self.dstUfoFont.info.ascender)
                 GUIDELINE_COLOR = 0x7fdfdfdf
                 tfsSvg.addItem(TFSSvgPath(openPathWithPoints(p0, p1)).addStroke(GUIDELINE_COLOR, 1))
 
         vGuidelines = ( 0,
-                        self.ufofont.info.ascender,
-                        self.ufofont.info.descender,
+                        self.dstUfoFont.info.ascender,
+                        self.dstUfoFont.info.descender,
                         )
         if vGuidelines:
             minmax = None
@@ -151,9 +227,12 @@ class Autokern(TFSMap):
         SVG_HEIGHT = 400
         SVG_MAX_WIDTH = 800
         self.timing.mark('renderSvgScene.0')
-        tfsSvg.renderToFile(dstFile, margin=10, height=SVG_HEIGHT, maxWidth=SVG_MAX_WIDTH, timing=self.timing)
+        svgdata = tfsSvg.renderToFile(dstFile, margin=10, height=SVG_HEIGHT, maxWidth=SVG_MAX_WIDTH, timing=self.timing)
         self.timing.mark('renderSvgScene.1')
-        return filename
+        if filename is not None:
+            return filename
+        else:
+            return svgdata
 
 
     def processKerningPair_flate(self, ufoglyph0, ufoglyph1):
@@ -210,7 +289,7 @@ class Autokern(TFSMap):
     #            print 'contour', type(contour), contour.description()
 
             naiveSpacingSvg = self.renderSvgScene(
-                                             filenamePrefix, phase, 'naive-spacing',
+                                                  filenamePrefix + '-naive-spacing',
                                              pathTuples = (
                                                            ( 0x7f7faf7f, contours0, ),
                                                            ( 0x7f7f7faf, [contour.applyPlus(TFSPoint(naiveSpacing, 0)) for contour in contours1], ),
@@ -218,7 +297,7 @@ class Autokern(TFSMap):
                                              hGuidelines = ( naiveSpacing, ) )
             phase += 1
             minDistanceSpacingSvg = self.renderSvgScene(
-                                             filenamePrefix, phase, 'min-spacing',
+                                                        filenamePrefix + '-min-spacing',
                                              pathTuples = (
                                                            ( 0x7f7faf7f, contours0, ),
                                                            ( 0x7f7f7faf, [contour.applyPlus(TFSPoint(minDistanceSpacing, 0)) for contour in contours1], ),
@@ -227,7 +306,7 @@ class Autokern(TFSMap):
                                              hGuidelines = ( naiveSpacing, ) )
             phase += 1
             roundingSpacingSvg = self.renderSvgScene(
-                                             filenamePrefix, phase, 'rounding',
+                                                     filenamePrefix + '-rounding',
                                              pathTuples = (
                                                            ( 0x7f7faf7f, contours0, ),
                                                            ( 0x7fafffaf, contours0_midRounding, ),
@@ -284,7 +363,7 @@ class Autokern(TFSMap):
             for key in ( 'ascender',
                          'descender',
                         ):
-                mustacheMap[key] = formatEmScalar(getattr(self.ufofont.info, key))
+                mustacheMap[key] = formatEmScalar(getattr(self.dstUfoFont.info, key))
 
             for key in (
                          'unitsPerEm',
@@ -293,7 +372,7 @@ class Autokern(TFSMap):
                          'fullName',
                          'fontName',
                         ):
-                mustacheMap[key] = getattr(self.ufofont.info, key)
+                mustacheMap[key] = getattr(self.dstUfoFont.info, key)
 
             import pystache
             logHtml = pystache.render(mustache_template, mustacheMap)
@@ -305,20 +384,33 @@ class Autokern(TFSMap):
                 f.write(logHtml)
 
 
-    def getGlyphContours(self, ufoglyph):
-        if ufoglyph.unicode in self.contoursCache:
-            return self.contoursCache[ufoglyph.unicode]
+    def getSrcGlyphContours(self, ufoglyph):
+#        ufoglyph = self.srcUfoFont.getGlyphByName(ufoglyph.name)
+#        if ufoglyph is None:
+#            return None
+        if ufoglyph.unicode in self.srcContoursCache:
+            return self.srcContoursCache[ufoglyph.unicode]
         contours = ufoglyph.getContours()
-        self.contoursCache[ufoglyph.unicode] = contours
+        self.srcContoursCache[ufoglyph.unicode] = contours
+        return contours
+
+
+    def getGlyphContours(self, ufoglyph):
+        if ufoglyph.name in self.dstContoursCache:
+            return self.dstContoursCache[ufoglyph.name]
+        contours = ufoglyph.getContours()
+        self.dstContoursCache[ufoglyph.name] = contours
         return contours
 
 
     def getGlyphPixels(self, ufoglyph):
-        if ufoglyph.unicode in self.pixelsCache:
-            return self.pixelsCache[ufoglyph.unicode]
+        if ufoglyph.name in self.pixelsCache:
+            return self.pixelsCache[ufoglyph.name]
         RASTERIZE_CELL_SIZE = self.precision
         pixels = self.rasterizeGlyph(ufoglyph, RASTERIZE_CELL_SIZE)
-        self.pixelsCache[ufoglyph.unicode] = pixels
+        if pixels is not None:
+            pixels = self.padPixels(pixels, self.convertToPixelUnits(self.max_distance, RASTERIZE_CELL_SIZE))
+        self.pixelsCache[ufoglyph.name] = pixels
         return pixels
 
 
@@ -413,24 +505,45 @@ class Autokern(TFSMap):
         if len(pixels0) != len(pixels1):
             raise Exception('pixel heights do not match. %d != %d', len(pixels0), len(pixels1))
 
-        def makeRowProfile(row, func):
-            result = None
+        def leftRowProfile(row):
             for index, pixel in enumerate(row):
                 if pixel:
-                    if result is not None:
-                        result = func(result, index)
-                    else:
-                        result = index
-            return result
+                    return index
+            return None
+
+        def rightRowProfile(row):
+            for index, pixel in enumerate(reversed(row)):
+                if pixel:
+                    return len(row) - (1 + index)
+            return None
 
         def makePixelProfile(pixels, func):
             result = []
             for row in pixels:
-                result.append(makeRowProfile(row, func))
+                result.append(func(row))
             return result
 
-        profile0 = makePixelProfile(pixels0, max)
-        profile1 = makePixelProfile(pixels1, min)
+        profile0 = makePixelProfile(pixels0, rightRowProfile)
+        profile1 = makePixelProfile(pixels1, leftRowProfile)
+
+#        def makeRowProfile(row, func):
+#            result = None
+#            for index, pixel in enumerate(row):
+#                if pixel:
+#                    if result is not None:
+#                        result = func(result, index)
+#                    else:
+#                        result = index
+#            return result
+#
+#        def makePixelProfile(pixels, func):
+#            result = []
+#            for row in pixels:
+#                result.append(makeRowProfile(row, func))
+#            return result
+#
+#        profile0 = makePixelProfile(pixels0, max)
+#        profile1 = makePixelProfile(pixels1, min)
 #        print 'profile0', profile0
 #        print 'profile1', profile1
         contactAdvance = None
@@ -500,14 +613,10 @@ class Autokern(TFSMap):
         return offsetAdvance
 
 
-    def logDisparities(self):
-
-        renderLog = self.log_dst is not None
-        if not renderLog:
-            return
+    def findDisparities(self):
 
         disparities = []
-        glyphs = self.ufofont.getGlyphs()
+        glyphs = self.dstUfoFont.getGlyphs()
 #        total = len(glyphs) * len(glyphs)
 #        count = 0
 #        startTime = time.time()
@@ -518,23 +627,67 @@ class Autokern(TFSMap):
                        ufoglyph1.unicode,)
                 if key not in self.advanceMap:
                     continue
-                advance = self.advanceMap[key]
-                advance = int(round(advance))
 
-                oldKerning = self.ufofont.getKerningPair(ufoglyph0.name, ufoglyph1.name)
-                if oldKerning is None:
-                    oldKerning = 0
-                oldAdvance = ufoglyph0.xAdvance + oldKerning
-                difference = abs(advance - oldAdvance)
-                if difference > 0:
-                    disparities.append((ufoglyph0, ufoglyph1, advance, oldAdvance, difference,))
+                disparity = TFSMap()
+                disparity.dstUfoGlyph0 = ufoglyph0
+                disparity.dstUfoGlyph1 = ufoglyph1
+
+#                disparity.srcXAdvance = disparity.srcUfoGlyph0.xAdvance
+                disparity.dstAdvance = int(round(self.advanceMap[key]))
+                disparity.dstXAdvance = disparity.dstUfoGlyph0.xAdvance
+                disparity.dstKerning = disparity.dstAdvance - disparity.dstXAdvance
+
+
+                disparity.srcUfoGlyph0 = self.srcUfoFont.getGlyphByName(ufoglyph0.name)
+                if disparity.srcUfoGlyph0 is None:
+                    raise Exception('Could not find glyph by name: %s %s' % (str(ufoglyph0.name),
+                                                                             str(ufoglyph0.unicode)))
+                disparity.srcUfoGlyph1 = self.srcUfoFont.getGlyphByName(ufoglyph1.name)
+                if disparity.srcUfoGlyph1 is None:
+                    raise Exception('Could not find glyph by name: %s %s' % (str(ufoglyph1.name),
+                                                                             str(ufoglyph1.unicode)))
+
+                disparity.srcKerning = self.srcUfoFont.getKerningPair(ufoglyph0.name, ufoglyph1.name)
+                if disparity.srcKerning is None:
+                    disparity.srcKerning = 0
+                disparity.srcXAdvance = disparity.srcUfoGlyph0.xAdvance
+                disparity.srcAdvance = disparity.srcUfoGlyph0.xAdvance + disparity.srcKerning
+
+
+                disparity.srcContours0 = self.getSrcGlyphContours(disparity.srcUfoGlyph0)
+                disparity.srcContours1 = self.getSrcGlyphContours(disparity.srcUfoGlyph1)
+
+                disparity.srcMinmax0 = self.getSrcCachedValue('getCachedMinmax %s' % ufoglyph0.name, getCachedMinmax, disparity.srcContours0)
+                disparity.srcMinmax1 = self.getSrcCachedValue('getCachedMinmax %s' % ufoglyph1.name, getCachedMinmax, disparity.srcContours1)
+                disparity.srcOffset = disparity.srcAdvance + (-disparity.srcMinmax0.maxX) + (disparity.srcMinmax1.minX)
+
+                disparity.dstContours0 = self.getGlyphContours(ufoglyph0)
+                disparity.dstContours1 = self.getGlyphContours(ufoglyph1)
+                disparity.dstMinmax0 = self.getDstCachedValue('getCachedMinmax %s' % ufoglyph0.name, getCachedMinmax, disparity.dstContours0)
+                disparity.dstMinmax1 = self.getDstCachedValue('getCachedMinmax %s' % ufoglyph1.name, getCachedMinmax, disparity.dstContours1)
+                disparity.dstOffset = disparity.dstAdvance + (-disparity.dstMinmax0.maxX) + (disparity.dstMinmax1.minX)
+
+                disparity.offsetDifference = abs(disparity.srcOffset - disparity.dstOffset)
+                disparity.advanceDifference = abs(disparity.dstAdvance - disparity.srcAdvance)
+
+                if disparity.offsetDifference != 0:
+                    disparities.append(disparity)
 
         def compareDisparities(disparity0, disparity1):
-            _, _, _, _, difference0 = disparity0
-            _, _, _, _, difference1 = disparity1
-            return cmp(difference0, difference1)
+            return cmp(disparity0.offsetDifference, disparity1.offsetDifference)
 
         disparities.sort(compareDisparities, reverse=True)
+        return disparities
+
+
+    def logDisparities(self):
+
+        renderLog = self.log_dst is not None
+        if not renderLog:
+            return
+
+        disparities = self.findDisparities()
+
         '''
         We're only interested in the top 100 disparities.
         '''
@@ -550,31 +703,23 @@ class Autokern(TFSMap):
                                       })
 
         for index, disparity in enumerate(disparities):
-            ufoglyph0, ufoglyph1, newAdvance, oldAdvance, difference = disparity
-
-            contours0 = self.getGlyphContours(ufoglyph0)
-            contours1 = self.getGlyphContours(ufoglyph1)
-            minmax0 = minmaxPaths(contours0)
-            minmax1 = minmaxPaths(contours1)
 
             filenamePrefix = 'disparity-%d' % index
             phase = 0
-            oldAdvanceSvg = self.renderSvgScene(
-                                             filenamePrefix, phase, 'old-advance',
+            oldAdvanceSvg = self.renderSvgScene(filenamePrefix + '-old-advance',
                                              pathTuples = (
-                                                           ( 0x7f7faf7f, contours0, ),
-                                                           ( 0x7f7f7faf, [contour.applyPlus(TFSPoint(oldAdvance, 0)) for contour in contours1], ),
+                                                           ( 0x7f7faf7f, disparity.srcContours0, ),
+                                                           ( 0x7f7f7faf, [contour.applyPlus(TFSPoint(disparity.srcAdvance, 0)) for contour in disparity.srcContours1], ),
                                                            ),
-                                             hGuidelines = ( oldAdvance, ) )
+                                             hGuidelines = ( disparity.srcAdvance, ) )
             phase += 1
 
-            newAdvanceSvg = self.renderSvgScene(
-                                             filenamePrefix, phase, 'new-advance',
+            newAdvanceSvg = self.renderSvgScene(filenamePrefix + '-new-advance',
                                              pathTuples = (
-                                                           ( 0x7f7faf7f, contours0, ),
-                                                           ( 0x7f7f7faf, [contour.applyPlus(TFSPoint(newAdvance, 0)) for contour in contours1], ),
+                                                           ( 0x7f7faf7f, disparity.dstContours0, ),
+                                                           ( 0x7f7f7faf, [contour.applyPlus(TFSPoint(disparity.dstAdvance, 0)) for contour in disparity.dstContours1], ),
                                                            ),
-                                             hGuidelines = ( newAdvance, ) )
+                                             hGuidelines = ( disparity.dstAdvance, ) )
             phase += 1
 
             import tfs.common.TFSProject as TFSProject
@@ -582,28 +727,37 @@ class Autokern(TFSMap):
             with open(mustache_template_file, 'rt') as f:
                 mustache_template = f.read()
 
-            pageTitle = u'pyautokern Log: Disparity %s vs. %s' % ( formatGlyphName(ufoglyph0),
-                                                                           formatGlyphName(ufoglyph1), )
+            pageTitle = u'pyautokern Log: Disparity %s vs. %s' % ( formatGlyphName(disparity.dstUfoGlyph0),
+                                                                   formatGlyphName(disparity.dstUfoGlyph1), )
 
             def formatEmScalar(value):
                 return '%0.3f em' % (value / float(self.units_per_em))
 
-            def formatGlyphMap(glyph, glyphMinmax):
+            def formatGlyphMap(glyph, srcMinmax, dstMinmax):
                 return {
                            'glyphName': formatGlyphName(glyph),
-                           'minX': formatEmScalar(glyphMinmax.minX),
-                           'maxX': formatEmScalar(glyphMinmax.maxX),
-                           'minY': formatEmScalar(glyphMinmax.minY),
-                           'maxY': formatEmScalar(glyphMinmax.maxY),
+                           'srcMinX': formatEmScalar(srcMinmax.minX),
+                           'srcMaxX': formatEmScalar(srcMinmax.maxX),
+                           'dstMinX': formatEmScalar(dstMinmax.minX),
+                           'dstMaxX': formatEmScalar(dstMinmax.maxX),
                         }
 
             mustacheMap = {
+                           'kerningLogFilename': self.getKerningPairHtmlFilename(disparity.dstUfoGlyph0,
+                                                                                 disparity.dstUfoGlyph1),
                            'pageTitle': pageTitle,
-                           'minmax0': minmax0,
-                           'minmax1': minmax1,
-                           'newAdvance': formatEmScalar(newAdvance),
-                           'oldAdvance': formatEmScalar(oldAdvance),
-                           'advanceDifference': formatEmScalar(difference),
+                           'minmax0': disparity.dstMinmax0,
+                           'minmax1': disparity.dstMinmax1,
+                           'dstAdvance': formatEmScalar(disparity.dstAdvance),
+                           'srcAdvance': formatEmScalar(disparity.srcAdvance),
+                           'advanceDifference': formatEmScalar(disparity.advanceDifference),
+                           'srcOffset': formatEmScalar(disparity.srcOffset),
+                           'dstOffset': formatEmScalar(disparity.dstOffset),
+                           'offsetDifference': formatEmScalar(disparity.offsetDifference),
+                           'srcKerning': formatEmScalar(disparity.srcKerning),
+                           'srcXAdvance': formatEmScalar(disparity.srcXAdvance),
+                           'dstXAdvance': formatEmScalar(disparity.dstXAdvance),
+                           'dstKerning': formatEmScalar(disparity.dstKerning),
 
                            'min_distance': formatEmScalar(self.min_distance),
                            'max_distance': formatEmScalar(self.max_distance),
@@ -611,11 +765,11 @@ class Autokern(TFSMap):
                            'oldAdvanceSvg': oldAdvanceSvg,
                            'newAdvanceSvg': newAdvanceSvg,
 
-                           'glyph0': formatGlyphName(ufoglyph0),
-                           'glyph1': formatGlyphName(ufoglyph1),
+                           'glyph0': formatGlyphName(disparity.dstUfoGlyph0),
+                           'glyph1': formatGlyphName(disparity.dstUfoGlyph1),
 
-                           'glyphMaps': ( formatGlyphMap(ufoglyph0, minmax0),
-                                          formatGlyphMap(ufoglyph1, minmax1),
+                           'glyphMaps': ( formatGlyphMap(disparity.dstUfoGlyph0, disparity.srcMinmax0, disparity.dstMinmax0),
+                                          formatGlyphMap(disparity.dstUfoGlyph1, disparity.srcMinmax1, disparity.dstMinmax1),
                                           ),
                            'disparityLinkMaps': disparityLinkMaps,
                            'firstDisparityLink': getDisparityFilename(0),
@@ -629,7 +783,7 @@ class Autokern(TFSMap):
             for key in ( 'ascender',
                          'descender',
                         ):
-                mustacheMap[key] = formatEmScalar(getattr(self.ufofont.info, key))
+                mustacheMap[key] = formatEmScalar(getattr(self.dstUfoFont.info, key))
 
             for key in (
                          'unitsPerEm',
@@ -638,7 +792,7 @@ class Autokern(TFSMap):
                          'fullName',
                          'fontName',
                         ):
-                mustacheMap[key] = getattr(self.ufofont.info, key)
+                mustacheMap[key] = getattr(self.dstUfoFont.info, key)
 
             import pystache
             logHtml = pystache.render(mustache_template, mustacheMap)
@@ -649,6 +803,35 @@ class Autokern(TFSMap):
                 # TODO: explicitly encode unicode
                 f.write(logHtml)
 
+#    def convertToPixelUnits(self, value):
+#        RASTERIZE_CELL_SIZE = self.precision
+#        return int(math.ceil(value / float(RASTERIZE_CELL_SIZE)))
+
+    def getDstCachedValue(self, key, func, *argv):
+        if key in self.dstValueCache:
+            return self.dstValueCache[key]
+        result = func(*argv)
+        self.dstValueCache[key] = result
+        return result
+
+    def getSrcCachedValue(self, key, func, *argv):
+        if key in self.srcValueCache:
+            return self.srcValueCache[key]
+        result = func(*argv)
+        self.srcValueCache[key] = result
+        return result
+
+
+    def getFilenamePrefixPair(self, prefix, ufoglyph0, ufoglyph1):
+        return '%s-%s-%s' % ( prefix,
+                              formatUnicode(ufoglyph0.unicode),
+                              formatUnicode(ufoglyph1.unicode), )
+
+    def getKerningPairFilenamePrefix(self, ufoglyph0, ufoglyph1):
+        return self.getFilenamePrefixPair('autokern', ufoglyph0, ufoglyph1)
+
+    def getKerningPairHtmlFilename(self, ufoglyph0, ufoglyph1):
+        return self.getKerningPairFilenamePrefix(ufoglyph0, ufoglyph1) + '.haml'
 
     def processKerningPair(self, ufoglyph0, ufoglyph1):
         '''
@@ -656,6 +839,9 @@ class Autokern(TFSMap):
         '''
 
         self.timing.mark('processKerningPair.0.')
+
+        if self.isCombiningGlyph(ufoglyph0) or self.isCombiningGlyph(ufoglyph1):
+            return
 
 #        print 'processKerningPair'
 
@@ -670,11 +856,23 @@ class Autokern(TFSMap):
         contours1 = self.getGlyphContours(ufoglyph1)
         if (not contours0) or (not contours1):
             return
-        minmax0 = minmaxPaths(contours0)
-        minmax1 = minmaxPaths(contours1)
+
+        self.timing.mark('processKerningPair.01')
+
+#            return self.inflatePixelBlock(pixels1, min_distance, RASTERIZE_CELL_SIZE)
+        minmax0 = self.getDstCachedValue('getCachedMinmax %s' % ufoglyph0.name, getCachedMinmax, contours0)
+        minmax1 = self.getDstCachedValue('getCachedMinmax %s' % ufoglyph1.name, getCachedMinmax, contours1)
+
+#        minmax0 = minmaxPaths(contours0)
+#        minmax1 = minmaxPaths(contours1)
+
+        self.timing.mark('processKerningPair.02')
 
         pixels0 = self.getGlyphPixels(ufoglyph0)
         pixels1 = self.getGlyphPixels(ufoglyph1)
+
+        self.timing.mark('processKerningPair.03')
+
 #        pixels0 = self.rasterizeGlyph(ufoglyph0, RASTERIZE_CELL_SIZE)
 #        pixels1 = self.rasterizeGlyph(ufoglyph1, RASTERIZE_CELL_SIZE)
 
@@ -688,31 +886,39 @@ class Autokern(TFSMap):
         def convertToPixelUnits(value):
             return int(math.ceil(value / float(RASTERIZE_CELL_SIZE)))
 
-        min_distance = self.min_distance_ems * self.ufofont.units_per_em
+        min_distance = self.min_distance_ems * self.dstUfoFont.units_per_em
         if debugKerning:
             print 'min_distance', min_distance
 #        min_distance_pixels = self.convertToPixelUnits(min_distance, RASTERIZE_CELL_SIZE)
 #        if debugKerning:
 #            print 'min_distance_pixels', min_distance_pixels
 
-        max_distance = self.max_distance_ems * self.ufofont.units_per_em
+        max_distance = self.max_distance_ems * self.dstUfoFont.units_per_em
         if debugKerning:
             print 'max_distance', max_distance
 #        max_distance_pixels = self.convertToPixelUnits(max_distance, RASTERIZE_CELL_SIZE)
 #        if debugKerning:
 #            print 'max_distance_pixels', max_distance_pixels
 
-        pixels0 = self.padPixels(pixels0, self.convertToPixelUnits(max_distance, RASTERIZE_CELL_SIZE))
-        pixels1 = self.padPixels(pixels1, self.convertToPixelUnits(max_distance, RASTERIZE_CELL_SIZE))
+#        pixels0 = self.padPixels(pixels0, self.convertToPixelUnits(max_distance, RASTERIZE_CELL_SIZE))
+#        pixels1 = self.padPixels(pixels1, self.convertToPixelUnits(max_distance, RASTERIZE_CELL_SIZE))
+#
+#        self.timing.mark('processKerningPair.04')
+#
+#        if debugKerning:
+#            self.dumpPixelBlock('pixels0', pixels0)
+#            self.dumpPixelBlock('pixels1', pixels1)
 
-        if debugKerning:
-            self.dumpPixelBlock('pixels0', pixels0)
-            self.dumpPixelBlock('pixels1', pixels1)
+        def getPixelsPlusMinDistance():
+            return self.inflatePixelBlock(pixels1, min_distance, RASTERIZE_CELL_SIZE)
+        pixels1_plusMin = self.getDstCachedValue('pixels1_plusMin %s' % ufoglyph1.name, getPixelsPlusMinDistance)
 
-        pixels1_plusMin = self.inflatePixelBlock(pixels1, min_distance, RASTERIZE_CELL_SIZE)
+#        pixels1_plusMin = self.inflatePixelBlock(pixels1, min_distance, RASTERIZE_CELL_SIZE)
         self.timing.mark('processKerningPair.1')
         if debugKerning:
             self.dumpPixelBlock('pixels1_plusMin', pixels1_plusMin)
+
+#        print 'pixels0', len(pixels0), 'pixels1', len(pixels1), 'pixels1_plusMin', len(pixels1_plusMin)
 
         minAdvancePixels = self.findMinAdvance(pixels0, pixels1_plusMin)
         self.timing.mark('processKerningPair.2')
@@ -734,21 +940,14 @@ class Autokern(TFSMap):
         height1 = minmax1.maxY - minmax1.minY
         maxGlyphHeight = max(height0, height1)
 
-#        min_distance = self.min_distance_ems * self.ufofont.units_per_em
-#        if debugKerning:
-#            print 'min_distance', min_distance
-#        min_distance_pixels = self.convertToPixelUnits(min_distance, RASTERIZE_CELL_SIZE)
-#        if debugKerning:
-#            print 'min_distance_pixels', min_distance_pixels
+        def getPixelsPlusMaxDistance():
+            return self.inflatePixelBlock(pixels1, max_distance, RASTERIZE_CELL_SIZE)
+        pixels1_plusMax = self.getDstCachedValue('pixels1_plusMax %s' % ufoglyph1.name, getPixelsPlusMaxDistance)
 
-#        max_distance = self.max_distance_ems * self.ufofont.units_per_em
-#        if debugKerning:
-#            print 'max_distance', max_distance
-#        max_distance_pixels = self.convertToPixelUnits(max_distance, RASTERIZE_CELL_SIZE)
-#        if debugKerning:
-#            print 'max_distance_pixels', max_distance_pixels
+#        print 'pixels0', len(pixels0), 'pixels1', len(pixels1), 'pixels1_plusMin', len(pixels1_plusMin), 'pixels1_plusMax', len(pixels1_plusMax)
 
-        pixels1_plusMax = self.inflatePixelBlock(pixels1, max_distance, RASTERIZE_CELL_SIZE)
+
+#        pixels1_plusMax = self.inflatePixelBlock(pixels1, max_distance, RASTERIZE_CELL_SIZE)
         if debugKerning:
             self.dumpPixelBlock('pixels1_plusMax', pixels1_plusMax)
 
@@ -757,7 +956,7 @@ class Autokern(TFSMap):
         intrusion_tolerance = self.intrusion_tolerance * max_distance * maxGlyphHeight
         intrusion_tolerance_pixels = int(round(float(intrusion_tolerance) / (RASTERIZE_CELL_SIZE * RASTERIZE_CELL_SIZE)))
 
-        min_non_intrusion = self.min_non_intrusion_ems * self.ufofont.units_per_em
+        min_non_intrusion = self.min_non_intrusion_ems * self.dstUfoFont.units_per_em
         min_non_intrusion_pixels = int(round(float(min_non_intrusion) / RASTERIZE_CELL_SIZE))
         if debugKerning:
             print 'min_non_intrusion', min_non_intrusion, 'min_non_intrusion_pixels', min_non_intrusion_pixels
@@ -810,15 +1009,41 @@ class Autokern(TFSMap):
 
         if renderLog:
 #            from tfs.common.TFSSvg import *
-            def formatUnicode(value):
-                if value is None:
-                    return 'None'
-                else:
-                    return '0x%X' % ( value, )
-            filenamePrefix = 'autokern-%s-%s' % ( formatUnicode(ufoglyph0.unicode),
-                                                  formatUnicode(ufoglyph1.unicode), )
+            filenamePrefix = self.getKerningPairFilenamePrefix(ufoglyph0, ufoglyph1)
             phase = 1
 
+            srcufoglyph0 = self.srcUfoFont.getGlyphByName(ufoglyph0.name)
+            if srcufoglyph0 is None:
+                raise Exception('Could not find glyph by name: %s %s' % (str(ufoglyph0.name),
+                                                                         str(ufoglyph0.unicode)))
+            srcufoglyph1 = self.srcUfoFont.getGlyphByName(ufoglyph1.name)
+            if srcufoglyph1 is None:
+                raise Exception('Could not find glyph by name: %s %s' % (str(ufoglyph1.name),
+                                                                         str(ufoglyph1.unicode)))
+
+            srcContours0 = self.getSrcGlyphContours(srcufoglyph0)
+            srcContours1 = self.getSrcGlyphContours(srcufoglyph1)
+            srcKerning = self.dstUfoFont.getKerningPair(ufoglyph0.name, ufoglyph1.name)
+            if srcKerning is None:
+                srcKerning = 0
+            srcAdvance = srcufoglyph0.xAdvance + srcKerning
+
+            srcminmax0 = self.getSrcCachedValue('getCachedMinmax %s' % ufoglyph0.name, getCachedMinmax, srcContours0)
+            srcminmax1 = self.getSrcCachedValue('getCachedMinmax %s' % ufoglyph1.name, getCachedMinmax, srcContours1)
+
+            srcAdvanceAdjusted = srcAdvance + (-srcminmax0.minX) + srcminmax1.minX
+            advanceAdjusted = advance + (-minmax0.minX) + minmax1.minX
+
+            srcSpacingSvg = self.renderSvgScene(None,
+#                                                filenamePrefix + '-src-spacing',
+                                             pathTuples = (
+                                                           ( 0x7f7faf7f, srcContours0, ),
+                                                           ( 0x7f7f7faf, [contour.applyPlus(TFSPoint(srcAdvance, 0)) for contour in srcContours1], ),
+                                                           ),
+                                             hGuidelines = ( srcAdvance, ) )
+            phase += 1
+
+            self.timing.mark('processKerningPair.6')
 
             naiveAdvancePixels = self.findMinAdvance(pixels0, pixels1)
             if naiveAdvancePixels is None:
@@ -836,10 +1061,10 @@ class Autokern(TFSMap):
 #            intrudingAdvanceRaw = RASTERIZE_CELL_SIZE * intrudingAdvanceRawPixels
 #            print 'intrudingAdvanceRaw', intrudingAdvanceRaw, 'intrudingAdvanceRawPixels', intrudingAdvanceRawPixels
 
-            self.timing.mark('processKerningPair.6')
+            self.timing.mark('processKerningPair.6a')
 
-            naiveSpacingSvg = self.renderSvgScene(
-                                             filenamePrefix, phase, 'naive-spacing',
+            naiveSpacingSvg = self.renderSvgScene(None,
+#                                                  filenamePrefix + '-naive-spacing',
                                              pathTuples = (
                                                            ( 0x7f7faf7f, contours0, ),
                                                            ( 0x7f7f7faf, [contour.applyPlus(TFSPoint(naiveAdvance, 0)) for contour in contours1], ),
@@ -847,8 +1072,8 @@ class Autokern(TFSMap):
                                              hGuidelines = ( naiveAdvance, ) )
             phase += 1
 
-            minDistanceSpacingSvg = self.renderSvgScene(
-                                             filenamePrefix, phase, 'min-spacing',
+            minDistanceSpacingSvg = self.renderSvgScene(None,
+#                                                        filenamePrefix + '-min-spacing',
                                              pathTuples = (
                                                            ( 0x7f7faf7f, contours0, ),
                                                            ( 0x7f7f7faf, [contour.applyPlus(TFSPoint(minAdvance, 0)) for contour in contours1], ),
@@ -856,24 +1081,24 @@ class Autokern(TFSMap):
                                              hGuidelines = ( minAdvance, ) )
             phase += 1
 
-            maxDistanceSpacingSvg = self.renderSvgScene(
-                                             filenamePrefix, phase, 'max-spacing',
+            maxDistanceSpacingSvg = self.renderSvgScene(None,
+#                                                        filenamePrefix + '-max-spacing',
                                              pathTuples = (
                                                            ( 0x7f7faf7f, contours0, ),
                                                            ( 0x7f7f7faf, [contour.applyPlus(TFSPoint(maxAdvance, 0)) for contour in contours1], ),
                                                            ),
                                              hGuidelines = ( maxAdvance, ) )
             phase += 1
-            intrudingAdvanceSpacingSvg = self.renderSvgScene(
-                                             filenamePrefix, phase, 'intruding-advance',
+            intrudingAdvanceSpacingSvg = self.renderSvgScene(None,
+#                                                             filenamePrefix + '-intruding-advance',
                                              pathTuples = (
                                                            ( 0x7f7faf7f, contours0, ),
                                                            ( 0x7f7f7faf, [contour.applyPlus(TFSPoint(intrudingAdvance, 0)) for contour in contours1], ),
                                                            ),
                                              hGuidelines = ( intrudingAdvance, ) )
             phase += 1
-            finalAdvanceSpacingSvg = self.renderSvgScene(
-                                             filenamePrefix, phase, 'advance',
+            finalAdvanceSpacingSvg = self.renderSvgScene(None,
+#                                                         filenamePrefix + '-advance',
                                              pathTuples = (
                                                            ( 0x7f7faf7f, contours0, ),
                                                            ( 0x7f7f7faf, [contour.applyPlus(TFSPoint(advance, 0)) for contour in contours1], ),
@@ -922,6 +1147,9 @@ class Autokern(TFSMap):
                            'maxAdvance': formatEmScalar(maxAdvance),
                            'intrudingAdvance': formatEmScalar(intrudingAdvance),
                            'advance': formatEmScalar(advance),
+                           'srcAdvance': formatEmScalar(srcAdvance),
+                           'srcAdvanceAdjusted': formatEmScalar(srcAdvanceAdjusted),
+                           'advanceAdjusted': formatEmScalar(advanceAdjusted),
 
 #                           'maxAdvance': formatEmScalar(maxAdvance),
                            'min_distance': formatEmScalar(self.min_distance),
@@ -930,6 +1158,7 @@ class Autokern(TFSMap):
                            'min_non_intrusion': formatEmScalar(min_non_intrusion),
 #                           'rounding': formatEmScalar(self.rounding),
 
+                           'srcSpacingSvg': srcSpacingSvg,
                            'naiveSpacingSvg': naiveSpacingSvg,
                            'minDistanceSpacingSvg': minDistanceSpacingSvg,
                            'maxDistanceSpacingSvg': maxDistanceSpacingSvg,
@@ -948,7 +1177,7 @@ class Autokern(TFSMap):
             for key in ( 'ascender',
                          'descender',
                         ):
-                mustacheMap[key] = formatEmScalar(getattr(self.ufofont.info, key))
+                mustacheMap[key] = formatEmScalar(getattr(self.dstUfoFont.info, key))
 
             for key in (
                          'unitsPerEm',
@@ -957,12 +1186,12 @@ class Autokern(TFSMap):
                          'fullName',
                          'fontName',
                         ):
-                mustacheMap[key] = getattr(self.ufofont.info, key)
+                mustacheMap[key] = getattr(self.dstUfoFont.info, key)
 
             import pystache
             logHtml = pystache.render(mustache_template, mustacheMap)
 
-            logFilename = '%s.html' % ( filenamePrefix, )
+            logFilename = self.getKerningPairHtmlFilename(ufoglyph0, ufoglyph1)
             logFile = os.path.abspath(os.path.join(self.html_folder, logFilename))
             with open(logFile, 'wt') as f:
                 # TODO: explicitly encode unicode
@@ -981,15 +1210,43 @@ class Autokern(TFSMap):
 
 #        count = 0
 
-        glyphs = self.ufofont.getGlyphs()
+        glyphs = self.dstUfoFont.getGlyphs()
         total = len(glyphs) * len(glyphs)
         count = 0
         startTime = time.time()
         glyphs.sort(lambda glyph0, glyph1:cmp(glyph0.unicode, glyph1.unicode))
         for ufoglyph0 in glyphs:
             for ufoglyph1 in glyphs:
-                maxUnicode = 0x25
+                glyphNamesToKern = ('grave',
+                                    'acute',
+                                    'AE',
+                                    'backslash',
+                                    'numbersign',
+                                    'aacute',
+                                    'slash',
+                                    'd',
+                                    '4',
+                                    'h',
+                                    'H',
+                                    'A',
+                                    'T',
+                                    'V',
+                                    'L',
+                                    'J',
+                                    'Y',
+                                    'W',
+                                    'N',
+                                    'B',
+                                    )
+                if not ((ufoglyph0.name in glyphNamesToKern) and (ufoglyph1.name in glyphNamesToKern)):
+                    count += 1
+                    continue
+
+
+#                maxUnicode = 0x25
+#                maxUnicode = 0x22
 #                maxUnicode = 0x30
+#                maxUnicode = 0x40
 #                if not (ufoglyph0.unicode <= maxUnicode and ufoglyph1.unicode <= maxUnicode):
 #                    continue
 
@@ -998,8 +1255,8 @@ class Autokern(TFSMap):
 #                if ufoglyph0.unicode != 0x41:
 #                    continue
 
-#        for ufoglyph0 in self.ufofont.getGlyphs():
-#            for ufoglyph1 in self.ufofont.getGlyphs():
+#        for ufoglyph0 in self.dstUfoFont.getGlyphs():
+#            for ufoglyph1 in self.dstUfoFont.getGlyphs():
                 self.processKerningPair(ufoglyph0, ufoglyph1)
 
                 count += 1
@@ -1021,9 +1278,9 @@ class Autokern(TFSMap):
 #                print 'ufoglyph0', ufoglyph0.unicode, ufoglyph0.name, 'ufoglyph1', ufoglyph1.unicode, ufoglyph1.name
                 if count % 10 == 0:
                     print '\t', '%s %s vs. %s %s (%0.2f%%)' % ( ufoglyph0.name,
-                                                          formatGlyphName(ufoglyph0.unicode),
+                                                          formatUnicode(ufoglyph0.unicode),
                                                           ufoglyph1.name,
-                                                          formatGlyphName(ufoglyph1.unicode),
+                                                          formatUnicode(ufoglyph1.unicode),
                                                           100 * count / float(total),), '\t', remaining
 
 #                count += 1
@@ -1044,7 +1301,10 @@ class Autokern(TFSMap):
             raise Exception('Invalid ufo_src: %s' % ufo_src)
 
     #    testFont = os.path.abspath(os.path.join('..', '..', 'data', 'TFSTest Plain.ufo'))
-        self.ufofont = TFSFontFromFile(ufo_src)
+#        self.dstUfoFont = TFSFontFromFile(ufo_src)
+        self.srcUfoFont = TFSFontFromFile(ufo_src)
+        self.dstUfoFont = TFSFontFromFile(ufo_src)
+#        self.dstUfoFont = TFSFontFromFile(ufo_src)
 
 
         if self.ufo_dst is None:
@@ -1100,11 +1360,11 @@ class Autokern(TFSMap):
                 self.css_folder = os.path.join(self.html_folder, 'stylesheets')
                 self.svg_folder = os.path.join(self.html_folder, 'svg')
 
-        self.units_per_em = float(self.ufofont.units_per_em)
-        self.min_distance = self.min_distance_ems * self.ufofont.units_per_em
-        self.max_distance = self.max_distance_ems * self.ufofont.units_per_em
-        self.min_non_intrusion  = self.min_non_intrusion_ems * self.ufofont.units_per_em
-#        self.rounding = self.rounding_ems * self.ufofont.units_per_em
+        self.units_per_em = float(self.dstUfoFont.units_per_em)
+        self.min_distance = self.min_distance_ems * self.dstUfoFont.units_per_em
+        self.max_distance = self.max_distance_ems * self.dstUfoFont.units_per_em
+        self.min_non_intrusion  = self.min_non_intrusion_ems * self.dstUfoFont.units_per_em
+#        self.rounding = self.rounding_ems * self.dstUfoFont.units_per_em
         print 'self.units_per_em', self.units_per_em
         print 'self.min_distance', self.min_distance
         print 'self.max_distance', self.max_distance
@@ -1117,10 +1377,15 @@ class Autokern(TFSMap):
         self.advanceMap = {}
 #        self.minAdvanceMap = defaultdict(0)
         self.rasterCache = {}
-        self.contoursCache = {}
+        self.srcContoursCache = {}
+        self.dstContoursCache = {}
+#        self.dstContoursInflateMinDistanceCache = {}
+#        self.dstContoursInflateMaxDistanceCache = {}
+        self.dstValueCache = {}
+        self.srcValueCache = {}
         self.pixelsCache = {}
         minmax = None
-        for ufoglyph in self.ufofont.getGlyphs():
+        for ufoglyph in self.dstUfoFont.getGlyphs():
 #            print 'ufoglyph', ufoglyph.unicode
             contours = self.getGlyphContours(ufoglyph)
             if len(contours) < 1:
@@ -1134,9 +1399,9 @@ class Autokern(TFSMap):
 #            return [TFSGlyph(glyph) for glyph in self.rffont]
 
     def updateKerning(self):
-        self.ufofont.clearKerning()
+        self.dstUfoFont.clearKerning()
 
-        glyphs = self.ufofont.getGlyphs()
+        glyphs = self.dstUfoFont.getGlyphs()
         glyphs.sort(lambda glyph0, glyph1:cmp(glyph0.unicode, glyph1.unicode))
         for ufoglyph0 in glyphs:
             for ufoglyph1 in glyphs:
@@ -1160,7 +1425,7 @@ class Autokern(TFSMap):
                 '''
                 kerningValue = advance - ufoglyph0.xAdvance
                 if kerningValue != 0:
-                    self.ufofont.setKerningPair(ufoglyph0.name,
+                    self.dstUfoFont.setKerningPair(ufoglyph0.name,
                                                 ufoglyph1.name, kerningValue)
 #                    print 'kerning', ufoglyph0.name, ufoglyph1.name, kerningValue, 'advance, ufoglyph0.xAdvance', advance, ufoglyph0.xAdvance
 
@@ -1169,10 +1434,17 @@ class Autokern(TFSMap):
         '''
         Removes the left and right side bearings from the glyph.
         '''
-        glyphs = self.ufofont.getGlyphs()
+        glyphs = self.dstUfoFont.getGlyphs()
         glyphs.sort(lambda glyph0, glyph1:cmp(glyph0.unicode, glyph1.unicode))
         for ufoglyph in glyphs:
-            contours = ufoglyph.getContours()
+            if self.isCombiningGlyph(ufoglyph):
+                '''
+                TODO: Should we normalize the side bearings of these glyphs to perhaps half of max_distance?
+                '''
+                continue
+
+            contours = self.getGlyphContours(ufoglyph)
+#            contours = ufoglyph.getContours()
             if len(contours) == 0:
                 '''
                 Do not modify width of space and other empty glyphs.
@@ -1182,6 +1454,10 @@ class Autokern(TFSMap):
             contours = [contour.applyPlus(TFSPoint(-minmax.minX, 0)) for contour in contours]
             ufoglyph.setContours(contours, correctDirection=False)
             ufoglyph.setXAdvance(minmax.maxX - minmax.minX)
+
+        # Clear the contours cache.
+        self.dstContoursCache = {}
+        self.dstValueCache = {}
 
 
     def updateSideBearings(self):
@@ -1196,14 +1472,19 @@ class Autokern(TFSMap):
         '''
         Removes the left and right side bearings from the glyph.
         '''
-        glyphs = self.ufofont.getGlyphs()
+        glyphs = self.dstUfoFont.getGlyphs()
         glyphs.sort(lambda glyph0, glyph1:cmp(glyph0.unicode, glyph1.unicode))
 
         glyphWidthMap = {}
         for ufoglyph in glyphs:
             glyphWidthMap[ufoglyph.unicode] = ufoglyph.xAdvance
 
+#        print 'updateSideBearings self.dstContoursCache', self.dstContoursCache.keys()
+
         for ufoglyph in glyphs:
+            if self.isCombiningGlyph(ufoglyph):
+                continue
+#            print 'updateSideBearings getGlyphContours', ufoglyph.name
             contours = self.getGlyphContours(ufoglyph)
 #            contours = ufoglyph.getContours()
             if len(contours) == 0:
@@ -1237,7 +1518,7 @@ class Autokern(TFSMap):
             '''
             Default sidebearings to half of the "max distance" parameter.
             '''
-            leftSideBearing = rightSideBearing = 0.5 * self.max_distance_ems * self.ufofont.units_per_em
+            leftSideBearing = rightSideBearing = 0.5 * self.max_distance_ems * self.dstUfoFont.units_per_em
             '''
             If we have kerning values for left or right side, use half of the average as the side bearing.
             '''
@@ -1291,7 +1572,7 @@ class Autokern(TFSMap):
         minmax0 = minmaxPaths(contours0)
         minmax1 = minmaxPaths(contours1)
 
-        kerning = self.ufofont.getKerningPair(ufoglyph0.name, ufoglyph1.name)
+        kerning = self.dstUfoFont.getKerningPair(ufoglyph0.name, ufoglyph1.name)
         if kerning is None:
             kerning = 0
         advance = ufoglyph0.xAdvance + kerning
@@ -1330,7 +1611,7 @@ class Autokern(TFSMap):
 
     def assessKerning(self):
 
-        glyphs = self.ufofont.getGlyphs()
+        glyphs = self.dstUfoFont.getGlyphs()
         unicodeGlyphMap = {}
         for ufoglyph in glyphs:
             if ufoglyph.unicode:
@@ -1338,8 +1619,8 @@ class Autokern(TFSMap):
 
 
 
-#        for ufoglyph0 in self.ufofont.getGlyphs():
-#            for ufoglyph1 in self.ufofont.getGlyphs():
+#        for ufoglyph0 in self.dstUfoFont.getGlyphs():
+#            for ufoglyph1 in self.dstUfoFont.getGlyphs():
 
         pairGroups = (
                       ( min, 'Minimum Distance Pairs',
@@ -1416,19 +1697,22 @@ class Autokern(TFSMap):
         self.processAllKerningPairs()
         self.timing.mark('processAllKerningPairs.')
 
+#        print 'logDisparities'
         self.logDisparities()
         self.timing.mark('logDisparities.')
 
         if not self.do_not_modify_side_bearings:
+#            print 'updateSideBearings'
             self.updateSideBearings()
             self.timing.mark('updateSideBearings.')
 
+#        print 'updateKerning'
         self.updateKerning()
         self.timing.mark('updateKerning.')
 
-        self.ufofont.update()
-        self.ufofont.save(self.ufo_dst)
-        self.ufofont.close()
+        self.dstUfoFont.update()
+        self.dstUfoFont.save(self.ufo_dst)
+        self.dstUfoFont.close()
 
         self.timing.mark('finished.')
         if True:

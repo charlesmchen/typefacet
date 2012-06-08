@@ -65,8 +65,6 @@ END OF TERMS AND CONDITIONS
 '''
 
 
-
-
 from tfs.common.TFBaseSettings import TFBaseSettings
 import argparse
 
@@ -84,4 +82,3 @@ class FontMetricsAuditSettings(TFBaseSettings):
                             required=True)
 
         return parser
-
