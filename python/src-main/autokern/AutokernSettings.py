@@ -136,5 +136,9 @@ class AutokernSettings(TFBaseSettings):
                             type=float,
                             default=0.2,
                             help='The minimum non-intruding height in ems.  0.0 <= x <= 1.0. Default: 0.2 em')
+        parser.add_argument('--kerning-threshold-ems',
+                            type=float,
+                            default=0.01,
+                            help='Kerning values smaller than this threshold will be ignored.  0.0 <= x <= 1.0. Default: 0.1 em')
 
         return parser

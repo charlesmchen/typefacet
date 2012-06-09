@@ -69,6 +69,9 @@ import os
 import shutil
 import math
 import time
+import locale
+
+locale.setlocale(locale.LC_ALL, 'en_US')
 
 from tfs.common.TFSFont import *
 from AutokernSettings import AutokernSettings
@@ -1238,9 +1241,9 @@ class Autokern(TFSMap):
                                     'N',
                                     'B',
                                     )
-                if not ((ufoglyph0.name in glyphNamesToKern) and (ufoglyph1.name in glyphNamesToKern)):
-                    count += 1
-                    continue
+#                if not ((ufoglyph0.name in glyphNamesToKern) and (ufoglyph1.name in glyphNamesToKern)):
+#                    count += 1
+#                    continue
 
 
 #                maxUnicode = 0x25
@@ -1268,7 +1271,9 @@ class Autokern(TFSMap):
 #                    print 'averageTime', averageTime
                     totalTime = averageTime * total
                     remainingTime = totalTime - elapsedTime
-                    remaining = '%0.0f seconds remaining, %0.2f seconds average' % (remainingTime, averageTime,)
+                    remaining = '%s remaining, %0.2f seconds average' % ( time.strftime('%H:%M:%S', time.gmtime(remainingTime)),
+#                                                                                     locale.format("%d", remainingTime, grouping=True),
+                                                                                     averageTime,)
 
                 def formatUnicode(value):
                     if value is None:
@@ -1364,12 +1369,14 @@ class Autokern(TFSMap):
         self.min_distance = self.min_distance_ems * self.dstUfoFont.units_per_em
         self.max_distance = self.max_distance_ems * self.dstUfoFont.units_per_em
         self.min_non_intrusion  = self.min_non_intrusion_ems * self.dstUfoFont.units_per_em
+        self.kerning_threshold  = self.kerning_threshold_ems * self.dstUfoFont.units_per_em
 #        self.rounding = self.rounding_ems * self.dstUfoFont.units_per_em
-        print 'self.units_per_em', self.units_per_em
-        print 'self.min_distance', self.min_distance
-        print 'self.max_distance', self.max_distance
-        print 'self.intrusion_tolerance', self.intrusion_tolerance
-        print 'self.min_non_intrusion', self.min_non_intrusion
+        print 'units_per_em', self.units_per_em
+        print 'min_distance', self.min_distance
+        print 'max_distance', self.max_distance
+        print 'intrusion_tolerance', self.intrusion_tolerance
+        print 'min_non_intrusion', self.min_non_intrusion
+        print 'kerning_threshold', self.kerning_threshold
 #        print 'self.rounding', self.rounding
     #    kerning.fontMetadata = kerning.ufofont.info
 
@@ -1424,7 +1431,9 @@ class Autokern(TFSMap):
                 TODO: add support for controlling what glyphs are kerned (with pairs).
                 '''
                 kerningValue = advance - ufoglyph0.xAdvance
-                if kerningValue != 0:
+
+                if abs(kerningValue) >= self.kerning_threshold:
+#                if kerningValue != 0:
                     self.dstUfoFont.setKerningPair(ufoglyph0.name,
                                                 ufoglyph1.name, kerningValue)
 #                    print 'kerning', ufoglyph0.name, ufoglyph1.name, kerningValue, 'advance, ufoglyph0.xAdvance', advance, ufoglyph0.xAdvance

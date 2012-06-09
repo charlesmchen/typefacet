@@ -84,6 +84,10 @@ pseudo_argv = (
                '0.1',
                '--intrusion-limit-glyph-width-fraction',
                '0.05',
+#               '--log-dst',
+#               os.path.abspath(os.path.join(TFSProject.findProjectRootFolder(), 'out')),
+               '--precision',
+               '15',
 
 #               '--ufo-src',
 #               os.path.abspath(os.path.join(TFSProject.findProjectRootFolder(), 'data-ignore', 'theleagueof', 'theleagueof-league-gothic-4f9ff8d', 'source', 'League Gothic.ufo')),
@@ -100,10 +104,10 @@ pseudo_argv = (
 #               '--ufo-dst',
 #               os.path.abspath(os.path.join(TFSProject.findProjectRootFolder(), 'out', 'PakTest Plain-kerned.ufo')),
 
-               '--log-dst',
-               os.path.abspath(os.path.join(TFSProject.findProjectRootFolder(), 'out')),
-               '--precision',
-               '25',
+#               '--log-dst',
+#               os.path.abspath(os.path.join(TFSProject.findProjectRootFolder(), 'out')),
+#               '--precision',
+#               '25',
                )
 print 'pseudo_argv', ' '.join([str(arg) for arg in pseudo_argv])
 
