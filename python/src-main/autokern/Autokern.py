@@ -81,6 +81,7 @@ from tfs.common.TFSMap import TFSMap
 import tfs.common.TFSMath as TFSMath
 from tfs.common.TFSPath import minmaxPaths, minmaxMerge, openPathWithPoints
 from tfs.common.TFSPoint import TFSPoint
+import tfs.common.UnicodeCharacterNames as UnicodeCharacterNames
 #from collections import defaultdict
 
 
@@ -709,7 +710,7 @@ class Autokern(TFSMap):
 
             filenamePrefix = 'disparity-%d' % index
             phase = 0
-            oldAdvanceSvg = self.renderSvgScene(filenamePrefix + '-old-advance',
+            oldAdvanceSvg = self.renderSvgScene(None,
                                              pathTuples = (
                                                            ( 0x7f7faf7f, disparity.srcContours0, ),
                                                            ( 0x7f7f7faf, [contour.applyPlus(TFSPoint(disparity.srcAdvance, 0)) for contour in disparity.srcContours1], ),
@@ -717,7 +718,7 @@ class Autokern(TFSMap):
                                              hGuidelines = ( disparity.srcAdvance, ) )
             phase += 1
 
-            newAdvanceSvg = self.renderSvgScene(filenamePrefix + '-new-advance',
+            newAdvanceSvg = self.renderSvgScene(None,
                                              pathTuples = (
                                                            ( 0x7f7faf7f, disparity.dstContours0, ),
                                                            ( 0x7f7f7faf, [contour.applyPlus(TFSPoint(disparity.dstAdvance, 0)) for contour in disparity.dstContours1], ),
@@ -834,17 +835,27 @@ class Autokern(TFSMap):
         return self.getFilenamePrefixPair('autokern', ufoglyph0, ufoglyph1)
 
     def getKerningPairHtmlFilename(self, ufoglyph0, ufoglyph1):
-        return self.getKerningPairFilenamePrefix(ufoglyph0, ufoglyph1) + '.haml'
+        return self.getKerningPairFilenamePrefix(ufoglyph0, ufoglyph1) + '.html'
 
     def processKerningPair(self, ufoglyph0, ufoglyph1):
         '''
+        returns True iff pair is kerned.
+
         TODO: handle empty glyphs with no contours
         '''
 
         self.timing.mark('processKerningPair.0.')
 
-        if self.isCombiningGlyph(ufoglyph0) or self.isCombiningGlyph(ufoglyph1):
-            return
+        if self.pairsToKern is not None:
+            if (ufoglyph0.name, ufoglyph1.name) not in self.pairsToKern:
+                return False
+        elif self.glyphsToKern is not None:
+            if ufoglyph0.name not in self.glyphsToKern:
+                return False
+            if ufoglyph1.name not in self.glyphsToKern:
+                return False
+        elif self.isCombiningGlyph(ufoglyph0) or self.isCombiningGlyph(ufoglyph1):
+            return False
 
 #        print 'processKerningPair'
 
@@ -858,7 +869,7 @@ class Autokern(TFSMap):
         contours0 = self.getGlyphContours(ufoglyph0)
         contours1 = self.getGlyphContours(ufoglyph1)
         if (not contours0) or (not contours1):
-            return
+            return False
 
         self.timing.mark('processKerningPair.01')
 
@@ -880,7 +891,7 @@ class Autokern(TFSMap):
 #        pixels1 = self.rasterizeGlyph(ufoglyph1, RASTERIZE_CELL_SIZE)
 
         if (pixels0 is None) or (pixels1 is None):
-            return
+            return False
 
         if debugKerning:
             self.dumpPixelBlock('pixels0', pixels0)
@@ -889,14 +900,14 @@ class Autokern(TFSMap):
         def convertToPixelUnits(value):
             return int(math.ceil(value / float(RASTERIZE_CELL_SIZE)))
 
-        min_distance = self.min_distance_ems * self.dstUfoFont.units_per_em
+        min_distance = self.min_distance_ems * self.units_per_em
         if debugKerning:
             print 'min_distance', min_distance
 #        min_distance_pixels = self.convertToPixelUnits(min_distance, RASTERIZE_CELL_SIZE)
 #        if debugKerning:
 #            print 'min_distance_pixels', min_distance_pixels
 
-        max_distance = self.max_distance_ems * self.dstUfoFont.units_per_em
+        max_distance = self.max_distance_ems * self.units_per_em
         if debugKerning:
             print 'max_distance', max_distance
 #        max_distance_pixels = self.convertToPixelUnits(max_distance, RASTERIZE_CELL_SIZE)
@@ -939,9 +950,9 @@ class Autokern(TFSMap):
 #        self.minAdvanceMap[(ufoglyph0.unicode,
 #                            ufoglyph1.unicode,)] = minAdvance
 
-        height0 = minmax0.maxY - minmax0.minY
-        height1 = minmax1.maxY - minmax1.minY
-        maxGlyphHeight = max(height0, height1)
+#        height0 = minmax0.maxY - minmax0.minY
+#        height1 = minmax1.maxY - minmax1.minY
+#        maxGlyphHeight = max(height0, height1)
 
         def getPixelsPlusMaxDistance():
             return self.inflatePixelBlock(pixels1, max_distance, RASTERIZE_CELL_SIZE)
@@ -956,8 +967,7 @@ class Autokern(TFSMap):
 
         self.timing.mark('processKerningPair.3')
 
-        intrusion_tolerance = self.intrusion_tolerance * max_distance * maxGlyphHeight
-        intrusion_tolerance_pixels = int(round(float(intrusion_tolerance) / (RASTERIZE_CELL_SIZE * RASTERIZE_CELL_SIZE)))
+        intrusion_tolerance_pixels = int(round((self.intrusion_tolerance * self.units_per_em) / float(RASTERIZE_CELL_SIZE * RASTERIZE_CELL_SIZE)))
 
         min_non_intrusion = self.min_non_intrusion_ems * self.dstUfoFont.units_per_em
         min_non_intrusion_pixels = int(round(float(min_non_intrusion) / RASTERIZE_CELL_SIZE))
@@ -983,20 +993,27 @@ class Autokern(TFSMap):
         if debugKerning:
             print 'intrudingAdvance', intrudingAdvance, 'intrudingAdvancePixels', intrudingAdvancePixels
 
+
         '''
         Now combine results into the final advance value.
         1. Start with the "intruding advance."
         2. Make sure advance is at least the "minimum advance."
-        3. Make sure advance is no greater than the "glyph width intrusion limit".
         '''
         advance = max(minAdvance, intrudingAdvance)
 
-        width0 = minmax0.maxX - minmax0.minX
-        width1 = minmax1.maxX - minmax1.minX
-        intrusion_limit_width = self.intrusion_limit_glyph_width_fraction * min(width0, width1)
-        advanceLimit = (minmax0.maxX - minmax1.minX) - intrusion_limit_width
-#        print 'intrusion_limit', intrusion_limit_width, 'advance', advance, 'advanceLimit', advanceLimit
-        advance = max(advance, advanceLimit)
+        '''
+        3. Make sure the "x-extrema overlap" is not greater than the "max x-extrema overlap".
+        '''
+        x_extrema_overlap = minmax0.maxX - (minmax1.minX + advance)
+        if x_extrema_overlap > self.max_x_extrema_overlap:
+#            print
+#            print 'overlap', ufoglyph0.name, ufoglyph1.name
+#            print 'minmax0.maxX, minmax1.minX', minmax0.maxX, minmax1.minX, 'advance', advance
+#            print 'x_extrema_overlap, self.max_x_extrema_overlap', x_extrema_overlap, self.max_x_extrema_overlap
+#            print 'advance.0', advance
+            advance += x_extrema_overlap - self.max_x_extrema_overlap
+#            print 'advance.1', advance
+
 #        print 'advanceLimit', advanceLimit, 'advance', advance
 
 
@@ -1138,6 +1155,8 @@ class Autokern(TFSMap):
                            'maxY': formatEmScalar(glyphMinmax.maxY),
                         }
 
+            x_extrema_overlap = minmax0.maxX - (minmax1.minX + advance)
+
             mustacheMap = {
                            'pageTitle': pageTitle,
                            'minmax0': minmax0,
@@ -1153,6 +1172,8 @@ class Autokern(TFSMap):
                            'srcAdvance': formatEmScalar(srcAdvance),
                            'srcAdvanceAdjusted': formatEmScalar(srcAdvanceAdjusted),
                            'advanceAdjusted': formatEmScalar(advanceAdjusted),
+                           'x_extrema_overlap': formatEmScalar(x_extrema_overlap),
+                           'max_x_extrema_overlap': formatEmScalar(self.max_x_extrema_overlap),
 
 #                           'maxAdvance': formatEmScalar(maxAdvance),
                            'min_distance': formatEmScalar(self.min_distance),
@@ -1205,6 +1226,8 @@ class Autokern(TFSMap):
 
         self.timing.mark('processKerningPair.9')
 
+        return True
+
 
     def processAllKerningPairs(self):
 
@@ -1220,31 +1243,6 @@ class Autokern(TFSMap):
         glyphs.sort(lambda glyph0, glyph1:cmp(glyph0.unicode, glyph1.unicode))
         for ufoglyph0 in glyphs:
             for ufoglyph1 in glyphs:
-                glyphNamesToKern = ('grave',
-                                    'acute',
-                                    'AE',
-                                    'backslash',
-                                    'numbersign',
-                                    'aacute',
-                                    'slash',
-                                    'd',
-                                    '4',
-                                    'h',
-                                    'H',
-                                    'A',
-                                    'T',
-                                    'V',
-                                    'L',
-                                    'J',
-                                    'Y',
-                                    'W',
-                                    'N',
-                                    'B',
-                                    )
-#                if not ((ufoglyph0.name in glyphNamesToKern) and (ufoglyph1.name in glyphNamesToKern)):
-#                    count += 1
-#                    continue
-
 
 #                maxUnicode = 0x25
 #                maxUnicode = 0x22
@@ -1260,9 +1258,13 @@ class Autokern(TFSMap):
 
 #        for ufoglyph0 in self.dstUfoFont.getGlyphs():
 #            for ufoglyph1 in self.dstUfoFont.getGlyphs():
-                self.processKerningPair(ufoglyph0, ufoglyph1)
+                pairKerned = self.processKerningPair(ufoglyph0, ufoglyph1)
 
                 count += 1
+
+                if not pairKerned:
+                    continue
+
                 remaining = ''
                 if count % 10 == 0:
                     elapsedTime = time.time() - startTime
@@ -1295,6 +1297,35 @@ class Autokern(TFSMap):
 #        sys.exit(0)
         print 'self.advanceMap =', repr(self.advanceMap)
         print
+
+
+    def parseCodePoint(self, argName, glyphNames, value):
+        '''
+        Parses a glyph value in one of three forms and returns to glyph's name.
+        1. Glyph name in font, ie. A = A.
+        2. Hexidecimal, ie. 0x41 = A.
+        3. Decimal, ie. 65 = A.
+        '''
+        if value in glyphNames:
+            return value
+
+        if value.startswith('0x'):
+            try:
+                codePoint = int(value, 16)
+            except ValueError, e:
+                raise Exception('Invalid hexidecimal value in %s: %s' % (argName, value,) )
+        else:
+            try:
+                codePoint = int(value)
+            except ValueError, e:
+                raise Exception('Invalid value in %s: %s' % (argName, value,) )
+
+        try:
+#            print 'codePoint', codePoint
+            name = UnicodeCharacterNames.getUnicodeCharacterName(codePoint)
+            return name
+        except ValueError, e:
+            raise Exception('Unknown value in %s: %s' % (argName, value,) )
 
 
     def configure(self):
@@ -1366,10 +1397,13 @@ class Autokern(TFSMap):
                 self.svg_folder = os.path.join(self.html_folder, 'svg')
 
         self.units_per_em = float(self.dstUfoFont.units_per_em)
-        self.min_distance = self.min_distance_ems * self.dstUfoFont.units_per_em
-        self.max_distance = self.max_distance_ems * self.dstUfoFont.units_per_em
-        self.min_non_intrusion  = self.min_non_intrusion_ems * self.dstUfoFont.units_per_em
-        self.kerning_threshold  = self.kerning_threshold_ems * self.dstUfoFont.units_per_em
+        self.min_distance = self.min_distance_ems * self.units_per_em
+        self.max_distance = self.max_distance_ems * self.units_per_em
+        self.min_non_intrusion  = self.min_non_intrusion_ems * self.units_per_em
+        self.kerning_threshold  = self.kerning_threshold_ems * self.units_per_em
+        self.max_x_extrema_overlap  = self.max_x_extrema_overlap_ems * self.units_per_em
+        self.intrusion_tolerance  = self.intrusion_tolerance_ems * self.units_per_em
+
 #        self.rounding = self.rounding_ems * self.dstUfoFont.units_per_em
         print 'units_per_em', self.units_per_em
         print 'min_distance', self.min_distance
@@ -1377,6 +1411,7 @@ class Autokern(TFSMap):
         print 'intrusion_tolerance', self.intrusion_tolerance
         print 'min_non_intrusion', self.min_non_intrusion
         print 'kerning_threshold', self.kerning_threshold
+        print 'max_x_extrema_overlap', self.max_x_extrema_overlap
 #        print 'self.rounding', self.rounding
     #    kerning.fontMetadata = kerning.ufofont.info
 
@@ -1391,6 +1426,34 @@ class Autokern(TFSMap):
         self.dstValueCache = {}
         self.srcValueCache = {}
         self.pixelsCache = {}
+        self.pairsToKern = None
+        self.glyphsToKern = None
+
+        glyphNames = self.srcUfoFont.glyphNames()
+
+        if self.glyph_pairs_to_kern is not None:
+            if len(self.glyph_pairs_to_kern) < 1:
+                raise Exception('Missing --glyph-pairs-to-kern value')
+            if len(self.glyph_pairs_to_kern) % 2 != 0:
+                raise Exception('Uneven number of  --glyph-pairs-to-kern values')
+            self.pairsToKern = set()
+            for index in xrange(len(self.glyph_pairs_to_kern) / 2):
+                value0 = self.glyph_pairs_to_kern[index * 2 + 0]
+                value1 = self.glyph_pairs_to_kern[index * 2 + 1]
+                self.pairsToKern.add(( self.parseCodePoint('-glyph-pairs-to-kern', glyphNames, value0),
+                                       self.parseCodePoint('-glyph-pairs-to-kern', glyphNames, value1),
+                                       ))
+        elif self.glyphs_to_kern is not None:
+            if len(self.glyphs_to_kern) < 1:
+                raise Exception('Missing --glyphs-to-kern value')
+            self.glyphsToKern = set()
+#            print 'self.glyphs_to_kern', self.glyphs_to_kern
+            for value in self.glyphs_to_kern:
+                self.glyphsToKern.add(self.parseCodePoint('--glyphs-to-kern', glyphNames, value))
+        else:
+            pass
+
+
         minmax = None
         for ufoglyph in self.dstUfoFont.getGlyphs():
 #            print 'ufoglyph', ufoglyph.unicode
@@ -1440,13 +1503,20 @@ class Autokern(TFSMap):
 
 
     def clearSideBearings(self):
+
+        if self.pairsToKern is not None:
+            return
+
         '''
         Removes the left and right side bearings from the glyph.
         '''
         glyphs = self.dstUfoFont.getGlyphs()
         glyphs.sort(lambda glyph0, glyph1:cmp(glyph0.unicode, glyph1.unicode))
         for ufoglyph in glyphs:
-            if self.isCombiningGlyph(ufoglyph):
+            if self.glyphsToKern is not None:
+                if ufoglyph.name not in self.glyphsToKern:
+                    continue
+            elif self.isCombiningGlyph(ufoglyph):
                 '''
                 TODO: Should we normalize the side bearings of these glyphs to perhaps half of max_distance?
                 '''
@@ -1475,6 +1545,9 @@ class Autokern(TFSMap):
         with other glyphs.
         '''
 
+        if self.pairsToKern is not None:
+            return
+
         modifiedAdvanceMap = {}
         modifiedAdvanceMap.update(self.advanceMap)
 
@@ -1491,7 +1564,10 @@ class Autokern(TFSMap):
 #        print 'updateSideBearings self.dstContoursCache', self.dstContoursCache.keys()
 
         for ufoglyph in glyphs:
-            if self.isCombiningGlyph(ufoglyph):
+            if self.glyphsToKern is not None:
+                if ufoglyph.name not in self.glyphsToKern:
+                    continue
+            elif self.isCombiningGlyph(ufoglyph):
                 continue
 #            print 'updateSideBearings getGlyphContours', ufoglyph.name
             contours = self.getGlyphContours(ufoglyph)
@@ -1527,7 +1603,7 @@ class Autokern(TFSMap):
             '''
             Default sidebearings to half of the "max distance" parameter.
             '''
-            leftSideBearing = rightSideBearing = 0.5 * self.max_distance_ems * self.dstUfoFont.units_per_em
+            leftSideBearing = rightSideBearing = 0.5 * self.max_distance_ems * self.units_per_em
             '''
             If we have kerning values for left or right side, use half of the average as the side bearing.
             '''

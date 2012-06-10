@@ -48,7 +48,7 @@
 
 <h3>Original Kerning</h3>
 <p>
-	{{srcSpacingSvg}}
+	{{{srcSpacingSvg}}}
 </p>
 <pre>
 Original Advance: {{srcAdvance}}
@@ -98,12 +98,14 @@ Maximum Advance: {{maxAdvance}}
 Intruding Advance: {{intrudingAdvance}}
 </pre>
 
-<h3>Autokern Kerning</h3>
+<h3>Final Kerning</h3>
 <p>
 	{{{finalAdvanceSpacingSvg}}}
 </p>
 <pre>
 Final Advance: {{advance}}
+x-extrema Overlap: {{x_extrema_overlap}}
+Max x-extrema Overlap: {{max_x_extrema_overlap}}
 </pre>
 
 <!--

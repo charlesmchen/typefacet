@@ -66,10 +66,52 @@ END OF TERMS AND CONDITIONS
 
 
 from tfs.common.TFBaseSettings import TFBaseSettings
+#import tfs.common.UnicodeCharacterNames as UnicodeCharacterNames
 import argparse
 
 
 class AutokernSettings(TFBaseSettings):
+
+#    def codePointType(self, value):
+#        if value.startswith('0x'):
+#            try:
+#                codePoint = int(value, 16)
+#            except ValueError, e:
+#                raise argparse.ArgumentTypeError('Invalid hexidecimal code point: ' + value)
+#            try:
+#                name = UnicodeCharacterNames.getUnicodeCharacterName(codePoint)
+#                return name
+#            except ValueError, e:
+#                raise argparse.ArgumentTypeError('Unknown hexidecimal code point: ' + value)
+#        else:
+#            try:
+#                codePoint = int(value)
+#            except ValueError, e:
+#                '''
+#                ignore
+#                '''
+#                pass
+#
+#                raise argparse.ArgumentTypeError('Not a valid hexidecimal code point: ' + value)
+#        el
+#        value = self.cleanupPath(value)
+#        self.assertExists(value)
+#        if os.path.isfile(value):
+#            msg = "%s is not a file" % value
+#            raise argparse.ArgumentTypeError(msg)
+#        return value
+
+
+    def em01Type(self, value):
+        try:
+            value = float(value)
+        except ValueError, e:
+            raise argparse.ArgumentTypeError('Invalid em value: ' + value)
+
+        if value < 0.0 or value > 1.0:
+            raise argparse.ArgumentTypeError('Invalid em value: ' + value)
+        return value
+
 
     def createParser(self):
 
@@ -85,15 +127,51 @@ class AutokernSettings(TFBaseSettings):
                             required=True)
         parser.add_argument('--log-dst',
                             type=self.dstFolderType,
-                            help='Optional folder in which to write HTML logs.  Writing the HTML logs dramatically worsens performance.  CAUTION: This folder will be completely overwritten.')
+                            help='''
+                            Optional folder in which to write HTML logs.
+                            Note: Writing the HTML logs dramatically worsens performance.
+                            CAUTION: This folder will be completely overwritten.
+                            ''')
+
+        parser.add_argument('--glyph-pairs-to-kern',
+#                            type=self.codePointType,
+                            nargs='+',
+                            help='''A list of glyph pairs to kern.
+                            Other glyphs pairs will be not kerned.
+                            Values may be glyph names (ie. A = A), decimal (ie. 65 = A), or hexidecimal (ie. 0x41 = A).
+                            To kern uppercase T against numeral 4 and lowercase e: "--glyph-pairs-to-kern T four T e".
+                            Overrides the --glyphs-to-kern argument.
+                            If used, no side bearings are adjusted.
+
+                            See the Adobe Glyph List for a list of glyph names:
+                            partners.adobe.com/public/developer/en/opentype/aglfn13.txt
+                            ''')
+        parser.add_argument('--glyphs-to-kern',
+#                            type=self.codePointType,
+                            nargs='+',
+                            help='''A list of glyphs to kern.
+                            Other glyphs will be not kerned.
+                            Values may be glyph names (ie. A = A), decimal (ie. 65 = A), or hexidecimal (ie. 0x41 = A).
+                            To kern uppercase T, numeral 4 and lowercase e against each other: "--glyphs-to-kern T four e".
+                            Overridden by the --glyph-pairs-to-kern argument.
+                            If used, only side bearings of these glyphs are adjusted.
+
+                            See the Adobe Glyph List for a list of glyph names:
+                            partners.adobe.com/public/developer/en/opentype/aglfn13.txt
+                            ''')
         parser.add_argument('--min-distance-ems',
-                            type=float,
+                            type=self.em01Type,
                             default=0.025,
                             help='The absolute minimum distance between glyphs in ems. 0.0 <= x <= 1.0. Default: 0.025 em')
         parser.add_argument('--max-distance-ems',
-                            type=float,
+                            type=self.em01Type,
                             default=0.08,
-                            help='''The absolute maximum distance between glyphs in ems. 0.0 <= x <= 1.0. Default: 0.08 em''')
+                            help='''
+                            The absolute maximum distance between glyphs in ems.
+                            0.0 <= x <= 1.0.
+                            Default: 0.08 em.
+                            ''')
+
 #        parser.add_argument('--rounding-ems',
 #                            type=float,
 #                            default=0.2,
@@ -101,14 +179,17 @@ class AutokernSettings(TFBaseSettings):
 
         parser.add_argument('--assess-only',
                             action='store_true',
-                            help='Activates assessment mode which analyzes the input font and suggests --min-distance-ems and --max-distance-ems values.')
+                            help='''
+                            Activates assessment mode which analyzes the input font and suggests --min-distance-ems and --max-distance-ems values.
+                            In assessment mode, no kerning is performed and no output is written.
+                            ''')
 
         parser.add_argument('--do-not-modify-side-bearings',
                             action='store_true',
-                            help='Disables the default behavior or rewriting the side bearings.')
+                            help='Preserves the current side bearings.')
         parser.add_argument('--allow-negative-side-bearings',
                             action='store_true',
-                            help='Allows side bearings that intrude on the glyph bounds.')
+                            help='Allows side bearings that intrude within the x-extrema of the glyph.')
 
         # TODO: not yet supported.
 #        parser.add_argument('--slope-rise',
@@ -123,21 +204,46 @@ class AutokernSettings(TFBaseSettings):
         parser.add_argument('--precision',
                             type=int,
                             default=10,
-                            help='Precision of the algorithm.  Lower values are more precise but slower. Use a precision of 10 or less for accurate results. 1 < x < 100. Default: 10')
-        parser.add_argument('--intrusion-tolerance',
-                            type=float,
+                            help='''
+                            Precision of the algorithm.
+                            Lower values are more precise but slower.
+                            Use a precision of 10 or less for accurate results.
+                            1 < x < 100.
+                            Default: 10.
+                            ''')
+        parser.add_argument('--intrusion-tolerance-ems',
+                            type=self.em01Type,
                             default=0.05,
-                            help='Intrusion tolerance as a fraction of the area defined by the --max-distance-ems value times the greater of the two glyphs\' heights.  Default: 0.1')
-        parser.add_argument('--intrusion-limit-glyph-width-fraction',
-                            type=float,
-                            default=0.5,
-                            help='Intrusion limit expressed as a fraction of the width of the narrower of the two glyphs.  Default: 0.5')
+                            help='''
+                            Intrusion tolerance in ems.
+                            0.0 <= x <= 1.0.
+                            Default: 0.1.
+                            ''')
+#        parser.add_argument('--intrusion-tolerance',
+#                            type=float,
+#                            default=0.05,
+#                            help='''
+#                            Intrusion tolerance as a fraction of the area defined by the --max-distance-ems value times the greater of the two glyphs\' heights.
+#                            Default: 0.1.
+#                            ''')
+        parser.add_argument('--max-x-extrema-overlap-ems',
+                            type=self.em01Type,
+                            default=0.1,
+                            help='''
+                            The maximum overlap of the x-extrema of the glyphs being kerned in ems.
+                            0.0 <= x <= 1.0.
+                            Default: 0.1 em.
+                            ''')
+#        parser.add_argument('--intrusion-limit-glyph-width-fraction',
+#                            type=float,
+#                            default=0.5,
+#                            help='Intrusion limit expressed as a fraction of the width of the narrower of the two glyphs.  Default: 0.5')
         parser.add_argument('--min-non-intrusion-ems',
-                            type=float,
+                            type=self.em01Type,
                             default=0.2,
                             help='The minimum non-intruding height in ems.  0.0 <= x <= 1.0. Default: 0.2 em')
         parser.add_argument('--kerning-threshold-ems',
-                            type=float,
+                            type=self.em01Type,
                             default=0.01,
                             help='Kerning values smaller than this threshold will be ignored.  0.0 <= x <= 1.0. Default: 0.1 em')
 

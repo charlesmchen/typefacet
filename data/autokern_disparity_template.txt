@@ -78,12 +78,12 @@ Naive Spacing: {{naiveSpacing}}
 
 <h3>Original Kerning</h3>
 <p>
-	<embed src="svg/{{oldAdvanceSvg}}" type="image/svg+xml" />
+	{{{oldAdvanceSvg}}}
 </p>
 
 <h3>Autokern Kerning</h3>
 <p>
-	<embed src="svg/{{newAdvanceSvg}}" type="image/svg+xml" />
+	{{{newAdvanceSvg}}}
 </p>
 
 <pre>

@@ -7,10 +7,13 @@ Project Pages: http://charlesmchen.github.com/typefacet/
 
 ## Featured Contents
 
+### Autokern
+
+A set of scripts for auto-kerning fonts.  See the [TypeFacet Autokern Manual](http://charlesmchen.github.com/typefacet/topics/autokern/index.html).
+
 ### Font Interpolator
 
 A library &amp; tool for combining glyphs in fonts.
-
 
 ## License
 

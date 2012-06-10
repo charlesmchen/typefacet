@@ -126,9 +126,17 @@ class TFSSegment(object):
                     endVectorLength = endVector.length()
                     startIntersectionLength = cpIntersection.distanceTo(self.startPoint())
                     endIntersectionLength = cpIntersection.distanceTo(self.endPoint())
-                    if ((startIntersectionLength > startVectorLength * 0.5) and
-                        (endIntersectionLength > endVectorLength * 0.5)):
+                    if ((startIntersectionLength <= startVectorLength * 0.5) and
+                        (endIntersectionLength <= endVectorLength * 0.5)):
                         # this curve will cross itself.
+
+#                        print 'cpIntersection', cpIntersection.description()
+#                        print 'startVectorLength', startVectorLength
+#                        print 'endVectorLength', endVectorLength
+#                        print 'startIntersectionLength', startIntersectionLength
+#                        print 'endIntersectionLength', endIntersectionLength
+#                        print 'hmm', startIntersectionLength, startVectorLength * 0.5, startIntersectionLength > startVectorLength * 0.5
+
                         raise TFSValidationException('Crossed cubic bezier')
         except TFSValidationException, e:
             print 'TFSSegment.validate', self.description()

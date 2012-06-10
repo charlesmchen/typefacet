@@ -254,12 +254,12 @@ def getUnicodeCharacterName(characterCode,
                             ignoreUnknown=False,
                             skipValidation=False):
 
-    magicCharacterNameMap = { 0x0000: '.notdef',
-                              0x0001: '.null',
-                              0x000D: 'nonmarkingreturn',
-                             }
-    if characterCode in magicCharacterNameMap:
-        return magicCharacterNameMap[characterCode]
+#    magicCharacterNameMap = { 0x0000: '.notdef',
+#                              0x0001: '.null',
+#                              0x000D: 'nonmarkingreturn',
+#                             }
+#    if characterCode in magicCharacterNameMap:
+#        return magicCharacterNameMap[characterCode]
 
     _loadDataIfNecessary()
 
