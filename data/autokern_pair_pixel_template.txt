@@ -16,7 +16,7 @@
   <body>
     <div class="wrapper">
       <header>
-        <h1>pyautokern Results</h1>
+        <h1>TypeFacet Autokern</h1>
         <ul>
         	<li>
     	    	<b>Family: {{familyName}}</b>
@@ -38,7 +38,7 @@
         	</li>
         </ul>
         <p>
-          <a href="http://charlesmchen.github.com/py-autokern/">pyautokern project</a>
+          <a href="http://charlesmchen.github.com/typefacet/">TypeFacet project</a>
         </p>
         
       </header>
@@ -56,12 +56,12 @@ Adjusted Original Advance: {{srcAdvanceAdjusted}}
 Adjusted Autokern Advance: {{advanceAdjusted}}
 </pre>
 
-<h3>Naive Advance</h3>
+<h3>Contact Advance</h3>
 <p>
-	{{{naiveSpacingSvg}}}
+	{{{contactAdvanceSvg}}}
 </p>
 <pre>
-Naive Advance: {{naiveAdvance}}
+Contact Advance: {{contactAdvance}}
 {{#glyphMaps}}
 {{{glyphName}}} left: {{minX}}
 {{{glyphName}}} right: {{maxX}}
@@ -73,26 +73,25 @@ Naive Spacing: {{naiveSpacing}}
 
 <h3>Minimum Advance</h3>
 <p>
-	{{{minDistanceSpacingSvg}}}
+	{{{minDistanceAdvanceSvg}}}
 </p>
 <pre>
 Minimum Distance: {{min_distance}}
-Minimum Advance: {{minAdvance}}
+Minimum Distance Advance: {{minDistanceAdvance}}
 </pre>
 
 <h3>Maximum Advance</h3>
 <p>
-	{{{maxDistanceSpacingSvg}}}
+	{{{maxDistanceAdvanceSvg}}}
 </p>
 <pre>
 Maximum Distance: {{max_distance}}
-Minimum Non-Intrusion: {{min_non_intrusion}}
-Maximum Advance: {{maxAdvance}}
+Maximum Distance Advance: {{maxDistanceAdvance}}
 </pre>
 
 <h3>Intruding Advance</h3>
 <p>
-	{{{intrudingAdvanceSpacingSvg}}}
+	{{{intrudingAdvanceSvg}}}
 </p>
 <pre>
 Intruding Advance: {{intrudingAdvance}}
@@ -100,15 +99,21 @@ Intruding Advance: {{intrudingAdvance}}
 
 <h3>Final Kerning</h3>
 <p>
-	{{{finalAdvanceSpacingSvg}}}
+	{{{finalAdvanceSvg}}}
 </p>
 <pre>
 Final Advance: {{advance}}
 x-extrema Overlap: {{x_extrema_overlap}}
 Max x-extrema Overlap: {{max_x_extrema_overlap}}
+Minimum Non-Intrusion: {{min_non_intrusion}}
 </pre>
 
+
 <!--
+<h3>profileDebugSvg</h3>
+<p>
+	{{{profileDebugSvg}}}
+</p>
 -->
 
       </section>

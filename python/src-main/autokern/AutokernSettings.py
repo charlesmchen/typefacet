@@ -201,16 +201,26 @@ class AutokernSettings(TFBaseSettings):
 #                            default=0,
 #                            help='The slope of oblique fonts is defined as rise/run (1.0/0.0 for non-oblique fonts).')
 
-        parser.add_argument('--precision',
-                            type=int,
-                            default=10,
+        parser.add_argument('--precision-ems',
+                            type=self.em01Type,
+                            default=0.005,
                             help='''
                             Precision of the algorithm.
                             Lower values are more precise but slower.
-                            Use a precision of 10 or less for accurate results.
-                            1 < x < 100.
-                            Default: 10.
+                            Use a precision of 5 or less for accurate results.
+                            0.0 <= x <= 1.0.
+                            Default: 0.005.
                             ''')
+#        parser.add_argument('--precision',
+#                            type=int,
+#                            default=5,
+#                            help='''
+#                            Precision of the algorithm.
+#                            Lower values are more precise but slower.
+#                            Use a precision of 5 or less for accurate results.
+#                            1 < x < 100.
+#                            Default: 10.
+#                            ''')
         parser.add_argument('--intrusion-tolerance-ems',
                             type=self.em01Type,
                             default=0.05,

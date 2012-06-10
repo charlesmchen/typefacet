@@ -169,10 +169,10 @@ def calculateIntersectPoint(p1, p2, p3, p4, debugMode=False):
         print 'calculateIntersectPoint.2'
     return p
 
-    def intersectionWithTangents(p0, tangent0, p1, tangent1):
-        p = getIntersectPoint(p0, p0.plus(tangent0),
-                              p1, p1.plus(tangent1))
-        return p
+def intersectionWithTangents(p0, tangent0, p1, tangent1):
+    p = getIntersectPoint(p0, p0.plus(tangent0),
+                          p1, p1.plus(tangent1))
+    return p
 
 
 # Test script below...
