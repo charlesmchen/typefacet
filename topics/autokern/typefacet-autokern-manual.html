@@ -194,8 +194,8 @@ section pre {
 		<li>
 			Autokern's performance is very dependent on its arguments.  
 			Writing the html logs (using the <b>--log-dst</b> argument) is slow and should probably not used when kerning an entire font.
-			The --precision also has a significant effect on performance. 
-			Smaller values (such as 5 or 10) are more accurate but far slower than large values (such as 25).
+			The --precision-ems also has a significant effect on performance. 
+			Values smaller than the default (0.005) are more accurate but slower.
 		</li>
 		<li>
 			When tuning Autokern's arguments, use the <b>--glyph-pairs-to-kern</b> or <b>--glyphs-to-kern</b> arguments 
@@ -258,7 +258,7 @@ Autokern.py \
 	--max-distance-ems 0.04 \ <-- Tune these arguments together using the same value
 	--max-x-extrema-overlap-ems 0.0 \
 	--intrusion-tolerance 0.1 \
-	--precision 15 \
+	--precision-ems 0.005 \
 	--log-dst out \
 	--glyph-pairs-to-kern T T
 </pre>
@@ -305,7 +305,7 @@ Autokern.py \
 	--max-distance-ems 0.1 \ <-- Tune this value
 	--max-x-extrema-overlap-ems 0.0 \
 	--intrusion-tolerance 0.0 \
-	--precision 15 \
+	--precision-ems 0.005 \
 	--log-dst out \
 	--glyph-pairs-to-kern N N 
 </pre>
@@ -352,7 +352,7 @@ Autokern.py \
 	--max-distance-ems 0.1 \
 	--max-x-extrema-overlap-ems 0.0 \
 	--intrusion-tolerance 0.1 \ <-- Tune this value
-	--precision 15 \
+	--precision-ems 0.005 \
 	--log-dst out \
 	--glyph-pairs-to-kern N N 
 </pre>
@@ -396,9 +396,9 @@ Autokern.py \
 	--max-distance-ems 0.1 \
 	--max-x-extrema-overlap-ems 0.1 \ <-- Tune this value
 	--intrusion-tolerance 0.1 \ 
-	--precision 15 \
+	--precision-ems 0.005 \
 	--log-dst out \
-	--glyph-pairs-to-kern N N 
+	--glyph-pairs-to-kern V A
 </pre>
 
 
