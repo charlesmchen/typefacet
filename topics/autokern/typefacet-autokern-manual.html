@@ -1,0 +1,424 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    
+    <title>TypeFacet Autokern Manual</title>
+
+    <link rel="stylesheet" href="stylesheets/styles.css">
+    <link rel="stylesheet" href="stylesheets/pygment_trac.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    
+    
+
+<style type="text/css">
+<!--
+
+header {
+	position: static;
+}
+
+header div {
+	padding-bottom: 10px;
+}
+
+section div {
+	color: #000;
+}
+
+section div,
+section ul {
+	padding-top: 10px;
+}
+
+section pre {
+	margin-top: 10px;
+}
+
+section div,
+section ul li {
+	color: #000;
+	font: 16px;
+}
+
+section h3 {
+	padding-top: 25px;
+}
+
+section b {
+	color: #333;
+}
+
+section {
+/*
+    width: auto;
+	float: none;
+*/
+}
+
+/*
+.mini-links a {
+	padding-right: 1px;
+}
+
+section pre {
+  font-size: 10px;
+}
+*/
+
+-->
+</style>
+
+  </head>
+  <body>
+
+    <div class="wrapper">
+    
+      <header>
+        <h1>TypeFacet</h1>
+        <p><img src="images/typefacet logo.120.png" /></p>
+        <p class="view"><a href="https://github.com/charlesmchen/typefacet">View the Project on GitHub <small>charlesmchen/typefacet</small></a></p>
+        <ul>
+          <li><a href="https://github.com/charlesmchen/typefacet/zipball/master">Download <strong>ZIP File</strong></a></li>
+          <li><a href="https://github.com/charlesmchen/typefacet/tarball/master">Download <strong>TAR Ball</strong></a></li>
+          <li><a href="https://github.com/charlesmchen/typefacet">View On <strong>GitHub</strong></a></li>
+        </ul>
+        
+<div>
+ <a href="http://typefacet.com/">TypeFacet Blog</a>
+</div>
+
+<div class="social">
+
+<div>
+<a href="https://twitter.com/share" class="twitter-share-button" data-url="http://charlesmchen.github.com/typefacet/" data-text="Typefacet Autokern" data-via="cmchen" data-hashtags="typefacet">Tweet</a>
+<script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0];if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src="//platform.twitter.com/widgets.js";fjs.parentNode.insertBefore(js,fjs);}}(document,"script","twitter-wjs");</script>
+</div>
+
+<div>
+<iframe src="http://markdotto.github.com/github-buttons/github-btn.html?user=charlesmchen&amp;repo=typefacet&amp;type=watch&amp;count=true" allowtransparency="true" frameborder="0" scrolling="0" width="170px" height="30px"></iframe>
+</div>
+
+</div>
+        
+      </header>
+      
+      <section>
+      
+        <h2>TypeFacet Autokern Manual</h2>
+
+	<div>
+	<b>Warning</b>: 
+	You will not receive usable results from Typefacet Autokern if you do not read this manual.
+	</div>
+
+	<h3>
+		Glyph Anatomy
+	</h3>
+	
+	<div>
+		<embed src="svg/example-glyph-anatomy-0.svg" type="image/svg+xml" />
+	</div>
+
+	<div>
+	For the purposes of kerning, a glyph has the elements:
+	</div>
+	<ul>
+		<li>
+			<B>Contour</B>, a path defined by a series of on-points and Bezier control points.
+		</li>
+		<li>
+			<B>LSB</B>, the <b>Left Side Bearing</b>.  This is the distance from the <b>origin</b> (0) to the left <b>x-extrema</b>.  This may be negative.
+		</li>
+		<li>
+			<B>RSB</B>, the <b>Right Side Bearing</b>.  This is the distance from the <b>x-advance</b> to the right <b>x-extrema</b>.  This may be negative.
+		</li>
+		<li>
+			<B>x-extrema</B>, the minimum and maximum x values.  May not correspond to any on-point or bezier control point of a contour.
+		</li>
+		<li>
+			<B>x-advance</B>, the default (unkerned) width of the glyph.
+		</li>
+	</ul>
+	
+	<div>
+		<embed src="svg/example-glyph-anatomy-1.svg" type="image/svg+xml" />
+	</div>
+	
+	<div>
+		When kerning a given pair of glyphs, we have the following elements:
+	</div>
+	<ul>
+		<li>
+			<B>Kerning value</B>, the adjustment to the spacing defined by the side-bearings.  
+			May be positive or negative. 
+			In the example above, a large negative kerning value draws the two glyphs closer together.
+		</li>
+		<li>
+			<B>x-extrema overlap</B>, the overlap of the glyph's x-extrema. 
+			 Does not imply the overlap of contours.
+		</li>
+	</ul>
+		
+	
+	<h3>
+		Installation
+	</h3>
+	<div>
+		Download TypeFacet and its dependencies.  See the <a href="typefacet-autokern-install.html">Installation Guide</a>.
+	</div>
+
+
+	
+	<h3>
+		Overview
+	</h3>
+
+	<ul>
+		<li>
+			TypeFacet Autokern reads a .UFO file and outputs a modified .UFO file.  Autokern only modifies the kerning values and (by default) the glyph side bearings.
+		</li>
+		<li>
+			There is no "correct" default behavior.  
+			Different font styles should be kerned in very different ways.  
+			Moreover kerning is dependent on the proclivities of the type designer.
+		</li>
+		<li>
+			Autokern's behavior is very dependent on its arguments.  
+			You will almost certainly need to try different combinations of arguments to arrive at a satisfactory result.
+		</li>
+		<li>
+			Autokern's performance is very dependent on its arguments.  
+			Writing the html logs (using the <b>--log-dst</b> argument) is slow and should probably not used when kerning an entire font.
+			The --precision also has a significant effect on performance. 
+			Smaller values (such as 5 or 10) are more accurate but far slower than large values (such as 25).
+		</li>
+		<li>
+			When tuning Autokern's arguments, use the <b>--glyph-pairs-to-kern</b> or <b>--glyphs-to-kern</b> arguments 
+			to autokern just a specific set of glyph combinations.  
+			This will be much faster than autokerning the entire font.
+		</li>
+	</ul>
+
+	<h3>
+		Invoking TypeFacet Autokern
+	</h3>
+
+	<div>
+		TypeFacet Autokern can only be used from the command line.
+	</div>
+	<div>
+		As described in the <a href="typefacet-installation.html">Installation Guide</a>, 
+		TypeFacet Autokern's dependencies must be append to the Python path.
+		Here's an example of how to invoke TypeFacet Autokern with the -h argument.
+	</div>
+<pre>
+Mac:
+env PYTHONPATH=dependencies/robofab:dependencies/pystache:dependencies/svgwrite:python/src-main python python/src-main/autokern/Autokern.py -h
+
+Windows:
+set PYTHONPATH=%PYTHONPATH%;dependencies/robofab;dependencies/pystache;dependencies/svgwrite
+python python/src-main/autokern/Autokern.py -h
+</pre>
+	<div>
+		From here on, examples will only describe the arguments to use.  Replace -h in the example above with the new arguments.
+	</div>
+
+	<h3>
+		Step 1: the --min-distance-ems argument
+	</h3>
+
+	<div>
+		The <b>--min-distance-ems</b> argument sets a lower bound on how close the contours of the two glyphs can be.
+	</div>
+	<div>
+		Tune the <b>--min-distance-ems</b> value by
+		kerning a pair of glyphs such as T vs. T, whose profiles meet at the endpoints of two horizontal strokes.
+	</div>
+
+	<div>
+		<embed src="svg/example-min-distance-0.svg" type="image/svg+xml" />
+	</div>
+
+<div>
+	To kern just T vs. T, use the following arguments:
+</div>
+
+<pre>
+# See "Invoking TypeFacet Autokern" above for example of how to append dependencies to the Python path.
+# All arguments should be one line.
+Autokern.py \
+	--ufo-src "theleagueof-league-gothic-4f9ff8d/source/League Gothic.ufo" \
+	--ufo-dst "out/League Gothic-kerned.ufo" \
+	--min-distance-ems 0.04 \ <-- Tune these arguments together using the same value
+	--max-distance-ems 0.04 \ <-- Tune these arguments together using the same value
+	--max-x-extrema-overlap-ems 0.0 \
+	--intrusion-tolerance 0.1 \
+	--precision 15 \
+	--log-dst out \
+	--glyph-pairs-to-kern T T
+</pre>
+
+<div>
+	There are two ways to review the results.  
+	You can open the output .ufo file in a font editor. 
+	A more convenient alternative is to look at Autokern's HTML logs.  
+	The <b>--log-dst</b> argument is set to "out" in the example above, so Autokern will write a HTML log for the T vs T pair to this file: "out/html/autokern-0x4E-0x4E.html".
+	<a href="autokern-pair-example-0.html">Example</a>.
+</div>
+
+
+
+
+	<h3>
+		Step 2: the --max-distance-ems argument
+	</h3>
+
+	<div>
+		The <b>--max-distance-ems</b> defines the normal spacing between two glyphs.
+		It sets an upper bound on how far apart the two glyphs can be.
+	</div>
+	<div>
+		Tune the <b>--max-distance-ems</b> value by
+		kerning a pair of glyphs such as N vs. N, which have straight, uninterrupted profiles.
+	</div>
+
+	<div>
+		<embed src="svg/example-max-distance-0.svg" type="image/svg+xml" />
+	</div>
+
+<div>
+	To kern just N vs. N, use the following arguments:
+</div>
+
+<pre>
+# See "Invoking TypeFacet Autokern" above for example of how to append dependencies to the Python path.
+# All arguments should be one line.
+Autokern.py \
+	--ufo-src "theleagueof-league-gothic-4f9ff8d/source/League Gothic.ufo" \
+	--ufo-dst "out/League Gothic-kerned.ufo" \
+	--min-distance-ems 0.04 \
+	--max-distance-ems 0.1 \ <-- Tune this value
+	--max-x-extrema-overlap-ems 0.0 \
+	--intrusion-tolerance 0.0 \
+	--precision 15 \
+	--log-dst out \
+	--glyph-pairs-to-kern N N 
+</pre>
+
+
+
+
+	<h3>
+		Step 3: the --intrusion-tolerance-ems argument
+	</h3>
+<div>
+	The <b>--intrusion-tolerance-ems</b> argument defines the maximum amount to which the glyphs can "intrude" into the spacing between them.
+	This argument defines not a length but an area: an area of size --intrusion-tolerance-ems X 1.0 em = intrusion area em^2.
+</div>
+<div>
+	For example, if you are working with a serif font, your results for the N vs. N kerning (see above) ought to look something like this:
+</div>
+
+	<div>
+		<embed src="svg/example-max-distance-1.svg" type="image/svg+xml" />
+	</div>
+
+<div>
+	This is wrong.  
+	The <b>--max-distance-ems</b> argument should be used to specify the distance between 
+		glyph's bodies, not small details like serifs. 
+	The serifs should intrude into the spacing between the glyphs.
+</div>
+<div>
+	Intrusion is limited by the <b>--min-distance-ems</b> argument, so intrusion will not lead to overlapping contours.
+</div>
+
+	<div>
+		<embed src="svg/example-max-distance-2.svg" type="image/svg+xml" />
+	</div>
+
+<pre>
+# See "Invoking TypeFacet Autokern" above for example of how to append dependencies to the Python path.
+# All arguments should be one line.
+Autokern.py \
+	--ufo-src theleagueof-linden-hill-a3f7ae6/source/Linden Hill.ufo \
+	--ufo-dst out/Linden Hill-kerned.ufo \
+	--min-distance-ems 0.04 \
+	--max-distance-ems 0.1 \
+	--max-x-extrema-overlap-ems 0.0 \
+	--intrusion-tolerance 0.1 \ <-- Tune this value
+	--precision 15 \
+	--log-dst out \
+	--glyph-pairs-to-kern N N 
+</pre>
+
+
+
+
+
+
+
+
+	<h3>
+		Step 4: the --max-x-extrema-overlap-ems argument
+	</h3>
+
+	<div>
+		The <b>--max-x-extrema-overlap-ems</b> argument limits the extent to which the x-extrema of glyphs can overlap.  
+		x-extrema overlap does not mean contour overlap.
+	</div>
+	<div>
+		Tune the <b>--max-x-extrema-overlap-ems</b> value by
+		kerning a pair of glyphs such as V vs. A or T vs. a whose x-extrema do not collide.
+	</div>
+
+	<div>
+		<embed src="svg/example-extrema-overlap-0.svg" type="image/svg+xml" />
+	</div>
+
+<div>
+	If the <b>--max-x-extrema-overlap-ems</b> argument can be negative, it will have the effect
+	of maintaining a minimum spacing between the glyphs' x-extrema.
+</div>
+
+<pre>
+# See "Invoking TypeFacet Autokern" above for example of how to append dependencies to the Python path.
+# All arguments should be one line.
+Autokern.py \
+	--ufo-src theleagueof-linden-hill-a3f7ae6/source/Linden Hill.ufo \
+	--ufo-dst out/Linden Hill-kerned.ufo \
+	--min-distance-ems 0.04 \
+	--max-distance-ems 0.1 \
+	--max-x-extrema-overlap-ems 0.1 \ <-- Tune this value
+	--intrusion-tolerance 0.1 \ 
+	--precision 15 \
+	--log-dst out \
+	--glyph-pairs-to-kern N N 
+</pre>
+
+
+
+
+
+	<div>
+	</div>
+
+<a name="bottom"> </a>
+
+      </section>
+      
+      <footer>
+<!--
+        <p>This project is maintained by <a href="https://github.com/charlesmchen">charlesmchen</a></p>
+-->
+      </footer>
+    </div>
+    <script src="javascripts/scale.fix.js"></script>
+    
+  </body>
+</html>

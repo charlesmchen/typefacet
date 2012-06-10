@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<svg baseProfile="full" height="400px" version="1.1" width="468px" xmlns="http://www.w3.org/2000/svg" xmlns:ev="http://www.w3.org/2001/xml-events" xmlns:xlink="http://www.w3.org/1999/xlink">
+<rect fill="rgb(255,255,255)" fill-opacity="1.000" height="400px" stroke="none" width="468px" x="0" y="0"/>
+<rect fill="none" height="4px" stroke="rgb(127,127,127)" stroke-opacity="0.498" stroke-width="1" width="4px" x="259.220472441" y="13.9842519685"/>
+<rect fill="none" height="4px" stroke="rgb(127,127,127)" stroke-opacity="0.498" stroke-width="1" width="4px" x="183.295275591" y="242.881889764"/>
+<rect fill="none" height="4px" stroke="rgb(127,127,127)" stroke-opacity="0.498" stroke-width="1" width="4px" x="182.547244094" y="242.881889764"/>
+<rect fill="none" height="4px" stroke="rgb(127,127,127)" stroke-opacity="0.498" stroke-width="1" width="4px" x="105.874015748" y="13.9842519685"/>
+<rect fill="none" height="4px" stroke="rgb(127,127,127)" stroke-opacity="0.498" stroke-width="1" width="4px" x="65.4803149606" y="13.9842519685"/>
+<rect fill="none" height="4px" stroke="rgb(127,127,127)" stroke-opacity="0.498" stroke-width="1" width="4px" x="163.472440945" y="282.527559055"/>
+<rect fill="none" height="4px" stroke="rgb(127,127,127)" stroke-opacity="0.498" stroke-width="1" width="4px" x="201.996062992" y="282.527559055"/>
+<rect fill="none" height="4px" stroke="rgb(127,127,127)" stroke-opacity="0.498" stroke-width="1" width="4px" x="299.988188976" y="13.9842519685"/>
+<path d="M261,16
+L185,245
+L185,245
+L108,16
+L67,16
+L165,285
+L204,285
+L302,16
+L261,16
+Z" fill="none" stroke="rgb(127,175,127)" stroke-opacity="0.498" stroke-width="2"/>
+
+<text x="235" y="240" font-family="Lato, Helvetica, Arial, sans-serif;" font-size="14px" font-weight="bold" fill="#7f977f" >
+    Contour
+</text>
+
+<path d="M10,300
+L67,300
+Z" fill="none" stroke="rgb(0,0,223)" stroke-opacity="0.498" stroke-width="3"/>
+<text x="39" y="320" font-family="Lato, Helvetica, Arial, sans-serif;" font-size="14px" font-weight="bold" fill="#7f7fDF" text-anchor="middle">
+    LSB
+</text>
+<path d="M67,310
+L302,310
+Z" fill="none" stroke="rgb(0,223,0)" stroke-opacity="0.498" stroke-width="3"/>
+<text x="67" y="330" font-family="Lato, Helvetica, Arial, sans-serif;" font-size="14px" font-weight="bold" fill="#7fDf7F">
+    min x-extrema
+</text>
+<text x="302" y="330" font-family="Lato, Helvetica, Arial, sans-serif;" font-size="14px" font-weight="bold" fill="#7fDf7F" text-anchor="end">
+    max x-extrema
+</text>
+<path d="M302,320
+L359,320
+Z" fill="none" stroke="rgb(223,0,0)" stroke-opacity="0.498" stroke-width="3"/>
+<text x="330" y="340" font-family="Lato, Helvetica, Arial, sans-serif;" font-size="14px" font-weight="bold" fill="#Df7f7F" text-anchor="middle">
+    RSB
+</text>
+<path d="M10,350
+L359,350
+Z" fill="none" stroke="rgb(223,0,223)" stroke-opacity="0.498" stroke-width="3"/>
+<text x="175" y="370" font-family="Lato, Helvetica, Arial, sans-serif;" font-size="14px" font-weight="bold" fill="#Df7fDF" text-anchor="middle">
+    x-Advance
+</text>
+
+<text x="369" y="285" font-family="Lato, Helvetica, Arial, sans-serif;" font-size="14px" font-weight="bold" fill="#7f7f7F" dominant-baseline="central">
+    Baseline
+</text>
+
+<!-- Vertical Lines -->
+<path d="M10,350
+L10,16
+Z" fill="none" stroke="rgb(223,223,223)" stroke-opacity="0.498" stroke-width="1"/>
+<path d="M67,350
+L67,16
+Z" fill="none" stroke="rgb(223,223,223)" stroke-opacity="0.498" stroke-width="1"/>
+<path d="M302,350
+L302,16
+Z" fill="none" stroke="rgb(223,223,223)" stroke-opacity="0.498" stroke-width="1"/>
+<path d="M359,350
+L359,16
+Z" fill="none" stroke="rgb(223,223,223)" stroke-opacity="0.498" stroke-width="1"/>
+
+<!-- Horizontal Lines -->
+<path d="M10,285
+L359,285
+Z" fill="none" stroke="rgb(223,223,223)" stroke-opacity="0.498" stroke-width="1"/>
+<path d="M10,16
+L359,16
+Z" fill="none" stroke="rgb(223,223,223)" stroke-opacity="0.498" stroke-width="1"/>
+
+<rect fill="none" height="400px" stroke="rgb(191,191,191)" stroke-opacity="0.498" stroke-width="1" width="468px" x="0" y="0"/></svg>

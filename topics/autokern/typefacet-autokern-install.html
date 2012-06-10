@@ -1,0 +1,198 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    
+    <title>TypeFacet Autokern Installation</title>
+
+    <link rel="stylesheet" href="stylesheets/styles.css">
+    <link rel="stylesheet" href="stylesheets/pygment_trac.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    
+    
+
+<style type="text/css">
+<!--
+
+header {
+	position: static;
+}
+
+header div {
+	padding-bottom: 10px;
+}
+
+section div {
+	color: #000;
+}
+
+section div,
+section ul {
+	padding-top: 10px;
+}
+
+section pre {
+	margin-top: 10px;
+}
+
+section div,
+section ul li {
+	color: #000;
+	font: 16px;
+}
+
+section h3 {
+	padding-top: 25px;
+}
+
+section b {
+	color: #333;
+}
+
+section {
+/*
+    width: auto;
+	float: none;
+*/
+}
+
+/*
+.mini-links a {
+	padding-right: 1px;
+}
+
+section pre {
+  font-size: 10px;
+}
+*/
+
+-->
+</style>
+
+  </head>
+  <body>
+
+    <div class="wrapper">
+    
+      <header>
+        <h1>TypeFacet</h1>
+        <p><img src="images/typefacet logo.120.png" /></p>
+        <p class="view"><a href="https://github.com/charlesmchen/typefacet">View the Project on GitHub <small>charlesmchen/typefacet</small></a></p>
+        <ul>
+          <li><a href="https://github.com/charlesmchen/typefacet/zipball/master">Download <strong>ZIP File</strong></a></li>
+          <li><a href="https://github.com/charlesmchen/typefacet/tarball/master">Download <strong>TAR Ball</strong></a></li>
+          <li><a href="https://github.com/charlesmchen/typefacet">View On <strong>GitHub</strong></a></li>
+        </ul>
+        
+<div>
+ <a href="http://typefacet.com/">TypeFacet Blog</a>
+</div>
+
+<div class="social">
+
+<div>
+<a href="https://twitter.com/share" class="twitter-share-button" data-url="http://charlesmchen.github.com/typefacet/" data-text="Typefacet Autokern" data-via="cmchen" data-hashtags="typefacet">Tweet</a>
+<script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0];if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src="//platform.twitter.com/widgets.js";fjs.parentNode.insertBefore(js,fjs);}}(document,"script","twitter-wjs");</script>
+</div>
+
+<div>
+<iframe src="http://markdotto.github.com/github-buttons/github-btn.html?user=charlesmchen&amp;repo=typefacet&amp;type=watch&amp;count=true" allowtransparency="true" frameborder="0" scrolling="0" width="170px" height="30px"></iframe>
+</div>
+
+</div>
+        
+      </header>
+      
+      <section>
+      
+        <h2>TypeFacet Autokern Installation</h2>
+
+	<div>
+	Back to the <a href="typefacet-autokern-manual.html">TypeFacet Autokern Manual</a>.
+	</div>
+
+	<h3>Step 1: Download TypeFacet</h3>
+	<ul>
+	  <li><a href="https://github.com/charlesmchen/typefacet/zipball/master">Download as .zip</a></li>
+	  <li><a href="https://github.com/charlesmchen/typefacet/tarball/master">Download as .tar</a></li>
+	</ul>
+	<div>
+		Once downloaded, expand the archive.
+	</div>
+	
+	<h3>Step 2: Download the dependencies</h3>
+	<ul>
+	  <li>Python 2.7 or later.  TypeFacet Autokern may work with earlier versions of Python.</li>
+	  <li><a href="http://robofab.org/">robofab</a></li>
+	  <li><a href="https://github.com/defunkt/pystache/">pystache</a> (only if using --log-dst option to write html logs)</li>
+	  <li><a href="http://packages.python.org/svgwrite/">svgwrite</a> (only if using --log-dst option to write html logs)</li> 
+	</ul>
+	<div>
+		It is not necessary to install these packages into your Python installation.
+		Instead, create a "dependencies" folder in your "typefacet" folder and move these packages there.
+	</div>
+	
+	<h3>Step 3: Test Installation</h3>
+	<ul>
+	  <li>Go to your Typefacet folder in Console (Mac) or Command Prompt (Windows)</li>
+	</ul>
+<pre>
+# Mac
+cd ~/Downloads/typefacet
+
+# Windows
+cd Downloads/typefacet
+</pre>
+	<ul>
+	  <li>Invoke Autokern With Usage Switch</li>
+	</ul>
+<pre>
+# We need to temporarily append our dependencies to the Python path.
+
+# Mac:
+env PYTHONPATH=dependencies/robofab:dependencies/pystache:dependencies/svgwrite:python/src-main python python/src-main/autokern/Autokern.py -h
+
+# Windows:
+set PYTHONPATH=%PYTHONPATH%;dependencies/robofab;dependencies/pystache;dependencies/svgwrite
+python python/src-main/autokern/Autokern.py -h
+</pre>
+	<div>
+		Using the -h help switch (as above) should output the usage message:
+	</div>
+<pre>
+usage: Autokern.py [-h] --ufo-src UFO_SRC --ufo-dst UFO_DST
+                   [--log-dst LOG_DST]
+                   [--glyph-pairs-to-kern GLYPH_PAIRS_TO_KERN [GLYPH_PAIRS_TO_KERN ...]]
+                   [--glyphs-to-kern GLYPHS_TO_KERN [GLYPHS_TO_KERN ...]]
+                   [--min-distance-ems MIN_DISTANCE_EMS]
+                   [--max-distance-ems MAX_DISTANCE_EMS] [--assess-only]
+                   [--do-not-modify-side-bearings]
+                   [--allow-negative-side-bearings] [--precision PRECISION]
+                   [--intrusion-tolerance INTRUSION_TOLERANCE]
+                   [--intrusion-limit-glyph-width-fraction INTRUSION_LIMIT_GLYPH_WIDTH_FRACTION]
+                   [--min-non-intrusion-ems MIN_NON_INTRUSION_EMS]
+                   [--kerning-threshold-ems KERNING_THRESHOLD_EMS]
+
+etc.
+</pre>
+
+	<div>
+	Back to the <a href="typefacet-autokern-manual.html">TypeFacet Autokern Manual</a>.
+	</div>
+	
+      </section>
+      
+      <footer>
+<!--
+        <p>This project is maintained by <a href="https://github.com/charlesmchen">charlesmchen</a></p>
+-->
+      </footer>
+    </div>
+    <script src="javascripts/scale.fix.js"></script>
+    
+  </body>
+</html>
