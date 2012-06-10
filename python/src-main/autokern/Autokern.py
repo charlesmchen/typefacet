@@ -71,6 +71,7 @@ import math
 import time
 import locale
 import itertools
+import yaml
 
 locale.setlocale(locale.LC_ALL, 'en_US')
 
@@ -95,13 +96,16 @@ TFSMath.setDefaultPrecisionDigits(1)
 
 AUTOKERN_SEGMENT_PRECISION = 16
 
+USE_CACHED_KERNING_MAP = False
+#USE_CACHED_KERNING_MAP = True
+
 
 def formatGlyphUnicode(glyph):
     if glyph.unicode is None:
         return 'None'
     else:
         return u'%d %s' % ( glyph.unicode,
-                                 hex(glyph.unicode), )
+                            hex(glyph.unicode), )
 
 def formatUnicode(value):
     if value is None:
@@ -263,10 +267,10 @@ class Autokern(TFSMap):
 #        ufoglyph = self.srcUfoFont.getGlyphByName(ufoglyph.name)
 #        if ufoglyph is None:
 #            return None
-        if ufoglyph.unicode in self.srcContoursCache:
-            return self.srcContoursCache[ufoglyph.unicode]
+        if ufoglyph.name in self.srcContoursCache:
+            return self.srcContoursCache[ufoglyph.name]
         contours = ufoglyph.getContours()
-        self.srcContoursCache[ufoglyph.unicode] = contours
+        self.srcContoursCache[ufoglyph.name] = contours
         return contours
 
 
@@ -365,14 +369,14 @@ class Autokern(TFSMap):
 
 
     def rasterizeGlyph(self, ufoglyph, RASTERIZE_CELL_SIZE):
-        if ufoglyph.unicode in self.rasterCache:
-            return self.rasterCache[ufoglyph.unicode]
+        if ufoglyph.name in self.rasterCache:
+            return self.rasterCache[ufoglyph.name]
         pixels = ufoglyph.rasterize(cellSize=RASTERIZE_CELL_SIZE,
                                    xMin=self.minmax.minX,
                                    yMin=self.minmax.minY,
                                    xMax=self.minmax.maxX,
                                    yMax=self.minmax.maxY)
-        self.rasterCache[ufoglyph.unicode] = pixels
+        self.rasterCache[ufoglyph.name] = pixels
         return pixels
 
 #    def findMinAdvance(self, pixels0, pixels1, tolerancePixels=0):
@@ -498,8 +502,8 @@ class Autokern(TFSMap):
         glyphs.sort(lambda glyph0, glyph1:cmp(glyph0.unicode, glyph1.unicode))
         for ufoglyph0 in glyphs:
             for ufoglyph1 in glyphs:
-                key = (ufoglyph0.unicode,
-                       ufoglyph1.unicode,)
+                key = (ufoglyph0.name,
+                       ufoglyph1.name,)
                 if key not in self.advanceMap:
                     continue
 
@@ -710,7 +714,7 @@ class Autokern(TFSMap):
 
 
     def convertProfileToLogPaths(self, profile, isLeft, offset=None):
-        minYunits = int(math.floor(self.allGlyphsMinY / float(self.precision)))
+        minYunits = int(math.floor((self.allGlyphsMinY - self.max_distance) / float(self.precision)))
 
         result = []
 
@@ -755,7 +759,7 @@ class Autokern(TFSMap):
         return result
 
 
-    def makeProfile(self, func, paths=None, segments=None):
+    def makeProfile(self, func, paths=None, segments=None, debug=False):
         maxYunits = int(math.ceil((self.allGlyphsMaxY + self.max_distance) / float(self.precision)))
         minYunits = int(math.floor((self.allGlyphsMinY - self.max_distance) / float(self.precision)))
         yHeightUnits = 1 + maxYunits - minYunits
@@ -795,8 +799,11 @@ class Autokern(TFSMap):
             '''
             y0u = int(round(point0.y / float(self.precision)))
             y1u = int(round(point1.y / float(self.precision)))
+#            y0u = int(round((point0.y - self.max_distance) / float(self.precision)))
+#            y1u = int(round((point1.y - self.max_distance) / float(self.precision)))
 
-#            print 'addSegmentSection', point0.description(), point1.description(), 'y0u', y0u, 'y1u', y1u
+            if debug:
+                print 'addSegmentSection', point0.description(), point1.description(), 'y0u', y0u, 'y1u', y1u
 
             if y0u == y1u:
                 yIndex = y0u - minYunits
@@ -820,7 +827,8 @@ class Autokern(TFSMap):
                 addProfilePoint(yIndex, xValue)
 
         for segment in allSegments:
-#            print 'segment', segment.description()
+            if debug:
+                print 'segment', segment.description()
             if segment.isStraight():
                 addSegmentSection(segment.startPoint(), segment.endPoint())
             else:
@@ -1025,8 +1033,9 @@ class Autokern(TFSMap):
         self.timing.mark('processKerningPair.01')
 
         def getRightContour():
+#            return self.makeProfile(func=max, paths=contours0, debug=True)
             return self.makeProfile(func=max, paths=contours0)
-        profile0 = self.getDstCachedValue('getRightContour %s' % ufoglyph1.name, getRightContour)
+        profile0 = self.getDstCachedValue('getRightContour %s' % ufoglyph0.name, getRightContour)
 
         self.timing.mark('processKerningPair.011')
 
@@ -1123,10 +1132,12 @@ class Autokern(TFSMap):
 #        print 'advanceLimit', advanceLimit, 'advance', advance
 
 
+        self.advanceMap[(ufoglyph0.name,
+                         ufoglyph1.name,)] = advance
 
-
-        self.advanceMap[(ufoglyph0.unicode,
-                         ufoglyph1.unicode,)] = advance
+#        if ufoglyph0.name == 'A' or ufoglyph1.name == 'A':
+#            print '\t', 'result', ufoglyph0.name, ufoglyph1.name, advance, 'spacing', advance - ufoglyph0.xAdvance
+#        print '\t', 'result', ufoglyph0.name, ufoglyph1.name, advance, 'spacing', advance - ufoglyph0.xAdvance
 
         if debugKerning:
             print '\t', ufoglyph0.unicode, ufoglyph1.unicode, advance
@@ -1368,13 +1379,22 @@ class Autokern(TFSMap):
 
     def processAllKerningPairs(self):
 
-#        self.advanceMap = {(67, 79): 675, (65, 67): 575, (84, 67): 1025, (88, 69): 1063.0, (66, 65): 350, (67, 85): 675, (68, 76): 675, (69, 90): 680.0, (66, 76): 975, (69, 87): 875, (65, 84): 225, (71, 84): 300, (76, 66): 675, (85, 84): 675, (89, 67): 875, (65, 89): 300, (84, 85): 800, (85, 65): 375, (90, 73): 875, (90, 67): 875, (87, 66): 1375, (76, 88): -50, (66, 87): 975, (79, 84): 1025, (87, 79): 1375, (66, 66): 975, (73, 88): -150, (68, 65): 400, (85, 69): 875, (70, 68): 525, (85, 90): 400, (89, 79): 875, (65, 87): 575, (79, 67): 1375, (76, 71): 250, (85, 87): 1025, (84, 87): 1025, (65, 68): 575, (84, 66): 1025, (87, 84): 1025, (85, 68): 1025, (67, 73): 675, (65, 73): 575, (87, 65): 725, (84, 69): 950, (66, 88): 250, (67, 90): 250, (79, 65): 725, (73, 70): 250, (69, 67): 875, (66, 71): 650, (79, 88): 550, (68, 70): 675, (70, 65): 300, (79, 85): 1150, (90, 65): 700, (79, 79): 1375, (70, 84): 300, (79, 70): 950, (76, 68): 675, (89, 84): 525, (65, 71): 550, (76, 87): 675, (85, 71): 650, (67, 68): 675, (89, 73): 875, (73, 76): 675, (87, 68): 1375, (69, 73): 875, (67, 89): 250, (73, 65): 25, (69, 70): 880.0, (88, 73): 1375, (71, 71): 525, (70, 66): 525, (79, 69): 950, (76, 73): 675, (90, 84): 525, (89, 87): 875, (65, 66): 575, (76, 84): 325, (67, 67): 675, (89, 68): 875, (73, 79): 675, (79, 87): 1375, (69, 76): 875, (79, 89): 750, (67, 84): 350, (88, 67): 1375, (69, 89): 680.0, (90, 89): 675, (88, 87): 1375, (68, 88): 75, (70, 79): 525, (71, 87): 525, (76, 67): 675, (79, 76): 1375, (65, 88): -250, (84, 90): 600, (84, 65): 525, (84, 89): 600, (76, 89): 50, (66, 84): 625, (89, 71): 875, (90, 88): 250, (69, 79): 875, (66, 67): 975, (68, 66): 675, (84, 79): 1025, (70, 69): 530.0, (71, 73): 525, (85, 89): 400, (71, 90): 325, (84, 88): 200, (89, 88): 250, (87, 87): 1375, (85, 67): 1025, (90, 69): 880.0, (84, 70): 800, (66, 89): 350, (89, 66): 875, (73, 69): 250, (69, 66): 875, (66, 68): 975, (88, 66): 1375, (73, 90): 50, (71, 67): 525, (68, 71): 675, (89, 69): 880.0, (70, 70): 525, (71, 76): 525, (70, 85): 525, (71, 89): 325, (76, 69): 250, (85, 73): 1025, (65, 70): 350, (70, 88): -75, (87, 90): 750, (85, 70): 600, (67, 71): 525, (90, 70): 850, (87, 71): 950, (66, 90): 350, (67, 88): 75, (68, 73): 675, (69, 69): 875, (66, 73): 975, (90, 85): 850, (73, 85): 450, (71, 70): 525, (68, 68): 675, (70, 67): 525, (90, 87): 875, (68, 87): 675, (79, 68): 1375, (85, 76): 1025, (88, 84): 1150, (65, 65): 575, (87, 89): 750, (76, 85): 450, (67, 66): 675, (84, 84): 675, (67, 87): 675, (73, 67): 675, (69, 88): 150, (88, 90): 1050, (88, 65): 950, (71, 69): 780.0, (68, 89): 400, (69, 85): 650, (70, 76): 525, (88, 68): 1375, (68, 84): 350, (90, 66): 875, (90, 76): 875, (76, 79): 675, (85, 79): 1025, (67, 76): 675, (79, 66): 1375, (65, 76): 575, (76, 90): 50, (66, 85): 825, (67, 65): 275, (89, 70): 850, (73, 73): 675, (87, 73): 1375, (68, 67): 675, (66, 79): 975, (88, 85): 1350, (85, 88): 200, (65, 85): 350, (70, 73): 525, (71, 85): 525, (76, 65): 25, (85, 85): 800, (65, 90): 300, (76, 76): 675, (85, 66): 1025, (89, 76): 875, (65, 79): 575, (87, 67): 1375, (84, 71): 875, (89, 65): 700, (73, 68): 675, (87, 76): 1375, (69, 65): 225, (66, 69): 600, (73, 89): 50, (71, 66): 525, (88, 89): 1050, (70, 71): 525, (71, 79): 525, (90, 90): 675, (71, 88): -75, (76, 70): 250, (89, 90): 675, (65, 69): 800, (70, 89): 325, (87, 85): 1150, (84, 73): 1025, (79, 90): 750, (67, 70): 525, (88, 70): 1300, (90, 71): 875, (87, 70): 950, (84, 68): 1025, (73, 71): 250, (90, 79): 875, (69, 68): 875, (66, 70): 650, (73, 84): 325, (71, 65): 300, (68, 69): 500, (88, 76): 1375, (88, 79): 1375, (89, 89): 675, (88, 71): 1300, (84, 76): 1025, (70, 87): 525, (79, 71): 950, (89, 85): 850, (70, 90): 325, (87, 88): 550, (67, 69): 375, (87, 69): 950, (73, 66): 675, (68, 79): 675, (69, 71): 880.0, (73, 87): 675, (71, 68): 525, (68, 90): 400, (69, 84): 875, (88, 88): 775, (79, 73): 1375, (68, 85): 675, (90, 68): 875}
-#        return
+        if USE_CACHED_KERNING_MAP:
+            import tfs.common.TFSProject as TFSProject
+            tmpFolder = os.path.abspath(os.path.join(TFSProject.findProjectRootFolder(), 'tmp'))
+            advanceMapYamlFile = os.path.abspath(os.path.join(tmpFolder, 'advanceMap.yaml'))
+            if os.path.exists(advanceMapYamlFile):
+                with open(advanceMapYamlFile, 'rt') as f:
+                    yamldata = f.read()
+                    self.advanceMap = yaml.load(yamldata)
+                    return
 
         glyphs = self.dstUfoFont.getGlyphs()
         total = len(glyphs) * len(glyphs)
         count = 0
         startTime = time.time()
+        lastLog = None
+        firstKernedName = None
         glyphs.sort(lambda glyph0, glyph1:cmp(glyph0.unicode, glyph1.unicode))
         for ufoglyph0 in glyphs:
             for ufoglyph1 in glyphs:
@@ -1386,17 +1406,34 @@ class Autokern(TFSMap):
                 if not pairKerned:
                     continue
 
-                remaining = ''
-                if count % 10 == 0:
-                    elapsedTime = time.time() - startTime
+                if firstKernedName is None:
+                    firstKernedName = ufoglyph0.name
+                    continue
+                elif firstKernedName == ufoglyph0.name:
+                    '''
+                    Do not log until we have completed a first successful pass.
+                    '''
+                    if count % 10 == 0:
+                        print '.',
+                    continue
+
+                now = time.time()
+                if (lastLog is not None) and (now - lastLog < 1.0):
+                    '''
+                    Do not log more than once per second.
+                    '''
+                    continue
+                lastLog = now
+
+                elapsedTime = time.time() - startTime
 #                    print 'elapsedTime', elapsedTime, 'total', total
-                    averageTime = elapsedTime / float(count)
+                averageTime = elapsedTime / float(count)
 #                    print 'averageTime', averageTime
-                    totalTime = averageTime * total
-                    remainingTime = totalTime - elapsedTime
-                    remaining = '%s remaining, %0.2f seconds average' % ( time.strftime('%H:%M:%S', time.gmtime(remainingTime)),
+                totalTime = averageTime * total
+                remainingTime = totalTime - elapsedTime
+                remaining = '%s remaining, %0.2f seconds average' % ( time.strftime('%H:%M:%S', time.gmtime(remainingTime)),
 #                                                                                     locale.format("%d", remainingTime, grouping=True),
-                                                                                     averageTime,)
+                                                                                 averageTime,)
 
                 def formatUnicode(value):
                     if value is None:
@@ -1404,14 +1441,25 @@ class Autokern(TFSMap):
                     else:
                         return '0x%X' % ( value, )
 #                print 'ufoglyph0', ufoglyph0.unicode, ufoglyph0.name, 'ufoglyph1', ufoglyph1.unicode, ufoglyph1.name
-                if count % 10 == 0:
-                    print '\t', '%s %s vs. %s %s (%0.2f%%)' % ( ufoglyph0.name,
-                                                          formatUnicode(ufoglyph0.unicode),
-                                                          ufoglyph1.name,
-                                                          formatUnicode(ufoglyph1.unicode),
-                                                          100 * count / float(total),), '\t', remaining
+                print '\t', '%s %s vs. %s %s (%0.2f%%)' % ( ufoglyph0.name,
+                                                      formatUnicode(ufoglyph0.unicode),
+                                                      ufoglyph1.name,
+                                                      formatUnicode(ufoglyph1.unicode),
+                                                      100 * count / float(total),), '\t', remaining
 
+#        print
+#        print 'self.advanceMap =', repr(self.advanceMap)
         print
+
+        if USE_CACHED_KERNING_MAP:
+            yamldata = yaml.dump(self.advanceMap)
+            import tfs.common.TFSProject as TFSProject
+            tmpFolder = os.path.abspath(os.path.join(TFSProject.findProjectRootFolder(), 'tmp'))
+            if not os.path.exists(tmpFolder):
+                os.mkdir(tmpFolder)
+            advanceMapYamlFile = os.path.abspath(os.path.join(tmpFolder, 'advanceMap.yaml'))
+            with open(advanceMapYamlFile, 'wt') as f:
+                f.write(yamldata)
 
 
     def parseCodePoint(self, argName, glyphNames, value):
@@ -1605,8 +1653,8 @@ class Autokern(TFSMap):
         glyphs.sort(lambda glyph0, glyph1:cmp(glyph0.unicode, glyph1.unicode))
         for ufoglyph0 in glyphs:
             for ufoglyph1 in glyphs:
-                key = (ufoglyph0.unicode,
-                       ufoglyph1.unicode,)
+                key = (ufoglyph0.name,
+                       ufoglyph1.name,)
                 if key not in self.advanceMap:
                     continue
                 advance = self.advanceMap[key]
@@ -1689,9 +1737,20 @@ class Autokern(TFSMap):
 
         glyphWidthMap = {}
         for ufoglyph in glyphs:
-            glyphWidthMap[ufoglyph.unicode] = ufoglyph.xAdvance
+            glyphWidthMap[ufoglyph.name] = ufoglyph.xAdvance
 
 #        print 'updateSideBearings self.dstContoursCache', self.dstContoursCache.keys()
+
+        if USE_CACHED_KERNING_MAP:
+            for ufoglyph in glyphs:
+                contours = self.getGlyphContours(ufoglyph)
+            print
+
+#        for key in self.advanceMap:
+#            if key in ( ('A','A',),
+#                        ('A','F',),
+#                        ):
+#                print 'self.advanceMap', key, self.advanceMap[key]
 
         for ufoglyph in glyphs:
             if self.glyphsToKern is not None:
@@ -1714,19 +1773,23 @@ class Autokern(TFSMap):
             leftKeys = []
             for key in self.advanceMap:
                 advance = self.advanceMap[key]
-                unicode0, unicode1 = key
-                if ufoglyph.unicode == unicode0:
+                name0, name1 = key
+                '''
+                The RIGHT side bearing is effected by pairs when he is on the LEFT,
+                and vice versa.
+                '''
+                if ufoglyph.name == name0:
                     '''
                     To get the spacing, subtract the unmodified width of the glyph on the left.
                     '''
-                    spacing = advance - glyphWidthMap[unicode0]
+                    spacing = advance - glyphWidthMap[name0]
                     rightSpacings.append(spacing)
                     rightKeys.append(key)
-                elif ufoglyph.unicode == unicode1:
+                if ufoglyph.name == name1:
                     '''
                     To get the spacing, subtract the unmodified width of the glyph on the left.
                     '''
-                    spacing = advance - glyphWidthMap[unicode0]
+                    spacing = advance - glyphWidthMap[name0]
                     leftSpacings.append(spacing)
                     leftKeys.append(key)
 
@@ -1753,6 +1816,19 @@ class Autokern(TFSMap):
                 '''
                 leftSideBearing = max(0, leftSideBearing)
                 rightSideBearing = max(0, rightSideBearing)
+
+#            if ufoglyph.name in ( 'A',
+#                                  'F', ):
+#                print
+#                print 'ufoglyph.name', ufoglyph.name
+#                print 'glyphWidthMap[]', glyphWidthMap[ufoglyph.name]
+#                print 'ufoglyph.xAdvance', ufoglyph.xAdvance
+#                print 'leftKeys', len(leftKeys), leftKeys
+#                print 'rightKeys', len(rightKeys), rightKeys
+#                print 'rightSpacings', len(rightSpacings), rightSpacings
+#                print 'leftSpacings', len(leftSpacings), leftSpacings
+#                print 'updateSideBearings', 'leftSideBearing', leftSideBearing, 'rightSideBearing', rightSideBearing, 'ufoglyph.xAdvance', ufoglyph.xAdvance
+
             '''
             Apply the LSB to the contours.
             '''
@@ -1763,13 +1839,29 @@ class Autokern(TFSMap):
             '''
             ufoglyph.setXAdvance(ufoglyph.xAdvance + leftSideBearing + rightSideBearing)
 
+#            if ufoglyph.name in ( 'A',
+#                                  'F', ):
+#                print 'updateSideBearings.1', 'leftSideBearing', leftSideBearing, 'rightSideBearing', rightSideBearing, 'ufoglyph.xAdvance', ufoglyph.xAdvance
+
             '''
             Lastly, update the kerning values in the advance map.
             '''
             for key in leftKeys:
-                modifiedAdvanceMap[key] = self.advanceMap[key] - leftSideBearing
+                modifiedAdvanceMap[key] = modifiedAdvanceMap[key] - leftSideBearing
             for key in rightKeys:
-                modifiedAdvanceMap[key] = self.advanceMap[key] - rightSideBearing
+                modifiedAdvanceMap[key] = modifiedAdvanceMap[key] - rightSideBearing
+
+
+#        for key in self.advanceMap:
+#            if key in ( ('A','A',),
+#                        ('A','F',),
+#                        ):
+#                print 'self.advanceMap', key, self.advanceMap[key]
+#        for key in modifiedAdvanceMap:
+#            if key in ( ('A','A',),
+#                        ('A','F',),
+#                        ):
+#                print 'modifiedAdvanceMap', key, modifiedAdvanceMap[key]
 
         '''
         Replace the advance map.
@@ -1827,15 +1919,14 @@ class Autokern(TFSMap):
     def assessKerning(self):
 
         glyphs = self.dstUfoFont.getGlyphs()
+#        glyphNameMap = {}
+#        for ufoglyph in glyphs:
+#            glyphNameMap[ufoglyph.name] = ufoglyph
         unicodeGlyphMap = {}
         for ufoglyph in glyphs:
             if ufoglyph.unicode:
                 unicodeGlyphMap[ufoglyph.unicode] = ufoglyph
 
-
-
-#        for ufoglyph0 in self.dstUfoFont.getGlyphs():
-#            for ufoglyph1 in self.dstUfoFont.getGlyphs():
 
         pairGroups = (
                       ( min, 'Minimum Distance Pairs',
