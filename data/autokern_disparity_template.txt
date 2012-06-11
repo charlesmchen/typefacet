@@ -25,16 +25,16 @@
 	        	<b>Style: {{styleName}}</b>
         	</li>
         	<li>
-	        	<b>Ascender: {{ascender}}</b>
+	        	<b>Ascender: {{ascender_ems}}</b>
         	</li>
         	<li>
-	        	<b>Descender: {{descender}}</b>
+	        	<b>Descender: {{descender_ems}}</b>
         	</li>
         	<li>
-	        	<b>Minimum Distance: {{min_distance}}</b>
+	        	<b>Minimum Distance: {{min_distance_ems}}</b>
         	</li>
         	<li>
-	        	<b>Maximum Distance: {{max_distance}}</b>
+	        	<b>Maximum Distance: {{max_distance_ems}}</b>
         	</li>
         </ul>
         <p>

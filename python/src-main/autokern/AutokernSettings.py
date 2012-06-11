@@ -172,11 +172,6 @@ class AutokernSettings(TFBaseSettings):
                             Default: 0.08 em.
                             ''')
 
-#        parser.add_argument('--rounding-ems',
-#                            type=float,
-#                            default=0.2,
-#                            help='The rounding factor used to erode sharp angles. 0.0 <= x <= 1.0. Default: 0.3')
-
         parser.add_argument('--assess-only',
                             action='store_true',
                             help='''
@@ -211,16 +206,6 @@ class AutokernSettings(TFBaseSettings):
                             0.0 <= x <= 1.0.
                             Default: 0.005.
                             ''')
-#        parser.add_argument('--precision',
-#                            type=int,
-#                            default=5,
-#                            help='''
-#                            Precision of the algorithm.
-#                            Lower values are more precise but slower.
-#                            Use a precision of 5 or less for accurate results.
-#                            1 < x < 100.
-#                            Default: 10.
-#                            ''')
         parser.add_argument('--intrusion-tolerance-ems',
                             type=self.em01Type,
                             default=0.05,
@@ -229,13 +214,6 @@ class AutokernSettings(TFBaseSettings):
                             0.0 <= x <= 1.0.
                             Default: 0.1.
                             ''')
-#        parser.add_argument('--intrusion-tolerance',
-#                            type=float,
-#                            default=0.05,
-#                            help='''
-#                            Intrusion tolerance as a fraction of the area defined by the --max-distance-ems value times the greater of the two glyphs\' heights.
-#                            Default: 0.1.
-#                            ''')
         parser.add_argument('--max-x-extrema-overlap-ems',
                             type=self.em01Type,
                             default=0.1,
@@ -244,10 +222,6 @@ class AutokernSettings(TFBaseSettings):
                             0.0 <= x <= 1.0.
                             Default: 0.1 em.
                             ''')
-#        parser.add_argument('--intrusion-limit-glyph-width-fraction',
-#                            type=float,
-#                            default=0.5,
-#                            help='Intrusion limit expressed as a fraction of the width of the narrower of the two glyphs.  Default: 0.5')
         parser.add_argument('--min-non-intrusion-ems',
                             type=self.em01Type,
                             default=0.2,
@@ -255,6 +229,6 @@ class AutokernSettings(TFBaseSettings):
         parser.add_argument('--kerning-threshold-ems',
                             type=self.em01Type,
                             default=0.01,
-                            help='Kerning values smaller than this threshold will be ignored.  0.0 <= x <= 1.0. Default: 0.1 em')
+                            help='Kerning values smaller than this threshold will be ignored.  0.0 <= x <= 1.0. Default: 0.01 em')
 
         return parser

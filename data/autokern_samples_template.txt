@@ -46,74 +46,26 @@
       
         <h2>{{{pageTitle}}}</h2>
 
-<h3>Original Kerning</h3>
-<p>
-	{{{srcSpacingSvg}}}
-</p>
-<pre>
-Original Advance: {{srcAdvance_in_ems}}
-Adjusted Original Advance: {{srcAdvanceAdjusted_in_ems}}
-Adjusted Autokern Advance: {{advanceAdjusted_in_ems}}
-</pre>
+{{#sampleTextsMaps}}
 
-<h3>Contact Advance</h3>
-<p>
-	{{{contactAdvanceSvg}}}
-</p>
-<pre>
-Contact Advance: {{contactAdvance_in_ems}}
-{{#glyphMaps}}
-{{{glyphName}}} left: {{minX}}
-{{{glyphName}}} right: {{maxX}}
-{{/glyphMaps}}
-</pre>
-<!--
-Naive Spacing: {{naiveSpacing}}
--->
+{{#errorMap}}
+<h3>{{source}}: {{text}}</h3>
+<div>
+	<b>Error:</b> {{message}}
+</div>
+{{/errorMap}}
 
-<h3>Minimum Advance</h3>
-<p>
-	{{{minDistanceAdvanceSvg}}}
-</p>
-<pre>
-Minimum Distance: {{min_distance_ems}}
-Minimum Distance Advance: {{minDistanceAdvance_in_ems}}
-</pre>
+{{#renderMap}}
+<h3>{{source}}: {{text}}</h3>
 
-<h3>Maximum Advance</h3>
-<p>
-	{{{maxDistanceAdvanceSvg}}}
-</p>
-<pre>
-Maximum Distance: {{max_distance_ems}}
-Maximum Distance Advance: {{maxDistanceAdvance_in_ems}}
-</pre>
+<div>
+	{{{svg}}}
+</div>
+{{/renderMap}}
 
-<h3>Intruding Advance</h3>
-<p>
-	{{{intrudingAdvanceSvg}}}
-</p>
-<pre>
-Intruding Advance: {{intrudingAdvance_in_ems}}
-</pre>
-
-<h3>Final Kerning</h3>
-<p>
-	{{{finalAdvanceSvg}}}
-</p>
-<pre>
-Final Advance: {{advance_in_ems}}
-x-extrema Overlap: {{x_extrema_overlap_in_ems}}
-Max x-extrema Overlap: {{max_x_extrema_overlap_in_ems}}
-Minimum Non-Intrusion: {{min_non_intrusion_ems}}
-</pre>
-
+{{/sampleTextsMaps}}
 
 <!--
-<h3>profileDebugSvg</h3>
-<p>
-	{{{profileDebugSvg}}}
-</p>
 -->
 
       </section>

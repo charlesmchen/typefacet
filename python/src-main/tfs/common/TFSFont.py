@@ -75,6 +75,9 @@ class TFSFont(object):
     def __init__(self, rffont):
         self.rffont = rffont
 
+    ascender = property(lambda self: self.rffont.info.ascender)
+    descender = property(lambda self: self.rffont.info.descender)
+
     def clearKerning(self):
         self.rffont.kerning.clear()
 

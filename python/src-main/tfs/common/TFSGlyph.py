@@ -79,7 +79,7 @@ class TFSGlyph(object):
     width = property(lambda self: self.rfglyph.width)
     xAdvance = property(lambda self: self.rfglyph.width)
 
-    def getContours(self, setSelected=False):
+    def getContours(self, setSelected=False, warnings=True):
 
         def rfPointToTFSPoint(rfpoint):
             fiPoint = TFSPoint(rfpoint.x, rfpoint.y)
@@ -97,7 +97,8 @@ class TFSGlyph(object):
                 fiPoints = [lastPoint,] + [rfPointToTFSPoint(rfpoint) for rfpoint in rfsegment.points]
                 lastPoint = fiPoints[-1]
                 if (len(fiPoints) == 2) and fiPoints[0] == fiPoints[-1]:
-                    print 'ignoring empty contour segment in: ' + self.rfglyph.name
+                    if warnings:
+                        print 'ignoring empty contour segment in: ' + self.rfglyph.name
 #                    print 'ignoring empty contour segment in: ' + hex(self.rfglyph.unicode)
                     continue
 
