@@ -455,7 +455,8 @@ class Autokern(TFSMap):
         '''
         We're only interested in the top 100 disparities.
         '''
-        disparities = disparities[:100]
+        self.disparity_log_count = max(0, self.disparity_log_count)
+        disparities = disparities[:self.disparity_log_count]
 
         def getDisparityFilename(index):
             return 'disparity-%d.html' % index
@@ -711,7 +712,112 @@ class Autokern(TFSMap):
         return profile
 
 
-    def findMinProfileAdvance(self, profile0, profile1, intrusionToleranceArea=0, minNonIntrusionRowCount=0):
+    def isValidProfileIntrusion(self, profile0, profile1, advance):
+
+#        print 'isValidProfileIntrusion', 'advance', advance
+
+        '''
+        Step 1
+        Split the profiles into sections of continuous values which are no more
+        than --max-distance apart.
+        '''
+        sections = []
+        sectionRowSpacings = []
+        for edge0, edge1 in itertools.izip(profile0, profile1):
+            rowSpacing = None
+            if (edge0 is not None) and (edge1 is not None):
+                rowSpacing = advance + edge1 - edge0
+#                print 'rowSpacing.0', rowSpacing, 'self.max_distance', self.max_distance, 'advance, edge1, edge0', advance, edge1, edge0
+                if rowSpacing >= self.max_distance:
+                    '''
+                    Treat gaps of more than --max-distance to be section breaks.
+                    '''
+                    rowSpacing = None
+
+#            print 'rowSpacing', rowSpacing
+
+            if rowSpacing is None:
+                if len(sectionRowSpacings) > 0:
+                    sections.append(sectionRowSpacings)
+                    sectionRowSpacings = []
+                continue
+
+#            print 'rowSpacing.0', rowSpacing, 'self.max_distance', self.max_distance, 'advance, edge1, edge0', advance, edge1, edge0
+
+            sectionRowSpacings.append(rowSpacing)
+
+        if len(sectionRowSpacings) > 0:
+            sections.append(sectionRowSpacings)
+
+#        print 'sections', sections
+
+        if len(sections) < 1:
+            '''
+            No collision found.
+            '''
+            return True
+
+#        '''
+#        Step 2
+#        Determine the intrusion tolerance area.
+#        '''
+#        totalSectionRowCount = reduce(int.__add__, [len(sectionRowSpacings) for sectionRowSpacings in sections])
+#        intrusionToleranceArea = self.intrusion_tolerance * totalSectionRowCount
+
+        '''
+        Step 3
+        Now consider each section separately.
+        '''
+#        intrusionTotal = 0
+#        extrusionTotal = 0
+        for sectionRowSpacings in sections:
+#            '''
+#            Ignore extrusion within section greater than the max intrusion of section.
+#            '''
+            intrusionTotal = 0
+            extrusionTotal = 0
+#            maxIntrusion = reduce(min, sectionRowSpacings)
+#            extrusionLimit = abs(maxIntrusion)
+#            print 'maxIntrusion', maxIntrusion, 'extrusionLimit', extrusionLimit
+            for rowSpacing in sectionRowSpacings:
+                rowIntrusion = max(0, -rowSpacing)
+                '''
+                Ignore extrusion greater than --max-distance argument.
+                '''
+                rowExtrusion = min(self.max_distance, max(0, +rowSpacing))
+
+#                rowExtrusion = min(extrusionLimit, max(0, rowSpacing))
+#                print 'edge0, edge1', edge0, edge1, 'diff', diff, 'advance', advance, 'rowIntrusion', rowIntrusion, 'rowExtrusion', rowExtrusion
+                intrusionTotal += rowIntrusion
+                extrusionTotal += rowExtrusion
+
+            '''
+            Enforce
+            '''
+
+#            print 'advance', advance
+#            print 'intrusionTotal', intrusionTotal, 'extrusionTotal', extrusionTotal
+#            INTRUSION_EXTRUSION_MIN_RATIO = 1.5
+            INTRUSION_EXTRUSION_MIN_RATIO = 1.0
+            if intrusionTotal > extrusionTotal * INTRUSION_EXTRUSION_MIN_RATIO:
+                return False
+
+            intrusionToleranceArea = self.intrusion_tolerance * len(sectionRowSpacings)
+#            print 'intrusionToleranceArea', intrusionToleranceArea
+            if intrusionTotal > intrusionToleranceArea:
+                return False
+
+#        print 'totalSectionRowCount', totalSectionRowCount, 'advance', advance
+#        print 'intrusionTotal', intrusionTotal, 'extrusionTotal', extrusionTotal, 'intrusionToleranceArea', intrusionToleranceArea
+
+#        if intrusionTotal > extrusionTotal:
+#            return False
+#        if intrusionTotal > intrusionToleranceArea:
+#            return False
+        return True
+
+
+    def findMinProfileAdvance(self, profile0, profile1):
         if len(profile0) != len(profile1):
             raise Exception('profile heights do not match. %d != %d', len(profile0), len(profile1))
 
@@ -725,47 +831,32 @@ class Autokern(TFSMap):
             else:
                 contactAdvance = max(contactAdvance, diff)
 
-        if contactAdvance is None or intrusionToleranceArea == 0:
-            return contactAdvance
-
-        def getProfileOverlap(advance):
-#            print
-#            print 'getProfileOverlap'
-            intrusionTotal = 0
-            extrusionTotal = 0
-            nonIntrusionRowCount = 0
-            for edge0, edge1 in itertools.izip(profile0, profile1):
-                if edge0 is None or edge1 is None:
-                    continue
-                diff = 1 + edge0 - edge1
-                rowIntrusion = max(0, diff - advance)
-                rowExtrusion = max(0, advance - diff)
-#                print 'edge0, edge1', edge0, edge1, 'diff', diff, 'advance', advance, 'rowIntrusion', rowIntrusion, 'rowExtrusion', rowExtrusion
-                intrusionTotal += rowIntrusion
-                extrusionTotal += rowExtrusion
-                if rowIntrusion <= 0:
-                    nonIntrusionRowCount += 1
-            return intrusionTotal, extrusionTotal, nonIntrusionRowCount
+        return contactAdvance
 
 
-#        print 'contactAdvance', contactAdvance, type(contactAdvance)
-        contactAdvance = int(round(contactAdvance))
-#        print 'tolerancePixels', tolerancePixels
-        offsetAdvance = contactAdvance
-        for offset in xrange(1, contactAdvance + 1):
-            advance = contactAdvance - offset
-            intrusionTotal, extrusionTotal, nonIntrusionRowCount = getProfileOverlap(advance)
-#            print 'intrusionTotal, extrusionTotal, nonIntrusionCount', intrusionTotal, extrusionTotal, nonIntrusionCount, 'intrusionTolerancePixels', intrusionTolerancePixels, 'minNonIntrusionCount', minNonIntrusionCount
-            if intrusionTotal > extrusionTotal:
-                return offsetAdvance
-            if intrusionTotal > intrusionToleranceArea:
-                return offsetAdvance
-            if nonIntrusionRowCount < minNonIntrusionRowCount:
-                return offsetAdvance
+    def findMinProfileAdvance_withIntrusion(self, profile0, profile1):
+        contactAdvance = self.findMinProfileAdvance(profile0, profile1)
 
-            offsetAdvance = advance
+        if contactAdvance is None:
+            return None
 
-        return offsetAdvance
+        '''
+        Binary search for best intrusion offset.
+        '''
+        lowValidIntrusionOffset = 0
+        highInvalidIntrusionOffset = int(math.ceil(self.intrusion_tolerance))
+        while True:
+            intrusionOffset = int(round((lowValidIntrusionOffset + highInvalidIntrusionOffset) / 2))
+#            print 'intrusionOffset', intrusionOffset, 'lowValidIntrusionOffset', lowValidIntrusionOffset, 'highInvalidIntrusionOffset', highInvalidIntrusionOffset
+
+            if intrusionOffset in ( lowValidIntrusionOffset,
+                                    highInvalidIntrusionOffset, ):
+                return contactAdvance - lowValidIntrusionOffset
+
+            if self.isValidProfileIntrusion(profile0, profile1, contactAdvance - intrusionOffset):
+                lowValidIntrusionOffset = intrusionOffset
+            else:
+                highInvalidIntrusionOffset = intrusionOffset
 
 
     def inflateSegmentLeft(self, segment, hDistance, vDistance=None):
@@ -899,6 +990,11 @@ class Autokern(TFSMap):
 
         self.timing.mark('processKerningPair.01')
 
+        minmax0 = self.getDstCachedValue('getCachedMinmax %s' % ufoglyph0.name, getCachedMinmax, contours0)
+        minmax1 = self.getDstCachedValue('getCachedMinmax %s' % ufoglyph1.name, getCachedMinmax, contours1)
+
+        self.timing.mark('processKerningPair.010')
+
         def getRightContour():
 #            return self.makeProfile(func=max, paths=contours0, debug=True)
             return self.makeProfile(func=max, paths=contours0)
@@ -929,25 +1025,16 @@ class Autokern(TFSMap):
         if debugKerning:
             print 'minDistanceAdvance', minDistanceAdvance
 
-        intrusion_tolerance_area = int(round((self.intrusion_tolerance * self.units_per_em) / float(self.precision * self.precision)))
-        if debugKerning:
-            print 'intrusion_tolerance', self.intrusion_tolerance, 'intrusion_tolerance_area', intrusion_tolerance_area
+        intrudingAdvance = self.findMinProfileAdvance_withIntrusion(profile0, profileMax1)
+#        print 'intrudingAdvance.1', intrudingAdvance
 
-        min_non_intrusion_row_count = int(round(float(self.min_non_intrusion) / self.precision))
-        if debugKerning:
-            print 'min_non_intrusion', self.min_non_intrusion, 'min_non_intrusion_row_count', min_non_intrusion_row_count
-
-        intrudingAdvance = self.findMinProfileAdvance(profile0, profileMax1,
-                                                      intrusionToleranceArea=intrusion_tolerance_area,
-                                                      minNonIntrusionRowCount=min_non_intrusion_row_count)
         self.timing.mark('processKerningPair.023')
         if debugKerning:
             print 'intrudingAdvance', intrudingAdvance
 
-        minmax0 = self.getDstCachedValue('getCachedMinmax %s' % ufoglyph0.name, getCachedMinmax, contours0)
-        minmax1 = self.getDstCachedValue('getCachedMinmax %s' % ufoglyph1.name, getCachedMinmax, contours1)
+#        intruding_x_extrema_overlap = minmax0.maxX - (minmax1.minX + intrudingAdvance)
+#        print 'intruding_x_extrema_overlap', intruding_x_extrema_overlap
 
-        self.timing.mark('processKerningPair.02')
 
         '''
         Now combine results into the final advance value.
@@ -1249,7 +1336,7 @@ class Autokern(TFSMap):
 
                 if firstKernedName is None:
                     firstKernedName = ufoglyph0.name
-                    print
+#                    print
                     continue
                 elif firstKernedName == ufoglyph0.name:
                     '''
@@ -1265,6 +1352,8 @@ class Autokern(TFSMap):
                     Do not log more than once per second.
                     '''
                     continue
+                if lastLog is None:
+                    print
                 lastLog = now
 
                 elapsedTime = time.time() - startTime
@@ -1405,7 +1494,7 @@ class Autokern(TFSMap):
         self.precision = int(round(self.precision_ems * self.units_per_em))
         self.min_distance = self.min_distance_ems * self.units_per_em
         self.max_distance = self.max_distance_ems * self.units_per_em
-        self.min_non_intrusion  = self.min_non_intrusion_ems * self.units_per_em
+#        self.min_non_intrusion  = self.min_non_intrusion_ems * self.units_per_em
         self.kerning_threshold  = self.kerning_threshold_ems * self.units_per_em
         self.max_x_extrema_overlap  = self.max_x_extrema_overlap_ems * self.units_per_em
         self.intrusion_tolerance  = self.intrusion_tolerance_ems * self.units_per_em
@@ -1421,7 +1510,7 @@ class Autokern(TFSMap):
         print 'min_distance', self.min_distance
         print 'max_distance', self.max_distance
         print 'intrusion_tolerance', self.intrusion_tolerance
-        print 'min_non_intrusion', self.min_non_intrusion
+#        print 'min_non_intrusion', self.min_non_intrusion
         print 'kerning_threshold', self.kerning_threshold
         print 'max_x_extrema_overlap', self.max_x_extrema_overlap
 #        print 'self.rounding', self.rounding
@@ -1938,6 +2027,9 @@ class Autokern(TFSMap):
                        'Style',
                        'enjoying',
                        'hamburgerfont',
+                       'NNOOoo',
+                       'pqpiitt',
+                       'ijiJn.',
                        )
         sampleTextsMaps = []
         for sampleText in sampleTexts:

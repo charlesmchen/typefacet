@@ -135,6 +135,10 @@ class AutokernSettings(TFBaseSettings):
         parser.add_argument('--skip-kerning-pair-logs',
                             action='store_true',
                             help='Do not write HTML logs for each kerning pair.')
+        parser.add_argument('--disparity-log-count',
+                            type=int,
+                            default=10,
+                            help='The number of disparity logs to write. Default: 10')
 
         parser.add_argument('--glyph-pairs-to-kern',
 #                            type=self.codePointType,
@@ -225,10 +229,10 @@ class AutokernSettings(TFBaseSettings):
                             0.0 <= x <= 1.0.
                             Default: 0.1 em.
                             ''')
-        parser.add_argument('--min-non-intrusion-ems',
-                            type=self.em01Type,
-                            default=0.2,
-                            help='The minimum non-intruding height in ems.  0.0 <= x <= 1.0. Default: 0.2 em')
+#        parser.add_argument('--min-non-intrusion-ems',
+#                            type=self.em01Type,
+#                            default=0.2,
+#                            help='The minimum non-intruding height in ems.  0.0 <= x <= 1.0. Default: 0.2 em')
         parser.add_argument('--kerning-threshold-ems',
                             type=self.em01Type,
                             default=0.01,

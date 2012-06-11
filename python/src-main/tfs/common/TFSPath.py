@@ -637,10 +637,11 @@ class TFSPath(object):
 
 
 def minmaxPaths(paths):
-    result = paths[0].minmax()
-    for path in paths[1:]:
+    result = None
+    for path in paths:
         result = minmaxMerge(result, path.minmax())
     return result
+
 
 def polygonWithPoints(*points):
     lastPoint = points[-1]
