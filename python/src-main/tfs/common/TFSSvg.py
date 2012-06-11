@@ -289,6 +289,45 @@ class TFSSvgPath(TFSSvgItem):
         self.renderStrokeAndFill(svg_document)
 
 
+class TFSSvgText(TFSSvgItem):
+
+    def __init__(self, text, origin, fillColor, **params):
+        self.origin = origin.scaleXY(1.0, -1.0)
+        self.text = text
+        self.renderOrigin = origin
+#        path.applyScaleXY(1.0, -1.0)
+        self.fillColor = fillColor
+        self.params = params
+
+    def resetRenderState(self):
+        self.renderOrigin = self.origin
+
+    def minmax(self):
+        return minmaxPoints((self.origin,))
+
+    def applyFunction(self, value):
+        self.renderOrigin = value(self.renderOrigin)
+
+    def translate(self, value):
+        self.renderOrigin = self.renderOrigin.plus(value)
+
+    def scale(self, value):
+        self.renderOrigin = self.renderOrigin.scale(value)
+
+    def render(self, svg_document):
+        argm = {
+                'insert': (int(round(self.renderOrigin.x)),
+                           int(round(self.renderOrigin.y)), ),
+                'fill': formatSvgColor(self.fillColor),
+                'fill_opacity': formatSvgOpacity(self.fillColor),
+                }
+        argm.update(self.params)
+
+        svg_document.add(svgwrite.text.Text(self.text,
+                                            **argm
+                                            ))
+
+
 class TFSSvg(object):
 
     def __init__(self):
@@ -306,6 +345,11 @@ class TFSSvg(object):
 
     def addItem(self, item):
         self.items.append(item)
+
+    def addText(self, text, origin, fillColor, **params):
+        item = TFSSvgText(text, origin, fillColor, **params)
+        self.items.append(item)
+        return item
 
     def addFillPath(self, path, color):
         self.addItem(TFSSvgPath(path).addFill(color))
@@ -336,7 +380,7 @@ class TFSSvg(object):
             return svg_document.tostring()
 
 
-    def renderToFile(self, filepath, margin, height, maxWidth, timing=None):
+    def renderToFile(self, filepath, margin, height, maxWidth, bottomPadding=0, timing=None):
         if timing is not None:
             timing.mark('TFSSvg.renderToFile.0')
 
@@ -353,7 +397,7 @@ class TFSSvg(object):
             else:
                 minmax = minmaxMerge(minmax, item.minmax())
 
-        scalingY = (height - 2 * margin) / (minmax.maxY - minmax.minY)
+        scalingY = (height - (2 * margin + bottomPadding)) / (minmax.maxY - minmax.minY)
         scalingX = (maxWidth - 2 * margin) / (minmax.maxX - minmax.minX)
         scaling = min(scalingX, scalingY)
         contentWidth = math.ceil((minmax.maxX - minmax.minX) * scaling)

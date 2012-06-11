@@ -281,7 +281,10 @@ class Autokern(TFSMap):
                        strokePathTuples = None,
                        fillPathTuples = None,
                        hGuidelines=None,
-                       hRanges=None):
+                       hRanges=None,
+                       textTuples=None,
+                       bottomPadding=0):
+
         from tfs.common.TFSSvg import TFSSvg, TFSSvgPath
         if filename is None:
             dstFile = filename
@@ -301,10 +304,11 @@ class Autokern(TFSMap):
                 self.subrenderGlyphContours(tfsSvg, contours, color, addPoints=False)
         if fillPathTuples is not None:
             for color, contours in fillPathTuples:
-                from tfs.common.TFSSvg import TFSSvgPath
                 for contour in contours:
                     tfsSvg.addItem(TFSSvgPath(contour).addFill(color))
-
+        if textTuples is not None:
+            for textMap in textTuples:
+                tfsSvg.addText(textMap.text, textMap.origin, textMap.fillColor, **textMap.params)
 
         if hGuidelines:
             for hGuideline in hGuidelines:
@@ -344,7 +348,9 @@ class Autokern(TFSMap):
         SVG_HEIGHT = 400
         SVG_MAX_WIDTH = 800
         self.timing.mark('renderSvgScene.0')
-        svgdata = tfsSvg.renderToFile(dstFile, margin=10, height=SVG_HEIGHT, maxWidth=SVG_MAX_WIDTH, timing=self.timing)
+        svgdata = tfsSvg.renderToFile(dstFile, margin=10, height=SVG_HEIGHT, maxWidth=SVG_MAX_WIDTH,
+                                      timing=self.timing,
+                                      bottomPadding=bottomPadding)
         self.timing.mark('renderSvgScene.1')
         if filename is not None:
             return filename
@@ -884,7 +890,7 @@ class Autokern(TFSMap):
         debugKerning = True
         debugKerning = False
 
-        renderLog = self.log_dst is not None
+        renderLog = (self.log_dst is not None) and not self.skip_kerning_pair_logs
 
         contours0 = self.getGlyphContours(ufoglyph0)
         contours1 = self.getGlyphContours(ufoglyph1)
@@ -1059,6 +1065,12 @@ class Autokern(TFSMap):
             if debugKerning:
                 print 'contactAdvance', contactAdvance
 
+            if contactAdvance is None:
+                '''
+                If no collisions between the glyph profiles, use x-extrema.
+                '''
+                contactAdvance = minmax0.maxX - minmax1.minX
+
             contactAdvanceSvg = self.renderSvgScene(None,
                                              pathTuples = (
                                                            ( 0x7f7faf7f, contours0, ),
@@ -1089,6 +1101,13 @@ class Autokern(TFSMap):
             self.timing.mark('processKerningPair.022')
             if debugKerning:
                 print 'maxDistanceAdvance', maxDistanceAdvance
+
+            if maxDistanceAdvance is None:
+                '''
+                If no collisions between the glyph profiles, use x-extrema
+                plus the max_distance argument.
+                '''
+                maxDistanceAdvance = minmax0.maxX + self.max_distance - minmax1.minX
 
             maxDistanceAdvanceSvg = self.renderSvgScene(None,
                                              pathTuples = (
@@ -1391,6 +1410,8 @@ class Autokern(TFSMap):
         self.max_x_extrema_overlap  = self.max_x_extrema_overlap_ems * self.units_per_em
         self.intrusion_tolerance  = self.intrusion_tolerance_ems * self.units_per_em
 
+        self.ascender = self.srcUfoFont.ascender
+        self.descender = self.srcUfoFont.descender
         self.ascender_ems = self.srcUfoFont.ascender / float(self.units_per_em)
         self.descender_ems = self.srcUfoFont.descender / float(self.units_per_em)
 
@@ -1808,8 +1829,10 @@ class Autokern(TFSMap):
         def convertTextToContours(text, ufoFont):
             outsideContours = []
             insideContours = []
+            kerningLabels = []
             xOffset = 0
             lastUfoGlyph = None
+            lastMinmax = None
             for textGlyph in text:
                 codePoint = ord(textGlyph)
                 ufoglyph = ufoFont.getGlyphByCodePoint(codePoint)
@@ -1819,7 +1842,8 @@ class Autokern(TFSMap):
 #                if len(contours) < 1:
 #                    continue
 
-                contours = self.getGlyphContours(ufoglyph)
+                contours = ufoglyph.getContours(warnings=False)
+#                contours = self.getGlyphContours(ufoglyph)
 
                 '''
                 We use robofab's correctDirection() method to correctly orient the
@@ -1833,6 +1857,7 @@ class Autokern(TFSMap):
                 tempTFSGlyph.setContours(contours, correctDirection=True)
                 contours = tempTFSGlyph.getContours(warnings=False)
 
+                kerningValue = None
                 if lastUfoGlyph is None:
                     minmax = minmaxPaths(contours)
                     xOffset = -minmax.minX
@@ -1841,8 +1866,38 @@ class Autokern(TFSMap):
                     kerningValue = ufoFont.getKerningPair(lastUfoGlyph.name, ufoglyph.name, )
                     if kerningValue is not None:
                         xOffset += kerningValue
+                    else:
+                        kerningValue = 0
+
 
                 contours = [contour.applyPlus(TFSPoint(xOffset, 0)) for contour in contours]
+                minmax = minmaxPaths(contours)
+
+                if kerningValue is not None:
+                    xExtremaOverlap = minmax.minX - lastMinmax.maxX
+                    text = '%0.0f (%s%0.0f)' % (
+                                                 float(kerningValue),
+                                                 '+' if xExtremaOverlap > 0 else '-',
+                                                 float(abs(xExtremaOverlap)),
+                                                 )
+
+                    KERNING_LABEL_COLOR = 0xdf000000
+
+                    kerningLabel = TFSMap()
+                    kerningLabel.text = text
+                    kerningLabel.origin = TFSPoint(xOffset, -abs(self.descender * 1.1))
+                    kerningLabel.fillColor = KERNING_LABEL_COLOR
+                    kerningLabel.params = {
+                                           'text-anchor': 'middle',
+                                           'dominant-baseline': 'text-before-edge',
+                                           'font-family': "Lato, Helvetica, Arial, sans-serif;",
+#                                           'font-size': "14px",
+#                                           'font-weight': "bold",
+                                           }
+                    kerningLabels.append(kerningLabel)
+
+                lastMinmax = minmax
+
 #                result.extend(contours)
                 for contour in contours:
                     if isClosedPathClockwise(contour):
@@ -1853,8 +1908,28 @@ class Autokern(TFSMap):
                 xOffset += ufoglyph.xAdvance
                 lastUfoGlyph = ufoglyph
 
-            return outsideContours, insideContours
+            return outsideContours, insideContours, kerningLabels
 
+
+        def renderTextWithFont(text, ufoFont, source, fillColor):
+            converted = convertTextToContours(text, ufoFont)
+            if converted is None:
+                return {'errorMap': {'text': sampleText,
+                                     'source': source,
+                                     'message': 'error'},
+                        }
+            else:
+                outsideContours, insideContours, kerningLabels = converted
+                sampleSvg = self.renderSvgScene(None,
+                                                fillPathTuples = ( ( fillColor, outsideContours, ),
+                                                                   ( 0xffffffff, insideContours, ), ),
+                                                textTuples = kerningLabels,
+                                                bottomPadding = 20,
+                                                )
+                return {'renderMap': {'text': sampleText,
+                       'source': source,
+                       'svg': sampleSvg},
+                       }
 
         sampleTexts = (
                        'Typography',
@@ -1866,39 +1941,9 @@ class Autokern(TFSMap):
                        )
         sampleTextsMaps = []
         for sampleText in sampleTexts:
+            sampleTextsMaps.append(renderTextWithFont(sampleText, self.srcUfoFont, 'Original', 0x7f7f7faf))
+            sampleTextsMaps.append(renderTextWithFont(sampleText, self.dstUfoFont, 'Autokern', 0x7f7faf7f))
 
-            srcPaths = convertTextToContours(sampleText, self.srcUfoFont)
-            if srcPaths is None:
-                sampleTextsMaps.append({'errorMap': {'text': sampleText,
-                                                     'source': 'original',
-                                                     'message': 'error'},
-                                        })
-            else:
-                outsideContours, insideContours = srcPaths
-                sampleSvg = self.renderSvgScene(None,
-                                                fillPathTuples = ( ( 0x7f7f7faf, outsideContours, ),
-                                                                   ( 0xffffffff, insideContours, ), ), )
-                sampleTextsMaps.append({'renderMap': {'text': sampleText,
-                                                     'source': 'original',
-                                                      'svg': sampleSvg},
-                                        })
-
-            dstPaths = convertTextToContours(sampleText, self.dstUfoFont)
-            if dstPaths is None:
-                sampleTextsMaps.append({'errorMap': {'text': sampleText,
-                                                     'source': 'autokern',
-                                                     'message': 'error'},
-                                        })
-            else:
-                outsideContours, insideContours = srcPaths
-                sampleSvg = self.renderSvgScene(None,
-                                                fillPathTuples = ( ( 0x7f7faf7f, outsideContours, ),
-                                                                   ( 0xffffffff, insideContours, ), ), )
-#                                                fillPathTuples = ( ( 0x7f7f7faf, dstPaths, ), ), )
-                sampleTextsMaps.append({'renderMap': {'text': sampleText,
-                                                     'source': 'autokern',
-                                                      'svg': sampleSvg},
-                                        })
 
         pageTitle = u'Autokern Sample Texts'
 

@@ -36,6 +36,21 @@
         	<li>
 	        	<b>Maximum Distance: {{max_distance_ems}}</b>
         	</li>
+        	<li>
+	        	<b>Precision: {{precision_ems}}</b>
+        	</li>
+        	<li>
+	        	<b>Intrusion Tolerance: {{intrusion_tolerance_ems}}</b>
+        	</li>
+        	<li>
+	        	<b>Maximum x-extrema Overlap: {{max_x_extrema_overlap_ems}}</b>
+        	</li>
+        	<li>
+	        	<b>Minimum Non-Intrusion: {{min_non_intrusion_ems}}</b>
+        	</li>
+        	<li>
+	        	<b>Kerning Threshold: {{kerning_threshold_ems}}</b>
+        	</li>
         </ul>
         <p>
           <a href="http://charlesmchen.github.com/typefacet/">TypeFacet project</a>
