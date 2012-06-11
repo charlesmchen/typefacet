@@ -73,6 +73,7 @@ import locale
 import itertools
 import yaml
 import types
+import unicodedata
 
 locale.setlocale(locale.LC_ALL, 'en_US')
 
@@ -203,7 +204,106 @@ class Autokern(TFSMap):
         return mustacheMap
 
 
+    def isLetterGlyph(self, glyph):
+        if glyph.unicode is None:
+            return False
+        uc = unichr(glyph.unicode)
+        if uc is not None:
+            unicode_category = unicodedata.category(uc)
+            if unicode_category is not None:
+                if unicode_category.startswith('L'):
+                    return True
+        return False
+
+
+    def isPunctuationGlyph(self, glyph):
+        if glyph.unicode is None:
+            return False
+        uc = unichr(glyph.unicode)
+        if uc is not None:
+            unicode_category = unicodedata.category(uc)
+            if unicode_category is not None:
+                if unicode_category.startswith('P'):
+                    return True
+        return False
+
+
+    def isPunctuationOrSymbolGlyph(self, glyph):
+        if glyph.unicode is None:
+            return False
+
+        uc = unichr(glyph.unicode)
+        if uc is not None:
+            unicode_category = unicodedata.category(uc)
+            if unicode_category is not None:
+                if (unicode_category.startswith('P') or
+                    unicode_category.startswith('N')):
+                    return True
+
+        # Latin
+        if 0x21 <= glyph.unicode <= 0x2f:
+            return True
+        if 0x3a <= glyph.unicode <= 0x40:
+            return True
+        if 0x5b <= glyph.unicode <= 0x60:
+            return True
+        if 0x7b <= glyph.unicode <= 0x7e:
+            return True
+        # Latin 1 supplement
+        if 0xa1 <= glyph.unicode <= 0xbf:
+            return True
+        if glyph.unicode in ( 0xf7, ):
+            return True
+        # 0xf7
+        if 0x1c0 <= glyph.unicode <= 0x1c3:
+            return True
+        # Halfwidth and Fullwidth Forms
+        if 0xff01 <= glyph.unicode <= 0xff0f:
+            return True
+        if 0xff1a <= glyph.unicode <= 0xff20:
+            return True
+        if 0xff3b <= glyph.unicode <= 0xff40:
+            return True
+        if 0xff5b <= glyph.unicode <= 0xff65:
+            return True
+        # Vertical Forms
+        if 0xfe10 <= glyph.unicode <= 0xfe1f:
+            return True
+        # General Punctuation
+        if 0x2000 <= glyph.unicode <= 0x206f:
+            return True
+        # Small Form Variants
+        if 0xfe50 <= glyph.unicode <= 0xfe6f:
+            return True
+        # Supplemental Punctuation
+        if 0x2e00 <= glyph.unicode <= 0x2e7f:
+            return True
+        # CJK Symbols and Punctuation
+        if 0x3000 <= glyph.unicode <= 0x303f:
+            return True
+        # CJK Compatibility Forms
+        if 0xfe30 <= glyph.unicode <= 0xfe4f:
+            return True
+        # Letterlike Symbols
+        if 0x2100 <= glyph.unicode <= 0x214f:
+            return True
+        # Ancient Symbols
+        if 0x10190 <= glyph.unicode <= 0x101cf:
+            return True
+
+        # TODO: there are more unicode blocks for symbols and punctuation...
+
+        return False
+
     def isCombiningGlyph(self, glyph):
+        if glyph.unicode is not None:
+            if 0xfe20 <= glyph.unicode <= 0xfe2f:
+                return True
+            if 0x1dc0 <= glyph.unicode <= 0x1dff:
+                return True
+            if 0x300 <= glyph.unicode <= 0x36f:
+                return True
+
         names = ('dieresis_acutecomb',
                  'dieresis_gravecomb',
                  'hungarumlaut',
@@ -449,6 +549,7 @@ class Autokern(TFSMap):
         renderLog = self.log_dst is not None
         if not renderLog:
             return
+        print 'Logging disparities...'
 
         disparities = self.findDisparities()
 
@@ -728,11 +829,11 @@ class Autokern(TFSMap):
             if (edge0 is not None) and (edge1 is not None):
                 rowSpacing = advance + edge1 - edge0
 #                print 'rowSpacing.0', rowSpacing, 'self.max_distance', self.max_distance, 'advance, edge1, edge0', advance, edge1, edge0
-                if rowSpacing >= self.max_distance:
-                    '''
-                    Treat gaps of more than --max-distance to be section breaks.
-                    '''
-                    rowSpacing = None
+#                if rowSpacing >= self.max_distance:
+#                    '''
+#                    Treat gaps of more than --max-distance to be section breaks.
+#                    '''
+#                    rowSpacing = None
 
 #            print 'rowSpacing', rowSpacing
 
@@ -1306,6 +1407,7 @@ class Autokern(TFSMap):
     def processAllKerningPairs(self):
 
         print
+        print 'Processing kerning pairs...'
 
         if USE_CACHED_KERNING_MAP:
             import tfs.common.TFSProject as TFSProject
@@ -1347,7 +1449,7 @@ class Autokern(TFSMap):
                     continue
 
                 now = time.time()
-                if (lastLog is not None) and (now - lastLog < 1.0):
+                if (lastLog is not None) and (now - lastLog < 3.0):
                     '''
                     Do not log more than once per second.
                     '''
@@ -1566,6 +1668,7 @@ class Autokern(TFSMap):
 
 
     def updateKerning(self):
+        print 'Updating kerning...'
         self.dstUfoFont.clearKerning()
 
         glyphs = self.dstUfoFont.getGlyphs()
@@ -1636,6 +1739,8 @@ class Autokern(TFSMap):
         if self.pairsToKern is not None:
             return
 
+        print 'Updating side-bearings...'
+
         modifiedAdvanceMap = {}
         modifiedAdvanceMap.update(self.advanceMap)
 
@@ -1649,7 +1754,24 @@ class Autokern(TFSMap):
         for ufoglyph in glyphs:
             glyphWidthMap[ufoglyph.name] = ufoglyph.xAdvance
 
-#        print 'updateSideBearings self.dstContoursCache', self.dstContoursCache.keys()
+        #
+
+        leftKeyMap = {}
+        rightKeyMap = {}
+        for key in self.advanceMap:
+            advance = self.advanceMap[key]
+            name0, name1 = key
+            spacing = advance - glyphWidthMap[name0]
+
+            leftKeyList = leftKeyMap.get(name1, [])
+            leftKeyList.append( ( key, advance, spacing, ) )
+            leftKeyMap[name1] = leftKeyList
+
+            rightKeyList = rightKeyMap.get(name0, [])
+            rightKeyList.append( ( key, advance, spacing, ) )
+            rightKeyMap[name0] = rightKeyList
+
+        #
 
         if USE_CACHED_KERNING_MAP:
             for ufoglyph in glyphs:
@@ -1670,9 +1792,9 @@ class Autokern(TFSMap):
                     continue
             elif self.isCombiningGlyph(ufoglyph):
                 continue
-#            print 'updateSideBearings getGlyphContours', ufoglyph.name
+
             contours = self.getGlyphContours(ufoglyph)
-#            contours = ufoglyph.getContours()
+
             if len(contours) == 0:
                 '''
                 Do not modify width of space and other empty glyphs.
@@ -1683,27 +1805,13 @@ class Autokern(TFSMap):
             rightKeys = []
             leftSpacings = []
             leftKeys = []
-            for key in self.advanceMap:
-                advance = self.advanceMap[key]
-                name0, name1 = key
-                '''
-                The RIGHT side bearing is effected by pairs when he is on the LEFT,
-                and vice versa.
-                '''
-                if ufoglyph.name == name0:
-                    '''
-                    To get the spacing, subtract the unmodified width of the glyph on the left.
-                    '''
-                    spacing = advance - glyphWidthMap[name0]
-                    rightSpacings.append(spacing)
-                    rightKeys.append(key)
-                if ufoglyph.name == name1:
-                    '''
-                    To get the spacing, subtract the unmodified width of the glyph on the left.
-                    '''
-                    spacing = advance - glyphWidthMap[name0]
-                    leftSpacings.append(spacing)
-                    leftKeys.append(key)
+
+            for key, advance, spacing in leftKeyMap[ufoglyph.name]:
+                leftSpacings.append(spacing)
+                leftKeys.append(key)
+            for key, advance, spacing in rightKeyMap[ufoglyph.name]:
+                rightSpacings.append(spacing)
+                rightKeys.append(key)
 
             '''
             Default sidebearings to half of the "max distance" parameter.
@@ -1716,6 +1824,7 @@ class Autokern(TFSMap):
                 rightSideBearing = 0.5 * reduce(float.__add__, [float(value) for value in rightSpacings]) / len(rightSpacings)
             if len(leftSpacings) > 0:
                 leftSideBearing = 0.5 * reduce(float.__add__, [float(value) for value in leftSpacings]) / len(leftSpacings)
+
             '''
             Use round numbers
             '''
@@ -1914,15 +2023,17 @@ class Autokern(TFSMap):
         renderLog = self.log_dst is not None
         if not renderLog:
             return
+        print 'Writing samples...'
 
-        def convertTextToContours(text, ufoFont):
+        def convertTextToContours(text, ufoFont, lastKerningValues=None):
             outsideContours = []
             insideContours = []
-            kerningLabels = []
+            labels = []
+            kerningValues = []
             xOffset = 0
             lastUfoGlyph = None
             lastMinmax = None
-            for textGlyph in text:
+            for index, textGlyph in enumerate(text):
                 codePoint = ord(textGlyph)
                 ufoglyph = ufoFont.getGlyphByCodePoint(codePoint)
                 if ufoglyph is None:
@@ -1964,30 +2075,46 @@ class Autokern(TFSMap):
 
                 if kerningValue is not None:
                     xExtremaOverlap = minmax.minX - lastMinmax.maxX
-                    text = '%0.0f (%s%0.0f)' % (
-                                                 float(kerningValue),
-                                                 '+' if xExtremaOverlap > 0 else '-',
-                                                 float(abs(xExtremaOverlap)),
-                                                 )
+#                    text = '%0.0f/%s%0.0f' % (
+#                                                 float(kerningValue),
+#                                                 '+' if xExtremaOverlap > 0 else '-',
+#                                                 float(abs(xExtremaOverlap)),
+#                                                 )
+                    text = '%d' % ( int(xExtremaOverlap), )
 
                     KERNING_LABEL_COLOR = 0xdf000000
+                    if lastKerningValues is not None:
+                        lastXExtremaOverlap = lastKerningValues[index - 1]
+                        xExtremaOverlapDelta = xExtremaOverlap - lastXExtremaOverlap
+                        KERNING_HIGHLIGHT_LOW_THRESHOLD = 10
+                        KERNING_HIGHLIGHT_HIGH_THRESHOLD = 20
+                        if abs(xExtremaOverlapDelta) >= KERNING_HIGHLIGHT_HIGH_THRESHOLD:
+                            KERNING_LABEL_COLOR = 0xdfa70000
+                        elif abs(xExtremaOverlapDelta) >= KERNING_HIGHLIGHT_LOW_THRESHOLD:
+                            KERNING_LABEL_COLOR = 0xdf530000
 
-                    kerningLabel = TFSMap()
-                    kerningLabel.text = text
-                    kerningLabel.origin = TFSPoint(xOffset, -abs(self.descender * 1.1))
-                    kerningLabel.fillColor = KERNING_LABEL_COLOR
-                    kerningLabel.params = {
+                        text += ' (%s%0.0f)' % (
+                                               '' if xExtremaOverlapDelta == 0 else ('+' if xExtremaOverlapDelta > 0 else '-'),
+                                               float(abs(xExtremaOverlapDelta)),
+                                               )
+
+
+                    label = TFSMap()
+                    label.text = text
+                    label.origin = TFSPoint(xOffset, -abs(self.descender * 1.1))
+                    label.fillColor = KERNING_LABEL_COLOR
+                    label.params = {
                                            'text-anchor': 'middle',
                                            'dominant-baseline': 'text-before-edge',
                                            'font-family': "Lato, Helvetica, Arial, sans-serif;",
 #                                           'font-size': "14px",
 #                                           'font-weight': "bold",
                                            }
-                    kerningLabels.append(kerningLabel)
+                    labels.append(label)
+                    kerningValues.append( xExtremaOverlap )
 
                 lastMinmax = minmax
 
-#                result.extend(contours)
                 for contour in contours:
                     if isClosedPathClockwise(contour):
                         outsideContours.append(contour)
@@ -1997,28 +2124,30 @@ class Autokern(TFSMap):
                 xOffset += ufoglyph.xAdvance
                 lastUfoGlyph = ufoglyph
 
-            return outsideContours, insideContours, kerningLabels
+            return outsideContours, insideContours, labels, kerningValues
 
 
-        def renderTextWithFont(text, ufoFont, source, fillColor):
-            converted = convertTextToContours(text, ufoFont)
+        def renderTextWithFont(text, ufoFont, source, fillColor, lastKerningValues=None):
+            converted = convertTextToContours(text, ufoFont, lastKerningValues=lastKerningValues)
             if converted is None:
                 return {'errorMap': {'text': sampleText,
                                      'source': source,
                                      'message': 'error'},
-                        }
+                        }, None
             else:
-                outsideContours, insideContours, kerningLabels = converted
+                outsideContours, insideContours, labels, kerningValues = converted
+
                 sampleSvg = self.renderSvgScene(None,
                                                 fillPathTuples = ( ( fillColor, outsideContours, ),
-                                                                   ( 0xffffffff, insideContours, ), ),
-                                                textTuples = kerningLabels,
+                                                                   ( 0xffffffff, insideContours, ),
+                                                                   ),
+                                                textTuples = labels,
                                                 bottomPadding = 20,
                                                 )
                 return {'renderMap': {'text': sampleText,
                        'source': source,
                        'svg': sampleSvg},
-                       }
+                       }, kerningValues
 
         sampleTexts = (
                        'Typography',
@@ -2030,11 +2159,14 @@ class Autokern(TFSMap):
                        'NNOOoo',
                        'pqpiitt',
                        'ijiJn.',
+                       'N-N=NtN',
                        )
         sampleTextsMaps = []
         for sampleText in sampleTexts:
-            sampleTextsMaps.append(renderTextWithFont(sampleText, self.srcUfoFont, 'Original', 0x7f7f7faf))
-            sampleTextsMaps.append(renderTextWithFont(sampleText, self.dstUfoFont, 'Autokern', 0x7f7faf7f))
+            sampleTextMap, kerningValues = renderTextWithFont(sampleText, self.srcUfoFont, 'Original', 0x7f7f7faf)
+            sampleTextsMaps.append(sampleTextMap)
+            sampleTextMap, _ = renderTextWithFont(sampleText, self.dstUfoFont, 'Autokern', 0x7f7faf7f, lastKerningValues=kerningValues)
+            sampleTextsMaps.append(sampleTextMap)
 
 
         pageTitle = u'Autokern Sample Texts'

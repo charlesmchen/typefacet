@@ -77,11 +77,11 @@ section h3 {
         <h2>{{{pageTitle}}}</h2>
 
 <div>
-	Label format: kerning value (x-extrema offset).
+	Labels are x-extrema offsets, not kerning values.
+	Kerning values can't be directly compared because the side bearings are likely to have changed.
 </div>
 <div>
-	The "original" and "autokern" kerning values can't be directly compared because the side bearings are likely to have changed.
-	Compare the x-extrema offsets instead.
+	Large changes to the x-extrema offsets are highlighted in red.
 </div>
 
 {{#sampleTextsMaps}}
