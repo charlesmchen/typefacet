@@ -1,0 +1,47 @@
+K 25
+svn:wc:ra_dav:version-url
+V 45
+/!svn/ver/554/trunk/Lib/robofab/interface/all
+END
+dialogs_mac_vanilla.py
+K 25
+svn:wc:ra_dav:version-url
+V 68
+/!svn/ver/501/trunk/Lib/robofab/interface/all/dialogs_mac_vanilla.py
+END
+dialogs_fontlab_legacy1.py
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/!svn/ver/498/trunk/Lib/robofab/interface/all/dialogs_fontlab_legacy1.py
+END
+dialogs_fontlab_legacy2.py
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/!svn/ver/554/trunk/Lib/robofab/interface/all/dialogs_fontlab_legacy2.py
+END
+__init__.py
+K 25
+svn:wc:ra_dav:version-url
+V 57
+/!svn/ver/379/trunk/Lib/robofab/interface/all/__init__.py
+END
+dialogs.py
+K 25
+svn:wc:ra_dav:version-url
+V 56
+/!svn/ver/554/trunk/Lib/robofab/interface/all/dialogs.py
+END
+dialogs_default.py
+K 25
+svn:wc:ra_dav:version-url
+V 64
+/!svn/ver/497/trunk/Lib/robofab/interface/all/dialogs_default.py
+END
+dialogs_legacy.py
+K 25
+svn:wc:ra_dav:version-url
+V 63
+/!svn/ver/500/trunk/Lib/robofab/interface/all/dialogs_legacy.py
+END

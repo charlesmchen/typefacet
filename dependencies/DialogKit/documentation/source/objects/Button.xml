@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xml>
+
+    <synopsis generate="1"/>
+	<title>dialogKit: Objects: Button</title>
+	
+	<include src="settings/main.xml" />
+	
+	<div class="content">
+
+<!-- 
+
+ -->
+
+	    <div class="sectionName">
+	        Button
+	    </div>
+	    
+	    <div class="sectionDescription">
+	       A standard push button.
+	    </div>
+
+<!-- 
+
+ -->
+
+	    <div class="method">
+	        
+	        <div class="init"><b>Button</b>(posSize, title, callback=None)</div>
+	        
+	        <p>
+	           <b>posSize</b> The position and size of the button. 
+	        </p>
+	        
+	        <p>
+	           <b>title</b> The text to be displayed in the button.
+	        </p>
+	        
+	        <p>
+	           <b>callback</b> The callback that should be called when the user hits the button.
+	        </p>
+	        
+	    </div>
+	    
+<!-- 
+
+ -->
+	        
+        <h4>Methods</h4>
+
+        <div class="method">
+	        <div class="methodName">show</div>
+	        <div class="arguments">value</div>
+	        <p>
+	            Show the button by passing a value of <i>True</i> or hide it by passing a value of <i>False</i>.
+	        </p>
+	    </div>
+	    
+	    <div class="method">
+	        <div class="methodName">enable</div>
+	        <div class="arguments">value</div>
+	        <p>
+	            Enable the button by passing a value of <i>True</i> or disable it by passing a value of <i>False</i>.
+	        </p>
+	    </div>
+
+	    <div class="method">
+	        <div class="methodName">get</div>
+	        <p>
+	            Returns the text in the button.
+	        </p>
+	    </div>
+
+<!-- 
+
+ -->
+
+	</div>
+
+</xml>

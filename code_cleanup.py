@@ -149,6 +149,8 @@ def cleanupFile(filepath, license):
 
 
 def walkCallback(license, dirname, names):
+    if dirname.startswith('./dependencies'):
+        return
 #    print 'walkCallback', dirname, names
 
     # Make sure we don't visit any source control directories.
@@ -163,7 +165,8 @@ def walkCallback(license, dirname, names):
 
 
 def main():
-    path = os.path.abspath(os.curdir)
+#    path = os.path.abspath(os.curdir)
+    path = os.curdir
     print 'path', path
 
     licenseFilepath = os.path.join(path, 'License.txt')

@@ -1,0 +1,35 @@
+K 25
+svn:wc:ra_dav:version-url
+V 51
+/!svn/ver/171/trunk/TestData/TestFont1%20(UFO1).ufo
+END
+lib.plist
+K 25
+svn:wc:ra_dav:version-url
+V 61
+/!svn/ver/171/trunk/TestData/TestFont1%20(UFO1).ufo/lib.plist
+END
+kerning.plist
+K 25
+svn:wc:ra_dav:version-url
+V 65
+/!svn/ver/171/trunk/TestData/TestFont1%20(UFO1).ufo/kerning.plist
+END
+groups.plist
+K 25
+svn:wc:ra_dav:version-url
+V 64
+/!svn/ver/171/trunk/TestData/TestFont1%20(UFO1).ufo/groups.plist
+END
+fontinfo.plist
+K 25
+svn:wc:ra_dav:version-url
+V 66
+/!svn/ver/171/trunk/TestData/TestFont1%20(UFO1).ufo/fontinfo.plist
+END
+metainfo.plist
+K 25
+svn:wc:ra_dav:version-url
+V 66
+/!svn/ver/171/trunk/TestData/TestFont1%20(UFO1).ufo/metainfo.plist
+END

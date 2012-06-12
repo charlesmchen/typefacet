@@ -132,9 +132,9 @@ class AutokernSettings(TFBaseSettings):
                             Note: Writing the HTML logs dramatically worsens performance.
                             CAUTION: This folder will be completely overwritten.
                             ''')
-        parser.add_argument('--skip-kerning-pair-logs',
+        parser.add_argument('--write-kerning-pair-logs',
                             action='store_true',
-                            help='Do not write HTML logs for each kerning pair.')
+                            help='Write HTML logs for each kerning pair.')
         parser.add_argument('--disparity-log-count',
                             type=int,
                             default=10,

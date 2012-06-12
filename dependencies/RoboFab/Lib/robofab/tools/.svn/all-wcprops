@@ -1,0 +1,95 @@
+K 25
+svn:wc:ra_dav:version-url
+V 37
+/!svn/ver/229/trunk/Lib/robofab/tools
+END
+toolsRF.py
+K 25
+svn:wc:ra_dav:version-url
+V 47
+/!svn/ver/67/trunk/Lib/robofab/tools/toolsRF.py
+END
+fontlabFeatureSplitter.py
+K 25
+svn:wc:ra_dav:version-url
+V 63
+/!svn/ver/171/trunk/Lib/robofab/tools/fontlabFeatureSplitter.py
+END
+toolsAll.py
+K 25
+svn:wc:ra_dav:version-url
+V 49
+/!svn/ver/228/trunk/Lib/robofab/tools/toolsAll.py
+END
+remote.py
+K 25
+svn:wc:ra_dav:version-url
+V 46
+/!svn/ver/67/trunk/Lib/robofab/tools/remote.py
+END
+glyphNameSchemes.py
+K 25
+svn:wc:ra_dav:version-url
+V 56
+/!svn/ver/67/trunk/Lib/robofab/tools/glyphNameSchemes.py
+END
+glyphConstruction.py
+K 25
+svn:wc:ra_dav:version-url
+V 57
+/!svn/ver/67/trunk/Lib/robofab/tools/glyphConstruction.py
+END
+__init__.py
+K 25
+svn:wc:ra_dav:version-url
+V 48
+/!svn/ver/67/trunk/Lib/robofab/tools/__init__.py
+END
+accentBuilder.py
+K 25
+svn:wc:ra_dav:version-url
+V 53
+/!svn/ver/67/trunk/Lib/robofab/tools/accentBuilder.py
+END
+rfPrefs.py
+K 25
+svn:wc:ra_dav:version-url
+V 47
+/!svn/ver/67/trunk/Lib/robofab/tools/rfPrefs.py
+END
+glifImport.py
+K 25
+svn:wc:ra_dav:version-url
+V 50
+/!svn/ver/67/trunk/Lib/robofab/tools/glifImport.py
+END
+otFeatures.py
+K 25
+svn:wc:ra_dav:version-url
+V 50
+/!svn/ver/67/trunk/Lib/robofab/tools/otFeatures.py
+END
+toolsFL.py
+K 25
+svn:wc:ra_dav:version-url
+V 48
+/!svn/ver/229/trunk/Lib/robofab/tools/toolsFL.py
+END
+objectDumper.py
+K 25
+svn:wc:ra_dav:version-url
+V 52
+/!svn/ver/67/trunk/Lib/robofab/tools/objectDumper.py
+END
+glifExport.py
+K 25
+svn:wc:ra_dav:version-url
+V 50
+/!svn/ver/67/trunk/Lib/robofab/tools/glifExport.py
+END
+proof.py
+K 25
+svn:wc:ra_dav:version-url
+V 45
+/!svn/ver/67/trunk/Lib/robofab/tools/proof.py
+END

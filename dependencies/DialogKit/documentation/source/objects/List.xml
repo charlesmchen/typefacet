@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xml>
+
+    <synopsis generate="1"/>
+	<title>dialogKit: Objects: List</title>
+	
+	<include src="settings/main.xml" />
+	
+	<div class="content">
+
+<!-- 
+
+ -->
+
+	    <div class="sectionName">
+	        List
+	    </div>
+	    
+	    <div class="sectionDescription">
+	        A list of items. The API for this object follows the API of the standard Python list.
+	    </div>
+
+<!-- 
+
+ -->
+
+	    <div class="method">
+	        
+	        <div class="init"><b>List</b>(posSize, items, callback=None)</div>
+	        
+	        <p>
+	           <b>posSize</b> The position and size of the list. 
+	        </p>
+	        
+	        <p>
+	           <b>items</b> The items shown in the list. This should be a list of strings.
+	        </p>
+	        
+	        <p>
+	           <b>callback</b> The callback that should be called when the user selects an item in the list.
+	        </p>
+	        
+	    </div>
+
+<!-- 
+
+ -->
+
+	    <div class="methods">
+
+	        <h4>Special methods</h4>
+
+    	    <div class="method">
+    	        <div class="methodName">__len__</div>
+    	    </div>
+
+    	    <div class="method">
+    	        <div class="methodName">__getitem__</div>
+    	    </div>
+
+    	    <div class="method">
+    	        <div class="methodName">__setitem__</div>
+    	    </div>
+
+    	    <div class="method">
+    	        <div class="methodName">__delitem__</div>
+    	    </div>
+
+    	    <div class="method">
+    	        <div class="methodName">__getslice__</div>
+    	    </div>
+
+    	    <div class="method">
+    	        <div class="methodName">__setslice__</div>
+    	    </div>
+
+    	    <div class="method">
+    	        <div class="methodName">__delslice__</div>
+    	    </div>
+
+    	    <div class="method">
+    	        <div class="methodName">append</div>
+    	    </div>
+
+    	    <div class="method">
+    	        <div class="methodName">remove</div>
+    	    </div>
+
+    	    <div class="method">
+    	        <div class="methodName">index</div>
+    	    </div>
+
+    	    <div class="method">
+    	        <div class="methodName">insert</div>
+    	    </div>
+
+    	    <div class="method">
+    	        <div class="methodName">extend</div>
+    	    </div>
+
+    	    <div class="method">
+    	        <div class="methodName">replace</div>
+    	    </div>
+
+	    </div>
+	    
+<!-- 
+
+ -->
+	        
+        <h4>Methods</h4>
+
+        <div class="method">
+	        <div class="methodName">show</div>
+	        <div class="arguments">value</div>
+	        <p>
+	            Show the list button by passing a value of <i>True</i> or hide it by passing a value of <i>False</i>.
+	        </p>
+	    </div>
+	    
+	    <div class="method">
+	        <div class="methodName">enable</div>
+	        <div class="arguments">value</div>
+	        <p>
+	            Enable the list by passing a value of <i>True</i> or disable it by passing a value of <i>False</i>.
+	        </p>
+	    </div>
+
+	    <div class="method">
+	        <div class="methodName">get</div>
+	        <p>
+	            Returns the items in the list.
+	        </p>
+	    </div>
+	    
+	    <div class="method">
+	        <div class="methodName">set</div>
+	        <div class="arguments">value</div>
+	        <p>
+	            Set the items in the list. The value should be a list of strings.
+	        </p>
+	    </div>
+	    
+	    <div class="method">
+	        <div class="methodName">getSelection</div>
+	        <p>
+	            Returns a list of indexes of selected items.
+	        </p>
+	    </div>
+	    
+	    <div class="method">
+	        <div class="methodName">setSelection</div>
+	        <div class="arguments">value</div>
+	        <p>
+	            Set the selected items in the list. The value should be a list of indexes.
+	        </p>
+	    </div>
+
+<!-- 
+
+ -->
+
+	</div>
+
+</xml>

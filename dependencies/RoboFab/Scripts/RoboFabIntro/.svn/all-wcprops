@@ -1,0 +1,167 @@
+K 25
+svn:wc:ra_dav:version-url
+V 40
+/!svn/ver/171/trunk/Scripts/RoboFabIntro
+END
+intro_ContoursSegmentsPoints.py
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/!svn/ver/22/trunk/Scripts/RoboFabIntro/intro_ContoursSegmentsPoints.py
+END
+demo_InvertSelectedSegments.py
+K 25
+svn:wc:ra_dav:version-url
+V 70
+/!svn/ver/22/trunk/Scripts/RoboFabIntro/demo_InvertSelectedSegments.py
+END
+intro_Groups.py
+K 25
+svn:wc:ra_dav:version-url
+V 55
+/!svn/ver/22/trunk/Scripts/RoboFabIntro/intro_Groups.py
+END
+demo_AlignBPoints.py
+K 25
+svn:wc:ra_dav:version-url
+V 60
+/!svn/ver/22/trunk/Scripts/RoboFabIntro/demo_AlignBPoints.py
+END
+intro_FontAndGlyphLib.py
+K 25
+svn:wc:ra_dav:version-url
+V 64
+/!svn/ver/22/trunk/Scripts/RoboFabIntro/intro_FontAndGlyphLib.py
+END
+demo_GlyphMath.py
+K 25
+svn:wc:ra_dav:version-url
+V 57
+/!svn/ver/22/trunk/Scripts/RoboFabIntro/demo_GlyphMath.py
+END
+demo_PrintMeasuments.py
+K 25
+svn:wc:ra_dav:version-url
+V 63
+/!svn/ver/22/trunk/Scripts/RoboFabIntro/demo_PrintMeasuments.py
+END
+demo_InterpolPreview.py
+K 25
+svn:wc:ra_dav:version-url
+V 63
+/!svn/ver/22/trunk/Scripts/RoboFabIntro/demo_InterpolPreview.py
+END
+demo_UFORemoveOverlap.py
+K 25
+svn:wc:ra_dav:version-url
+V 64
+/!svn/ver/22/trunk/Scripts/RoboFabIntro/demo_UFORemoveOverlap.py
+END
+demo_GlyphAppender.py
+K 25
+svn:wc:ra_dav:version-url
+V 61
+/!svn/ver/22/trunk/Scripts/RoboFabIntro/demo_GlyphAppender.py
+END
+demo_CorrectDirection.py
+K 25
+svn:wc:ra_dav:version-url
+V 64
+/!svn/ver/22/trunk/Scripts/RoboFabIntro/demo_CorrectDirection.py
+END
+intro_FontObject.py
+K 25
+svn:wc:ra_dav:version-url
+V 60
+/!svn/ver/171/trunk/Scripts/RoboFabIntro/intro_FontObject.py
+END
+intro_GeneratingFonts.py
+K 25
+svn:wc:ra_dav:version-url
+V 64
+/!svn/ver/22/trunk/Scripts/RoboFabIntro/intro_GeneratingFonts.py
+END
+intro_Kerning.py
+K 25
+svn:wc:ra_dav:version-url
+V 57
+/!svn/ver/171/trunk/Scripts/RoboFabIntro/intro_Kerning.py
+END
+demo_RoundKerning.py
+K 25
+svn:wc:ra_dav:version-url
+V 60
+/!svn/ver/22/trunk/Scripts/RoboFabIntro/demo_RoundKerning.py
+END
+demo_PrintKerningCounts.py
+K 25
+svn:wc:ra_dav:version-url
+V 66
+/!svn/ver/22/trunk/Scripts/RoboFabIntro/demo_PrintKerningCounts.py
+END
+demo_FindCompatibleGlyphs.py
+K 25
+svn:wc:ra_dav:version-url
+V 69
+/!svn/ver/171/trunk/Scripts/RoboFabIntro/demo_FindCompatibleGlyphs.py
+END
+intro_GlyphProperties.py
+K 25
+svn:wc:ra_dav:version-url
+V 64
+/!svn/ver/22/trunk/Scripts/RoboFabIntro/intro_GlyphProperties.py
+END
+intro_InterpolateFonts.py
+K 25
+svn:wc:ra_dav:version-url
+V 65
+/!svn/ver/22/trunk/Scripts/RoboFabIntro/intro_InterpolateFonts.py
+END
+intro_StartHere.py
+K 25
+svn:wc:ra_dav:version-url
+V 58
+/!svn/ver/22/trunk/Scripts/RoboFabIntro/intro_StartHere.py
+END
+demo_MakeCameoFont.py
+K 25
+svn:wc:ra_dav:version-url
+V 61
+/!svn/ver/22/trunk/Scripts/RoboFabIntro/demo_MakeCameoFont.py
+END
+intro_AccentBuilder.py
+K 25
+svn:wc:ra_dav:version-url
+V 62
+/!svn/ver/22/trunk/Scripts/RoboFabIntro/intro_AccentBuilder.py
+END
+intro_SimpleDrawing.py
+K 25
+svn:wc:ra_dav:version-url
+V 62
+/!svn/ver/22/trunk/Scripts/RoboFabIntro/intro_SimpleDrawing.py
+END
+intro_008.py
+K 25
+svn:wc:ra_dav:version-url
+V 52
+/!svn/ver/22/trunk/Scripts/RoboFabIntro/intro_008.py
+END
+intro_FoundrySettings.py
+K 25
+svn:wc:ra_dav:version-url
+V 65
+/!svn/ver/171/trunk/Scripts/RoboFabIntro/intro_FoundrySettings.py
+END
+intro_GlyphObject.py
+K 25
+svn:wc:ra_dav:version-url
+V 60
+/!svn/ver/22/trunk/Scripts/RoboFabIntro/intro_GlyphObject.py
+END
+postScriptHintData.py
+K 25
+svn:wc:ra_dav:version-url
+V 61
+/!svn/ver/73/trunk/Scripts/RoboFabIntro/postScriptHintData.py
+END

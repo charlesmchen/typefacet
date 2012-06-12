@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<xml>
+    
+    <synopsis generate="%d"/>
+    
+    <title>%s</title>
+    
+    <include src="settings/main.xml" />
+    
+    <div class="pyContent">
+        
+        <div class="sectionName">
+	        %s
+	    </div>
+	    
+	    <div class="sectionDescription">
+	       %s
+	    </div>
+        
+    </div>
+
+</xml>

@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xml>
+
+    <synopsis generate="1"/>
+	<title>dialogKit: Objects: PopUpButton</title>
+	
+	<include src="settings/main.xml" />
+	
+	<div class="content">
+
+<!-- 
+
+ -->
+
+	    <div class="sectionName">
+	        PopUpButton
+	    </div>
+	    
+	    <div class="sectionDescription">
+	        A standard pop-up button that lets the user choose from a set list of items.
+	    </div>
+
+<!-- 
+
+ -->
+
+	    <div class="method">
+	        
+	        <div class="init"><b>PopUpButton</b>(posSize, items, callback=None)</div>
+	        
+	        <p>
+	           <b>posSize</b> The position and size of the pop-up button. 
+	        </p>
+	        
+	        <p>
+	           <b>items</b> The items available to the user in the pop-up button. This should be a list of strings.
+	        </p>
+	        
+	        <p>
+	           <b>callback</b> The callback that should be called when the user selects an item in the pop-up button.
+	        </p>
+	        
+	    </div>
+	    
+<!-- 
+
+ -->
+	        
+        <h4>Methods</h4>
+
+        <div class="method">
+	        <div class="methodName">show</div>
+	        <div class="arguments">value</div>
+	        <p>
+	            Show the pop-up button by passing a value of <i>True</i> or hide it by passing a value of <i>False</i>.
+	        </p>
+	    </div>
+	    
+	    <div class="method">
+	        <div class="methodName">enable</div>
+	        <div class="arguments">value</div>
+	        <p>
+	            Enable the pop-up button by passing a value of <i>True</i> or disable it by passing a value of <i>False</i>.
+	        </p>
+	    </div>
+
+	    <div class="method">
+	        <div class="methodName">get</div>
+	        <p>
+	            Returns the items available to the user in the pop-up button.
+	        </p>
+	    </div>
+	    
+	    <div class="method">
+	        <div class="methodName">set</div>
+	        <div class="arguments">value</div>
+	        <p>
+	            Set the items available to the user in the pop-up button. The value should be a list of strings.
+	        </p>
+	    </div>
+	    
+	    <div class="method">
+	        <div class="methodName">getSelection</div>
+	        <p>
+	            Returns the index of the item selected by the user. If the user did not select an item, this returns None.
+	        </p>
+	    </div>
+	    
+	    <div class="method">
+	        <div class="methodName">setSelection</div>
+	        <div class="arguments">value</div>
+	        <p>
+	            Set the selected item in the pop-up button. The value should be an index.
+	        </p>
+	    </div>
+
+<!-- 
+
+ -->
+
+	</div>
+
+</xml>

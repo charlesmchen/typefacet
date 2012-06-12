@@ -1,0 +1,83 @@
+K 25
+svn:wc:ra_dav:version-url
+V 38
+/!svn/ver/493/trunk/Scripts/RoboFabUFO
+END
+ExportSelectedGlyphsToUFOForAllFonts.py
+K 25
+svn:wc:ra_dav:version-url
+V 77
+/!svn/ver/82/trunk/Scripts/RoboFabUFO/ExportSelectedGlyphsToUFOForAllFonts.py
+END
+ImportChangedGlyphsFromUFO.py
+K 25
+svn:wc:ra_dav:version-url
+V 68
+/!svn/ver/200/trunk/Scripts/RoboFabUFO/ImportChangedGlyphsFromUFO.py
+END
+ExportOneGlyphToGlif.py
+K 25
+svn:wc:ra_dav:version-url
+V 62
+/!svn/ver/203/trunk/Scripts/RoboFabUFO/ExportOneGlyphToGlif.py
+END
+SelectedGlyphsToUFO.py
+K 25
+svn:wc:ra_dav:version-url
+V 60
+/!svn/ver/81/trunk/Scripts/RoboFabUFO/SelectedGlyphsToUFO.py
+END
+ExportSelectedGlyphsToUFO.py
+K 25
+svn:wc:ra_dav:version-url
+V 67
+/!svn/ver/218/trunk/Scripts/RoboFabUFO/ExportSelectedGlyphsToUFO.py
+END
+ImportOneGlyphFromUFO.py
+K 25
+svn:wc:ra_dav:version-url
+V 62
+/!svn/ver/22/trunk/Scripts/RoboFabUFO/ImportOneGlyphFromUFO.py
+END
+ImportFontFromUFO.py
+K 25
+svn:wc:ra_dav:version-url
+V 59
+/!svn/ver/493/trunk/Scripts/RoboFabUFO/ImportFontFromUFO.py
+END
+UpdateFromUFO.py
+K 25
+svn:wc:ra_dav:version-url
+V 55
+/!svn/ver/200/trunk/Scripts/RoboFabUFO/UpdateFromUFO.py
+END
+ExportAllOpenFontsAsUFO.py
+K 25
+svn:wc:ra_dav:version-url
+V 64
+/!svn/ver/81/trunk/Scripts/RoboFabUFO/ExportAllOpenFontsAsUFO.py
+END
+ExportOneGlyphToUFO.py
+K 25
+svn:wc:ra_dav:version-url
+V 61
+/!svn/ver/203/trunk/Scripts/RoboFabUFO/ExportOneGlyphToUFO.py
+END
+ExportFontToUFO.py
+K 25
+svn:wc:ra_dav:version-url
+V 56
+/!svn/ver/81/trunk/Scripts/RoboFabUFO/ExportFontToUFO.py
+END
+ImportUFOBatch.py
+K 25
+svn:wc:ra_dav:version-url
+V 55
+/!svn/ver/81/trunk/Scripts/RoboFabUFO/ImportUFOBatch.py
+END
+SelectedGlyphsToUFOForAllFonts.py
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/!svn/ver/81/trunk/Scripts/RoboFabUFO/SelectedGlyphsToUFOForAllFonts.py
+END

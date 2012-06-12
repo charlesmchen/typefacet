@@ -1,0 +1,35 @@
+K 25
+svn:wc:ra_dav:version-url
+V 57
+/svnroot/fonttools/!svn/ver/587/trunk/Lib/fontTools/ttLib
+END
+sfnt.py
+K 25
+svn:wc:ra_dav:version-url
+V 65
+/svnroot/fonttools/!svn/ver/568/trunk/Lib/fontTools/ttLib/sfnt.py
+END
+xmlImport.py
+K 25
+svn:wc:ra_dav:version-url
+V 70
+/svnroot/fonttools/!svn/ver/302/trunk/Lib/fontTools/ttLib/xmlImport.py
+END
+__init__.py
+K 25
+svn:wc:ra_dav:version-url
+V 69
+/svnroot/fonttools/!svn/ver/581/trunk/Lib/fontTools/ttLib/__init__.py
+END
+standardGlyphOrder.py
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/svnroot/fonttools/!svn/ver/374/trunk/Lib/fontTools/ttLib/standardGlyphOrder.py
+END
+macUtils.py
+K 25
+svn:wc:ra_dav:version-url
+V 69
+/svnroot/fonttools/!svn/ver/403/trunk/Lib/fontTools/ttLib/macUtils.py
+END

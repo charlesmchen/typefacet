@@ -1,0 +1,35 @@
+K 25
+svn:wc:ra_dav:version-url
+V 39
+/!svn/ver/494/trunk/Lib/robofab/objects
+END
+objectsFL.py
+K 25
+svn:wc:ra_dav:version-url
+V 52
+/!svn/ver/494/trunk/Lib/robofab/objects/objectsFL.py
+END
+__init__.py
+K 25
+svn:wc:ra_dav:version-url
+V 50
+/!svn/ver/67/trunk/Lib/robofab/objects/__init__.py
+END
+objectsRF.py
+K 25
+svn:wc:ra_dav:version-url
+V 52
+/!svn/ver/472/trunk/Lib/robofab/objects/objectsRF.py
+END
+objectsBase.py
+K 25
+svn:wc:ra_dav:version-url
+V 54
+/!svn/ver/471/trunk/Lib/robofab/objects/objectsBase.py
+END
+objectsFF.py
+K 25
+svn:wc:ra_dav:version-url
+V 51
+/!svn/ver/67/trunk/Lib/robofab/objects/objectsFF.py
+END

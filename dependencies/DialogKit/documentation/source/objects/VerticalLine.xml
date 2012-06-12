@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xml>
+
+    <synopsis generate="1"/>
+	<title>dialogKit: Objects: VerticalLine</title>
+	
+	<include src="settings/main.xml" />
+	
+	<div class="content">
+
+<!-- 
+
+ -->
+
+	    <div class="sectionName">
+	        VerticalLine
+	    </div>
+	    
+	    <div class="sectionDescription">
+	        A vertical line.
+	    </div>
+
+<!-- 
+
+ -->
+
+	    <div class="method">
+	        
+	        <div class="init"><b>VerticalLine</b>(posSize)</div>
+	        
+	        <p>
+	           <b>posSize</b> The position and size of the line.
+	        </p>
+	        
+	    </div>
+	    
+<!-- 
+
+ -->
+	        
+        <h4>Methods</h4>
+
+        <div class="method">
+	        <div class="methodName">show</div>
+	        <div class="arguments">value</div>
+	        <p>
+	            Show the line by passing a value of <i>True</i> or hide it by passing a value of <i>False</i>.
+	        </p>
+	    </div>
+
+<!-- 
+
+ -->
+
+	</div>
+
+</xml>

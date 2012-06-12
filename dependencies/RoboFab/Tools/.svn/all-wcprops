@@ -1,0 +1,23 @@
+K 25
+svn:wc:ra_dav:version-url
+V 25
+/!svn/ver/560/trunk/Tools
+END
+buildRoboFabDistroFromSVN.py
+K 25
+svn:wc:ra_dav:version-url
+V 54
+/!svn/ver/560/trunk/Tools/buildRoboFabDistroFromSVN.py
+END
+versionSniffer.py
+K 25
+svn:wc:ra_dav:version-url
+V 43
+/!svn/ver/556/trunk/Tools/versionSniffer.py
+END
+installModuleForFontLabOSX.py
+K 25
+svn:wc:ra_dav:version-url
+V 55
+/!svn/ver/481/trunk/Tools/installModuleForFontLabOSX.py
+END

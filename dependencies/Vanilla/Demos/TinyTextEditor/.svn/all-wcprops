@@ -1,0 +1,23 @@
+K 25
+svn:wc:ra_dav:version-url
+V 55
+/!svn/ver/1/packages/vanilla/trunk/Demos/TinyTextEditor
+END
+TinyTextEditor.py
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/!svn/ver/1/packages/vanilla/trunk/Demos/TinyTextEditor/TinyTextEditor.py
+END
+setup.py
+K 25
+svn:wc:ra_dav:version-url
+V 64
+/!svn/ver/1/packages/vanilla/trunk/Demos/TinyTextEditor/setup.py
+END
+tinyTextEditorDocumentWindow.py
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/!svn/ver/1/packages/vanilla/trunk/Demos/TinyTextEditor/tinyTextEditorDocumentWindow.py
+END

@@ -1,0 +1,23 @@
+K 25
+svn:wc:ra_dav:version-url
+V 38
+/!svn/ver/885/packages/dialogKit/trunk
+END
+License.txt
+K 25
+svn:wc:ra_dav:version-url
+V 48
+/!svn/ver/1/packages/dialogKit/trunk/License.txt
+END
+makeDistro.py
+K 25
+svn:wc:ra_dav:version-url
+V 50
+/!svn/ver/1/packages/dialogKit/trunk/makeDistro.py
+END
+install.py
+K 25
+svn:wc:ra_dav:version-url
+V 47
+/!svn/ver/1/packages/dialogKit/trunk/install.py
+END

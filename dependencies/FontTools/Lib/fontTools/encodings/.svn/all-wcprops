@@ -1,0 +1,23 @@
+K 25
+svn:wc:ra_dav:version-url
+V 60
+/svnroot/fonttools/!svn/ver/90/trunk/Lib/fontTools/encodings
+END
+MacRoman.py
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/svnroot/fonttools/!svn/ver/18/trunk/Lib/fontTools/encodings/MacRoman.py
+END
+__init__.py
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/svnroot/fonttools/!svn/ver/90/trunk/Lib/fontTools/encodings/__init__.py
+END
+StandardEncoding.py
+K 25
+svn:wc:ra_dav:version-url
+V 80
+/svnroot/fonttools/!svn/ver/15/trunk/Lib/fontTools/encodings/StandardEncoding.py
+END

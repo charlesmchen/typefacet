@@ -1,0 +1,41 @@
+K 25
+svn:wc:ra_dav:version-url
+V 40
+/!svn/ver/171/trunk/Scripts/RoboFabUtils
+END
+Start_FL_Remote.py
+K 25
+svn:wc:ra_dav:version-url
+V 58
+/!svn/ver/22/trunk/Scripts/RoboFabUtils/Start_FL_Remote.py
+END
+RobustBatchGenerate.py
+K 25
+svn:wc:ra_dav:version-url
+V 63
+/!svn/ver/171/trunk/Scripts/RoboFabUtils/RobustBatchGenerate.py
+END
+RewriteDemoFont.py
+K 25
+svn:wc:ra_dav:version-url
+V 58
+/!svn/ver/22/trunk/Scripts/RoboFabUtils/RewriteDemoFont.py
+END
+GenerateKernProof.py
+K 25
+svn:wc:ra_dav:version-url
+V 60
+/!svn/ver/22/trunk/Scripts/RoboFabUtils/GenerateKernProof.py
+END
+FontToUfo.py
+K 25
+svn:wc:ra_dav:version-url
+V 52
+/!svn/ver/22/trunk/Scripts/RoboFabUtils/FontToUfo.py
+END
+TestFontEquality.py
+K 25
+svn:wc:ra_dav:version-url
+V 60
+/!svn/ver/171/trunk/Scripts/RoboFabUtils/TestFontEquality.py
+END

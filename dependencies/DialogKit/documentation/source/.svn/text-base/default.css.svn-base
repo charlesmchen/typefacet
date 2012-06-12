@@ -1,0 +1,264 @@
+body {
+	font: 11px/17px Verdana, Helvetica, Arial, Sans-Serif;
+	text-align: left;
+	background: #666;
+}
+
+
+/* ---------- STANDARDS ---------- */
+
+p {
+	margin-top: 0px;
+	margin-bottom: 8px;
+}
+
+h3 {
+    font-size: 17px;
+    font-weight: bold;
+    margin-top: 0px;
+	margin-bottom: 20px;
+}
+
+h4 {
+    font-size: 14px;
+    font-weight: bold;
+    margin-top: 25px;
+	margin-bottom: 15px;
+	color: #fff;
+}
+
+h5 {
+    font-size: 14px;
+    font-weight: bold;
+    margin-top: 15px;
+	margin-bottom: 5px;
+}
+
+a {
+    color: #000;
+    text-decoration: none;
+    font-weight: bold;
+}
+
+a.bugReplication {
+    color: #fff;
+}
+
+a:hover {
+    padding: 1px 0px 1px 0px;
+    background-color: #ccc;
+}
+
+a.navigationItems {
+    padding: 1px 2px 1px 2px;
+    border-bottom: 0px;
+    text-decoration: none;
+    font-weight: normal;
+}
+
+a.navigationItems:hover {
+    padding: 1px 2px 1px 2px;
+    border-bottom: 1px solid #fff;
+    background-color: #fff;
+    color: #000;
+}
+
+/* ------------- DIV ------------- */
+
+.header {
+    position: absolute;
+    left: 30px;
+    top: 30px;
+    width: 125px;
+    height: 30px;
+    border: 1px solid #000;
+    background: #000;
+    color: #fff;
+    font: 11px/15px Verdana, Helvetica, Arial, Sans-Serif;
+}
+
+.headerTitle {
+    position: absolute;
+    left: 15px;
+    top: 9px;
+}
+
+.navigation {
+    position: absolute;
+    left: 30px;
+    top: 60px;
+    width: 110px;
+    margin-top: -1px;
+    padding: 10px 0px 15px 15px;
+    background-color: #ccc;
+    border: 1px solid #000;
+    font: 10px/17px Verdana, Helvetica, Arial, Sans-Serif;
+    font-weight: bold;
+}
+
+.navigationObjects {
+    padding-left: 5px;
+    border-left: 1px solid #fff;
+    font-style: italic;
+}
+
+.content {
+    position: absolute;
+    left: 185px;
+    top: 30px;
+    width: 400px;
+}
+
+/* SECTION/OBJECT */
+
+.sectionName {
+    width: 100%;
+    margin: -1px 0px 0px 0px;
+    padding: 10px 10px 10px 10px;
+    background-color: #000;
+    border: 1px solid #000;
+    font: 17px/20px Verdana, Helvetica, Arial, Sans-Serif;
+    color: #fff;
+}
+
+.sectionDescription {
+    width: 100%;
+    margin-bottom: 20px;
+    padding: 10px 10px 10px 10px;
+    border: 1px solid #000;
+    background-color: #fff;
+}
+
+.sectionImage {
+    margin-bottom: 20px;
+    padding: 10px 0px 10px 0px;
+}
+
+/* EXAMPLES */
+
+.pyContent {
+    position: absolute;
+    left: 185px;
+    top: 30px;
+}
+
+/* METHOD */
+
+.method {
+    width: 100%;
+    margin-bottom: 10px;
+    padding: 0px 10px 5px 10px;
+    background-color: #ccc;
+    border: 1px solid #000;
+}
+
+.init {
+    margin: -1px -11px 10px -11px;
+    padding: 5px 10px 5px 10px;
+    background-color: #333;
+    border: 1px solid #000;
+    font: 13px/18px Verdana, Helvetica, Arial, Sans-Serif;
+    color: #fff;
+}
+
+.methodName {
+    margin: -1px -11px 10px -11px;
+    padding: 5px 10px 5px 10px;
+    background-color: #666;
+    border: 1px solid #000;
+    font: 12px/16px Verdana, Helvetica, Arial, Sans-Serif;
+    color: #fff;
+}
+
+.arguments {
+    margin: -11px -11px 10px -11px;
+    padding: 5px 10px 5px 10px;
+    background-color: #fff;
+    border: 1px solid #000;
+    font-style: italic;
+}
+
+/* BUG */
+
+b.bugSmallCaps {
+    font-size: 9px;
+    font-weight: normal;
+    text-transform: uppercase;
+    letter-spacing: 0.2px
+}
+
+.bug {
+    width: 100%;
+    margin-bottom: 20px;
+    padding: 0px 10px 5px 10px;
+    background-color: #ccc;
+    border: 1px solid #000;
+}
+
+.bugHeader {
+    margin: -1px -11px 0px -11px;
+    padding: 5px 10px 5px 10px;
+    background-color: #333;
+    border: 1px solid #000;
+    font: 12px/16px Verdana, Helvetica, Arial, Sans-Serif;
+    color: #fff;
+}
+
+.bugData {
+    margin: -1px -11px 0px -11px;
+    padding: 5px 10px 5px 10px;
+    background-color: #666;
+    border: 1px solid #000;
+    font: 12px/16px Verdana, Helvetica, Arial, Sans-Serif;
+    color: #fff;
+}
+
+.bugText {
+    margin: -1px -11px -10px -11px;
+    padding: 10px 10px 10px 10px;
+}
+
+/* EXAMPLES */
+/* these are needed by py2html */
+
+.exampleList {
+    padding-left: 8px;
+    border-left: 1px solid #999;
+    line-height: 20px;
+}
+
+.python_code {
+    font: 10px/14px Monaco, Andale Mono, monospace;
+}
+
+.py_key {
+    color: black;
+}
+
+.py_num{
+    color: black;
+}
+
+.py_str {
+    color: green;
+}
+
+.py_op {
+    color: black;
+}
+
+.py_com {
+    color: #666;
+}
+
+.py_res {
+    color: blue;
+}
+
+.py_def {
+    color: red;
+}
+
+.py_brk {
+    color: black;
+}

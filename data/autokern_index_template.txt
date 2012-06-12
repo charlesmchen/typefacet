@@ -1,0 +1,119 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    
+    <title>{{pageTitle}}</title>
+
+    <link rel="stylesheet" href="stylesheets/styles.css">
+    <link rel="stylesheet" href="stylesheets/pygment_trac.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+
+
+
+<style type="text/css">
+<!--
+
+section div,
+section ul {
+	padding-top: 10px;
+}
+
+section h3 {
+	padding-top: 25px;
+}
+
+-->
+</style>
+
+  </head>
+  <body>
+    <div class="wrapper">
+    
+      <header>
+        <h1>TypeFacet Autokern</h1>
+        <ul>
+        	<li>
+    	    	<b>Family: {{familyName}}</b>
+        	</li>
+        	<li>
+	        	<b>Style: {{styleName}}</b>
+        	</li>
+        	<li>
+	        	<b>Units per em: {{units_per_em}}</b>
+        	</li>
+        	<li>
+	        	<b>Ascender: {{ascender_ems}}</b>
+        	</li>
+        	<li>
+	        	<b>Descender: {{descender_ems}}</b>
+        	</li>
+        	<li>
+	        	<b>Minimum Distance: {{min_distance_ems}}</b>
+        	</li>
+        	<li>
+	        	<b>Maximum Distance: {{max_distance_ems}}</b>
+        	</li>
+        	<li>
+	        	<b>Precision: {{precision_ems}}</b>
+        	</li>
+        	<li>
+	        	<b>Intrusion Tolerance: {{intrusion_tolerance_ems}}</b>
+        	</li>
+        	<li>
+	        	<b>Maximum x-extrema Overlap: {{max_x_extrema_overlap_ems}}</b>
+        	</li>
+        	<li>
+	        	<b>Glyph Count: {{glyph_count}}</b>
+        	</li>
+        	<li>
+	        	<b>Kerned Pairs: {{kerned_pairs_count}}</b>
+        	</li>
+        	<li>
+	        	<b>Valid Kerned Pairs (--kerning-threshold-ems: {{kerning_threshold_ems}}): {{valid_kerned_pairs_count}}</b>
+        	</li>
+{{#max_kerning_pairs}}
+        	<li>
+	        	<b>Final Kerned Pairs (--max-kerning-pairs: {{max_kerning_pairs}}): {{final_kerned_pairs_count}}</b>
+        	</li>
+{{/max_kerning_pairs}}
+        	
+        </ul>
+        <p>
+          <a href="http://charlesmchen.github.com/typefacet/">TypeFacet project</a>
+        </p>
+        
+      </header>
+      <section>
+      
+        <h2>{{{pageTitle}}}</h2>
+
+{{#logGroupMaps}}
+<h3>{{logGroupName}}</h3>
+
+<div>
+{{#logGroupItems}}
+	<a href="{{filename}}">{{logShortname}}</a>
+{{/logGroupItems}}
+
+{{groupSuffix}}
+
+</div>
+
+{{/logGroupMaps}}
+
+      </section>
+      <footer>
+<!--
+        <p>This project is maintained by <a href="https://github.com/charlesmchen">charlesmchen</a></p>
+-->
+      </footer>
+    </div>
+    <script src="javascripts/scale.fix.js"></script>
+    
+  </body>
+</html>

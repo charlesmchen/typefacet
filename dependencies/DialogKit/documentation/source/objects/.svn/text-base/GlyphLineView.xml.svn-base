@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xml>
+
+    <synopsis generate="1"/>
+	<title>dialogKit: Objects: GlyphLineView</title>
+	
+	<include src="settings/main.xml" />
+	
+	<div class="content">
+
+<!-- 
+
+ -->
+
+	    <div class="sectionName">
+	        GlyphLineView
+	    </div>
+	    
+	    <div class="sectionDescription">
+	        A view which shows a string of text for a given font.
+	    </div>
+
+<!-- 
+
+ -->
+
+	    <div class="method">
+	        
+	        <div class="init"><b>GlyphLineView</b>(posSize, text="", font=None)</div>
+	        
+	        <p>
+	           <b>posSize</b> The position and size of the view. 
+	        </p>
+	        
+	        <p>
+	           <b>text</b> The text to be displayed in the view.
+	        </p>
+	        
+	        <p>
+	           <b>font</b> The font to be displayed in the view. If no font is given, the current font will be used. When used in FontLab, the font can be either a raw fl.font or a RoboFab wrapped font.
+	        </p>
+	        
+	    </div>
+	    
+<!-- 
+
+ -->
+	        
+        <h4>Methods</h4>
+
+        <div class="method">
+	        <div class="methodName">show</div>
+	        <div class="arguments">value</div>
+	        <p>
+	            Show the view by passing a value of <i>True</i> or hide it by passing a value of <i>False</i>.
+	        </p>
+	    </div>
+
+	    <div class="method">
+	        <div class="methodName">get</div>
+	        <p>
+	            Returns the text in the view.
+	        </p>
+	    </div>
+        
+        <div class="method">
+	        <div class="methodName">set</div>
+	        <div class="arguments">value</div>
+	        <p>
+	            Set the text in the view.
+	        </p>
+	    </div>
+	    
+	    <div class="method">
+	        <div class="methodName">setFont</div>
+	        <div class="arguments">font</div>
+	        <p>
+	            Set the font to be displayed in the view. If None is passed, the current font will be used.
+	        </p>
+	    </div>
+
+<!-- 
+
+ -->
+
+	</div>
+
+</xml>

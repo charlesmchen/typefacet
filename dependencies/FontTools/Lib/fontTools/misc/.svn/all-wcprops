@@ -1,0 +1,71 @@
+K 25
+svn:wc:ra_dav:version-url
+V 56
+/svnroot/fonttools/!svn/ver/588/trunk/Lib/fontTools/misc
+END
+eexec.py
+K 25
+svn:wc:ra_dav:version-url
+V 65
+/svnroot/fonttools/!svn/ver/578/trunk/Lib/fontTools/misc/eexec.py
+END
+psLib.py
+K 25
+svn:wc:ra_dav:version-url
+V 65
+/svnroot/fonttools/!svn/ver/550/trunk/Lib/fontTools/misc/psLib.py
+END
+psCharStrings.py
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/svnroot/fonttools/!svn/ver/549/trunk/Lib/fontTools/misc/psCharStrings.py
+END
+transform.py
+K 25
+svn:wc:ra_dav:version-url
+V 69
+/svnroot/fonttools/!svn/ver/588/trunk/Lib/fontTools/misc/transform.py
+END
+__init__.py
+K 25
+svn:wc:ra_dav:version-url
+V 67
+/svnroot/fonttools/!svn/ver/90/trunk/Lib/fontTools/misc/__init__.py
+END
+arrayTools.py
+K 25
+svn:wc:ra_dav:version-url
+V 70
+/svnroot/fonttools/!svn/ver/537/trunk/Lib/fontTools/misc/arrayTools.py
+END
+bezierTools.py
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/svnroot/fonttools/!svn/ver/537/trunk/Lib/fontTools/misc/bezierTools.py
+END
+psOperators.py
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/svnroot/fonttools/!svn/ver/270/trunk/Lib/fontTools/misc/psOperators.py
+END
+homeResFile.py
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/svnroot/fonttools/!svn/ver/113/trunk/Lib/fontTools/misc/homeResFile.py
+END
+macCreatorType.py
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/svnroot/fonttools/!svn/ver/526/trunk/Lib/fontTools/misc/macCreatorType.py
+END
+textTools.py
+K 25
+svn:wc:ra_dav:version-url
+V 69
+/svnroot/fonttools/!svn/ver/512/trunk/Lib/fontTools/misc/textTools.py
+END

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xml>
+
+    <synopsis generate="1"/>
+	<title>dialogKit: Callbacks</title>
+	
+	<include src="settings/main.xml" />
+	
+	<div class="content">
+	    
+	    <div class="sectionName">
+	       Callbacks
+	    </div>
+	    
+	    <div class="sectionDescription">
+	       
+            <p>
+	           The various dialogKit objects accept callback arguments. These callbacks should be methods or functions that accept a <i>sender</i> argument. The dialogKit object, when clicked, typed in, etc. will call the callback and pass itself as the sender.
+	        </p>
+	        
+	    </div>
+	    
+	</div>
+
+</xml>

@@ -1,0 +1,47 @@
+K 25
+svn:wc:ra_dav:version-url
+V 56
+/svnroot/fonttools/!svn/ver/498/trunk/Lib/fontTools/pens
+END
+pointInsidePen.py
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/svnroot/fonttools/!svn/ver/496/trunk/Lib/fontTools/pens/pointInsidePen.py
+END
+basePen.py
+K 25
+svn:wc:ra_dav:version-url
+V 67
+/svnroot/fonttools/!svn/ver/498/trunk/Lib/fontTools/pens/basePen.py
+END
+boundsPen.py
+K 25
+svn:wc:ra_dav:version-url
+V 69
+/svnroot/fonttools/!svn/ver/411/trunk/Lib/fontTools/pens/boundsPen.py
+END
+reportLabPen.py
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/svnroot/fonttools/!svn/ver/451/trunk/Lib/fontTools/pens/reportLabPen.py
+END
+transformPen.py
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/svnroot/fonttools/!svn/ver/453/trunk/Lib/fontTools/pens/transformPen.py
+END
+__init__.py
+K 25
+svn:wc:ra_dav:version-url
+V 68
+/svnroot/fonttools/!svn/ver/410/trunk/Lib/fontTools/pens/__init__.py
+END
+cocoaPen.py
+K 25
+svn:wc:ra_dav:version-url
+V 68
+/svnroot/fonttools/!svn/ver/429/trunk/Lib/fontTools/pens/cocoaPen.py
+END

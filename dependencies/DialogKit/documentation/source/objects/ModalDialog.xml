@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xml>
+	<synopsis generate="1" />
+	<title>
+		dialogKit: Objects: ModalDialog 
+	</title>
+	<include src="settings/main.xml" />
+	<div class="content">
+<!-- 
+
+ -->
+		<div class="sectionName">
+	        ModalDialog
+	    </div>
+	    
+		<div class="sectionDescription">
+			A dialog object that can contain controls. The dialog has <i>Cancel</i> and <i>OK</i> buttons at the bottom. 
+		</div>
+<!-- 
+
+ -->
+		<div class="method">
+		    
+		    <div class="init"><b>ModalDialog</b>(posSize, title=None, okText="OK", cancelText="Cancel", okCallback=None, cancelCallback=None)</div>
+			
+			<p>
+				<b>posSize</b> A four tuple of form <i>(left, top, width, height)</i> containing integers indicating the position and size of the dialog. For convenience, a two tuple of form<i> (width, height)</i> representing the size of the dialog is also acceptable. In this case, the dialog will be centered on screen. 
+			</p>
+			<p>
+				<b>title</b> The title displayed in the title bar of the dialog. If None is passed, the title bar will be empty.
+			</p>
+			<p>
+				<b>okText 
+				</b> The text displayed in the <i>OK</i> button. 
+			</p>
+			<p>
+				<b>cancelText</b> The text displayed in the <i>Cancel</i> button. 
+			</p>
+			<p>
+				<b>okCallback</b> The callback which will be called when the user hits the <i>OK</i> button. 
+			</p>
+			<p>
+				<b>cancelCallback</b> The callback which will be called when the user hits the <i>Cancel</i> button. 
+			</p>
+			
+		</div>
+<!-- 
+
+ -->
+            
+            <h4>Special methods</h4>
+			    
+			<div class="method">
+				<div class="methodName">ModalDialog.foo = bar</div>
+				<p>
+					Setting a UI object as an attribute of a dialog will display the object in the dialog. 
+				</p>
+			</div>
+<!-- 
+
+ -->
+            <h4>Methods</h4>
+            
+		    <div class="method">
+				<div class="methodName">open</div>
+				<p>
+					Open the dialog. 
+				</p>
+			</div>
+			<div class="method">
+				<div class="methodName">close</div>
+				<p>
+					Close the dialog. 
+				</p>
+			</div>
+<!-- 
+
+ -->
+	
+	</div>
+</xml>

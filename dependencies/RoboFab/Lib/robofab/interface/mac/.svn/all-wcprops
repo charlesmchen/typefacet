@@ -1,0 +1,17 @@
+K 25
+svn:wc:ra_dav:version-url
+V 45
+/!svn/ver/502/trunk/Lib/robofab/interface/mac
+END
+getFileOrFolder.py
+K 25
+svn:wc:ra_dav:version-url
+V 64
+/!svn/ver/502/trunk/Lib/robofab/interface/mac/getFileOrFolder.py
+END
+__init__.py
+K 25
+svn:wc:ra_dav:version-url
+V 56
+/!svn/ver/67/trunk/Lib/robofab/interface/mac/__init__.py
+END

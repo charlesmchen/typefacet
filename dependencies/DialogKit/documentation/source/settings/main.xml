@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<xml>
+    
+    <synopsis generate="0"/>
+    <link href="default.css" rel="stylesheet" type="text/css" />
+    
+    <div class="navigation">
+    
+        <a class="navigationItems" href="index.html">Overview</a><br/>
+        <a class="navigationItems" href="coordinates.html">Coordinates</a><br/>
+        <a class="navigationItems" href="callbacks.html">Callbacks</a><br/>
+        
+        <i>Objects</i><br/>
+        
+        <div class="navigationObjects">
+            <a class="navigationItems" href="objects/ModalDialog.html">ModalDialog</a><br/>
+            <a class="navigationItems" href="objects/TextBox.html">TextBox</a><br/>
+            <a class="navigationItems" href="objects/EditText.html">EditText</a><br/>
+            <a class="navigationItems" href="objects/Button.html">Button</a><br/>
+            <a class="navigationItems" href="objects/CheckBox.html">CheckBox</a><br/>
+            <a class="navigationItems" href="objects/PopUpButton.html">PopUpButton</a><br/>
+            <a class="navigationItems" href="objects/List.html">List</a><br/>
+            <a class="navigationItems" href="objects/HorizontalLine.html">HorizontalLine</a><br/>
+            <a class="navigationItems" href="objects/VerticalLine.html">VerticalLine</a><br/>
+            <a class="navigationItems" href="objects/GlyphView.html">GlyphView</a><br/>
+            <a class="navigationItems" href="objects/GlyphLineView.html">GlyphLineView</a><br/>
+        </div>
+        
+        <a class="navigationItems" href="examples.html">Examples</a><br/>
+        <a class="navigationItems" href="bugs.html">Bugs</a><br/>
+    
+    </div>
+    
+    <div class="header">
+        <div class="headerTitle">
+            dialogKit 0.0.1b
+        </div>
+    </div>
+
+</xml>

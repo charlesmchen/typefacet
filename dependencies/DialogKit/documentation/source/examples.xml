@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xml>
+
+    <synopsis generate="1"/>
+	<title>dialogKit: Examples</title>
+	
+	<include src="settings/main.xml" />
+	
+	<div class="content">
+	    
+	    <div class="sectionName">
+	       Examples
+	    </div>
+	    
+	    <div class="sectionDescription">
+	       
+	       <p>
+	           dialogKit includes a number of examples. They are located, oddly enough, in the “examples” directory. If you’d rather look at them in a browser (with fancy syntax coloring thanks to <a href="http://www.python.org/pypi/py2html">py2html</a>), here you go.
+	       </p>
+	       
+	       <div class="exampleList">
+    	       <p>
+    	           %s
+    	       </p>
+    	    </div>
+	       
+	    </div>
+	    
+	</div>
+
+</xml>

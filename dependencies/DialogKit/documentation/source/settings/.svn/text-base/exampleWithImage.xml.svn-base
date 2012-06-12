@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<xml>
+    
+    <synopsis generate="%d"/>
+    
+    <title>%s</title>
+    
+    <include src="settings/main.xml" />
+    
+    <div class="pyContent">
+        
+        <div class="sectionName">
+	        %s
+	    </div>
+	    
+	    <div class="sectionDescription">
+	       %s
+	    </div>
+	    
+	    <div class="sectionImage">
+	        <img src="images/%s" alt="demo screen grab"/>
+	    </div>
+        
+    </div>
+
+</xml>

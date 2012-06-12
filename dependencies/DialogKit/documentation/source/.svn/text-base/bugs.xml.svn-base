@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xml>
+
+    <synopsis generate="1"/>
+	<title>dialogKit: Bugs</title>
+	
+	<include src="settings/main.xml" />
+	
+	<div class="content">
+	    
+	    <div class="sectionName">
+	       Bugs
+	    </div>
+	    
+	    <div class="sectionDescription">
+	       
+            <p>
+                dialogKit does not directly interface with the OS UI, rather it wraps existing libraries into a consistent API. Because of this, any bugs that are in the underlying libraries will be manifested in dialogKit. And, there is not much that can be done other than to track them.
+            </p>
+            
+            <p>
+                This page lists all the known bugs with dialogKit. When possible, bug replication code, using the unwrapped objects, is provided.
+            </p>
+                
+            <p>
+                If you find another bug, report it to Tal Leming at the email address listed <a href="http://www.talleming.com">here</a>.
+            </p>
+	       
+	    </div>
+	    
+	    %s
+	    
+	</div>
+
+</xml>

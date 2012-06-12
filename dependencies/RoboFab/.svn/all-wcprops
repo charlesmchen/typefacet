@@ -1,0 +1,23 @@
+K 25
+svn:wc:ra_dav:version-url
+V 19
+/!svn/ver/560/trunk
+END
+LICENSE.txt
+K 25
+svn:wc:ra_dav:version-url
+V 31
+/!svn/ver/543/trunk/LICENSE.txt
+END
+setup.py
+K 25
+svn:wc:ra_dav:version-url
+V 28
+/!svn/ver/538/trunk/setup.py
+END
+install.py
+K 25
+svn:wc:ra_dav:version-url
+V 29
+/!svn/ver/67/trunk/install.py
+END

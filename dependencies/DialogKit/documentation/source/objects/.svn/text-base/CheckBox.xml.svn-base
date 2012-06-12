@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xml>
+
+    <synopsis generate="1"/>
+	<title>dialogKit: Objects: CheckBox</title>
+	
+	<include src="settings/main.xml" />
+	
+	<div class="content">
+
+<!-- 
+
+ -->
+
+	    <div class="sectionName">
+	        CheckBox
+	    </div>
+	    
+	    <div class="sectionDescription">
+	        Standard check box object.
+	    </div>
+
+<!-- 
+
+ -->
+
+	    <div class="method">
+	        
+	        <div class="init"><b>CheckBox</b>(posSize, title, callback=None, value=False)</div>
+	        
+	        <p>
+	           <b>posSize</b> The position and size of the check box. 
+	        </p>
+	        
+	        <p>
+	           <b>title</b> The text to be displayed next to the check box.
+	        </p>
+	        
+	        <p>
+	           <b>callback</b> The callback that should be called when the user clicks the check box.
+	        </p>
+	        
+	        <p>
+	           <b>value</b> The on/off state of the check box. Pass True for on and False for off.
+	        </p>
+	        
+	    </div>
+	    
+<!-- 
+
+ -->
+	        
+        <h4>Methods</h4>
+
+        <div class="method">
+	        <div class="methodName">show</div>
+	        <div class="arguments">value</div>
+	        <p>
+	            Show the check box by passing a value of <i>True</i> or hide it by passing a value of <i>False</i>.
+	        </p>
+	    </div>
+	    
+	    <div class="method">
+	        <div class="methodName">enable</div>
+	        <div class="arguments">value</div>
+	        <p>
+	            Enable the check box by passing a value of <i>True</i> or disable it by passing a value of <i>False</i>.
+	        </p>
+	    </div>
+
+	    <div class="method">
+	        <div class="methodName">get</div>
+	        <p>
+	            Returns a boolean value representing the state of the check box.
+	        </p>
+	    </div>
+        
+        <div class="method">
+	        <div class="methodName">set</div>
+	        <div class="arguments">value</div>
+	        <p>
+	            Set the on/off state of the check box. Pass True for on and False for off.
+	        </p>
+	    </div>
+
+<!-- 
+
+ -->
+
+	</div>
+
+</xml>

@@ -1,0 +1,304 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xml>
+
+    <synopsis generate="1"/>
+	<title>dialogKit: Objects: GlyphView</title>
+	
+	<include src="settings/main.xml" />
+	
+	<div class="content">
+
+<!-- 
+
+ -->
+
+	    <div class="sectionName">
+	        GlyphView
+	    </div>
+	    
+	    <div class="sectionDescription">
+	        A view which shows a single glyph.
+	    </div>
+
+<!-- 
+
+ -->
+
+	    <div class="method">
+	        
+	        <div class="init"><b>GlyphView</b>(posSize, font, glyph, margin=30, showFill=True, showOutline=False, showDescender=True, showBaseline=True, showXHeight=True, showAscender=True, showCapHeight=True, showUPMTop=False, showLeftSidebearing=True, showRightSidebearing=True, showOnCurvePoints=True)</div>
+	        
+	        <p>
+	           <b>posSize</b> The position and size of the view. 
+	        </p>
+	        
+	        <p>
+	           <b>font</b> The font to be displayed in the view. When used in FontLab, the font can be either a raw fl.font or a RoboFab wrapped font.
+	        </p>
+	        
+	        <p>
+	           <b>glyph</b> The glyph to be displayed in the view.
+	        </p>
+	        
+	        <p>
+	           <b>margin</b> The glyph will be fit within the available space in the view based on the font’s UPM. The margin value simple adds a little breathing room around the glyph in the view.
+	        </p>
+	        
+	        <p>
+	           <b>showFill</b> Fill the glyph. The passed value should be a boolean.
+	        </p>
+	        
+	        <p>
+	           <b>showOutline</b> Outline the glyph. The passed value should be a boolean.
+	        </p>
+	        
+	        <p>
+	           <b>showDescender</b> Show a line indicating the font’s descender value. The passed value should be a boolean.
+	        </p>
+	        
+	        <p>
+	           <b>showBaseline</b> Show a line indicating the font’s baseline. The passed value should be a boolean.
+	        </p>
+	        
+	        <p>
+	           <b>showXHeight</b> Show a line indicating the font’s x-height value. The passed value should be a boolean.
+	        </p>
+	        
+	        <p>
+	           <b>showAscender</b> Show a line indicating the font’s ascender value. The passed value should be a boolean.
+	        </p>
+	        
+	        <p>
+	           <b>showCapHeight</b> Show a line indicating the font’s cap height value. The passed value should be a boolean.
+	        </p>
+	        
+	        <p>
+	           <b>showUPMTop</b> Show a line indicating the top of the font’s em-square value calculated by adding the UPM to the descender. The passed value should be a boolean.
+	        </p>
+	        
+	        <p>
+	           <b>showLeftSidebearing</b> Show a line indicating the glyph’s left sidebearing value. The passed value should be a boolean.
+	        </p>
+	        
+	        <p>
+	           <b>showRightSidebearing</b> Show a line indicating the glyph’s right sidebearing value. The passed value should be a boolean.
+	        </p>
+	        
+	    </div>
+	    
+<!-- 
+
+ -->
+	        
+        <h4>Methods</h4>
+
+        <div class="method">
+	        <div class="methodName">show</div>
+	        <div class="arguments">value</div>
+	        <p>
+	            Show the view by passing a value of <i>True</i> or hide it by passing a value of <i>False</i>.
+	        </p>
+	    </div>
+
+	    <div class="method">
+	        <div class="methodName">set</div>
+	        <div class="arguments">font, glyph</div>
+	        <p>
+	            Set the font and glyph to be displayed in the view.
+	        </p>
+	    </div>
+	    
+	    <div class="method">
+	        <div class="methodName">update</div>
+	        <p>
+	            Tells the view to redraw. This method <b>must</b> after setting a glyph or value in the view.
+	        </p>
+	    </div>
+	    
+	    <div class="method">
+            <div class="methodName">getShowFill</div>
+            <p>
+                Returns a boolean representing if the glyph is filled.
+            </p>
+        </div>
+
+        <div class="method">
+            <div class="methodName">setShowFill</div>
+            <div class="arguments">value</div>
+            <p>
+                Turn on/off the glyph fill. The passed value should be a boolean.
+            </p>
+        </div>
+
+        <div class="method">
+            <div class="methodName">getShowOutline</div>
+            <p>
+                Returns a boolean representing if the glyph is outlined.
+            </p>
+        </div>
+
+        <div class="method">
+            <div class="methodName">setShowOutline</div>
+            <div class="arguments">value</div>
+            <p>
+                Turn on/off the glyph outline. The passed value should be a boolean.
+            </p>
+        </div>
+
+        <div class="method">
+            <div class="methodName">getMargin</div>
+            <p>
+                Returns a the margin value within the view.
+            </p>
+        </div>
+
+        <div class="method">
+            <div class="methodName">setMargin</div>
+            <div class="arguments">value</div>
+            <p>
+                Set the margin value within the view. The passed value should be an integer.
+            </p>
+        </div>
+
+        <div class="method">
+            <div class="methodName">getShowDescender</div>
+            <p>
+                Returns a boolean representing if the line indicating the font’s descender value is visible.
+            </p>
+        </div>
+
+        <div class="method">
+            <div class="methodName">setShowDescender</div>
+            <div class="arguments">value</div>
+            <p>
+                Turn on/off the line indicating the font’s descender value. The passed value should be a boolean.
+            </p>
+        </div>
+
+        <div class="method">
+            <div class="methodName">getShowBaseline</div>
+            <p>
+                Returns a boolean representing if the line indicating the font’s baseline is visible.
+            </p>
+        </div>
+
+        <div class="method">
+            <div class="methodName">setShowBaseline</div>
+            <div class="arguments">value</div>
+            <p>
+                Turn on/off the line indicating the font’s baseline. The passed value should be a boolean.
+            </p>
+        </div>
+
+        <div class="method">
+            <div class="methodName">getShowXHeight</div>
+            <p>
+                Returns a boolean representing if the line indicating the font’s x-height value is visible.
+            </p>
+        </div>
+
+        <div class="method">
+            <div class="methodName">setShowXHeight</div>
+            <div class="arguments">value</div>
+            <p>
+                Turn on/off the line indicating the font’s x-height value. The passed value should be a boolean.
+            </p>
+        </div>
+
+        <div class="method">
+            <div class="methodName">getShowAscender</div>
+            <p>
+                Returns a boolean representing if the line indicating the font’s ascender value is visible.
+            </p>
+        </div>
+
+        <div class="method">
+            <div class="methodName">setShowAscender</div>
+            <div class="arguments">value</div>
+            <p>
+                Turn on/off the line indicating the font’s ascender value. The passed value should be a boolean.
+            </p>
+        </div>
+
+        <div class="method">
+            <div class="methodName">getShowCapHeight</div>
+            <p>
+                Returns a boolean representing if the line indicating the font’s cap height value is visible.
+            </p>
+        </div>
+
+        <div class="method">
+            <div class="methodName">setShowCapHeight</div>
+            <div class="arguments">value</div>
+            <p>
+                Turn on/off the line indicating the font’s cap height value. The passed value should be a boolean.
+            </p>
+        </div>
+
+        <div class="method">
+            <div class="methodName">getShowUPMTop</div>
+            <p>
+                Returns a boolean representing if the line indicating the top of the font’s UPM value is visible.
+            </p>
+        </div>
+
+        <div class="method">
+            <div class="methodName">setShowUPMTop</div>
+            <div class="arguments">value</div>
+            <p>
+                Turn on/off the line indicating the top of the font’s UPM value. The passed value should be a boolean.
+            </p>
+        </div>
+
+        <div class="method">
+            <div class="methodName">getShowLeftSidebearing</div>
+            <p>
+                Returns a boolean representing if the line indicating the glyph’s left sidebearing value is visible.
+            </p>
+        </div>
+
+        <div class="method">
+            <div class="methodName">setShowLeftSidebearing</div>
+            <div class="arguments">value</div>
+            <p>
+                Turn on/off the line indicating the glyph’s left sidebearing value. The passed value should be a boolean.
+            </p>
+        </div>
+
+        <div class="method">
+            <div class="methodName">getShowRightSidebearing</div>
+            <p>
+                Returns a boolean representing if the line indicating the glyph’s right sidebearing value is visible.
+            </p>
+        </div>
+
+        <div class="method">
+            <div class="methodName">setShowRightSidebearing</div>
+            <div class="arguments">value</div>
+            <p>
+                Turn on/off the line indicating the glyph’s right sidebearing value. The passed value should be a boolean.
+            </p>
+        </div>
+
+        <div class="method">
+            <div class="methodName">getShowOnCurvePoints</div>
+            <p>
+                Returns a boolean representing if the glyph’s on-curve points are visible.
+            </p>
+        </div>
+
+        <div class="method">
+            <div class="methodName">setShowOnCurvePoints</div>
+            <div class="arguments">value</div>
+            <p>
+                Turn on/off the display of the glyph’s on-curve points.
+            </p>
+        </div>
+
+<!-- 
+
+ -->
+
+	</div>
+
+</xml>

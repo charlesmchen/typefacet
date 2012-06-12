@@ -27,6 +27,10 @@ section h3 {
 	padding-top: 25px;
 }
 
+section div.back_link {
+	padding: 25px 0;
+}
+
 -->
 </style>
 
@@ -88,6 +92,10 @@ section h3 {
         
       </header>
       <section>
+
+<div class="back_link">
+	Back to <a href="index.html">Log Index</a>
+</div>
       
         <h2>{{{pageTitle}}}</h2>
 
@@ -120,6 +128,9 @@ section h3 {
 
 <!--
 -->
+<div class="back_link">
+	Back to <a href="index.html">Log Index</a>
+</div>
 
       </section>
       <footer>

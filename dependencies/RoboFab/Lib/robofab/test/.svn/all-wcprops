@@ -1,0 +1,89 @@
+K 25
+svn:wc:ra_dav:version-url
+V 36
+/!svn/ver/503/trunk/Lib/robofab/test
+END
+test_objectsFL.py
+K 25
+svn:wc:ra_dav:version-url
+V 54
+/!svn/ver/171/trunk/Lib/robofab/test/test_objectsFL.py
+END
+testSupport.py
+K 25
+svn:wc:ra_dav:version-url
+V 51
+/!svn/ver/171/trunk/Lib/robofab/test/testSupport.py
+END
+runAll.py
+K 25
+svn:wc:ra_dav:version-url
+V 46
+/!svn/ver/171/trunk/Lib/robofab/test/runAll.py
+END
+test_RInfoFL.py
+K 25
+svn:wc:ra_dav:version-url
+V 52
+/!svn/ver/171/trunk/Lib/robofab/test/test_RInfoFL.py
+END
+test_noneLabUFOReadWrite.py
+K 25
+svn:wc:ra_dav:version-url
+V 64
+/!svn/ver/171/trunk/Lib/robofab/test/test_noneLabUFOReadWrite.py
+END
+__init__.py
+K 25
+svn:wc:ra_dav:version-url
+V 47
+/!svn/ver/67/trunk/Lib/robofab/test/__init__.py
+END
+test_ufoLib.py
+K 25
+svn:wc:ra_dav:version-url
+V 51
+/!svn/ver/171/trunk/Lib/robofab/test/test_ufoLib.py
+END
+test_dialogs.py
+K 25
+svn:wc:ra_dav:version-url
+V 52
+/!svn/ver/503/trunk/Lib/robofab/test/test_dialogs.py
+END
+test_objectsUFO.py
+K 25
+svn:wc:ra_dav:version-url
+V 54
+/!svn/ver/67/trunk/Lib/robofab/test/test_objectsUFO.py
+END
+test_RInfoRF.py
+K 25
+svn:wc:ra_dav:version-url
+V 52
+/!svn/ver/171/trunk/Lib/robofab/test/test_RInfoRF.py
+END
+test_pens.py
+K 25
+svn:wc:ra_dav:version-url
+V 48
+/!svn/ver/67/trunk/Lib/robofab/test/test_pens.py
+END
+test_fontLabUFOReadWrite.py
+K 25
+svn:wc:ra_dav:version-url
+V 64
+/!svn/ver/171/trunk/Lib/robofab/test/test_fontLabUFOReadWrite.py
+END
+test_glifLib.py
+K 25
+svn:wc:ra_dav:version-url
+V 52
+/!svn/ver/181/trunk/Lib/robofab/test/test_glifLib.py
+END
+test_psHints.py
+K 25
+svn:wc:ra_dav:version-url
+V 52
+/!svn/ver/200/trunk/Lib/robofab/test/test_psHints.py
+END

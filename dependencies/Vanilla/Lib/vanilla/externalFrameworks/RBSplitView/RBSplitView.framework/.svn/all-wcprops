@@ -1,0 +1,23 @@
+K 25
+svn:wc:ra_dav:version-url
+V 101
+/!svn/ver/430/packages/vanilla/trunk/Lib/vanilla/externalFrameworks/RBSplitView/RBSplitView.framework
+END
+RBSplitView
+K 25
+svn:wc:ra_dav:version-url
+V 113
+/!svn/ver/430/packages/vanilla/trunk/Lib/vanilla/externalFrameworks/RBSplitView/RBSplitView.framework/RBSplitView
+END
+Resources
+K 25
+svn:wc:ra_dav:version-url
+V 111
+/!svn/ver/430/packages/vanilla/trunk/Lib/vanilla/externalFrameworks/RBSplitView/RBSplitView.framework/Resources
+END
+Headers
+K 25
+svn:wc:ra_dav:version-url
+V 109
+/!svn/ver/430/packages/vanilla/trunk/Lib/vanilla/externalFrameworks/RBSplitView/RBSplitView.framework/Headers
+END

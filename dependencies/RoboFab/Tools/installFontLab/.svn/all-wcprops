@@ -1,0 +1,29 @@
+K 25
+svn:wc:ra_dav:version-url
+V 40
+/!svn/ver/519/trunk/Tools/installFontLab
+END
+pythonInspector.py
+K 25
+svn:wc:ra_dav:version-url
+V 59
+/!svn/ver/519/trunk/Tools/installFontLab/pythonInspector.py
+END
+__init__.py
+K 25
+svn:wc:ra_dav:version-url
+V 52
+/!svn/ver/518/trunk/Tools/installFontLab/__init__.py
+END
+installerScript.py
+K 25
+svn:wc:ra_dav:version-url
+V 59
+/!svn/ver/514/trunk/Tools/installFontLab/installerScript.py
+END
+installerFunctions.py
+K 25
+svn:wc:ra_dav:version-url
+V 62
+/!svn/ver/513/trunk/Tools/installFontLab/installerFunctions.py
+END

@@ -1,0 +1,71 @@
+K 25
+svn:wc:ra_dav:version-url
+V 65
+/!svn/ver/1/packages/dialogKit/trunk/documentation/source/objects
+END
+HorizontalLine.xml
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/!svn/ver/1/packages/dialogKit/trunk/documentation/source/objects/HorizontalLine.xml
+END
+VerticalLine.xml
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/!svn/ver/1/packages/dialogKit/trunk/documentation/source/objects/VerticalLine.xml
+END
+CheckBox.xml
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/!svn/ver/1/packages/dialogKit/trunk/documentation/source/objects/CheckBox.xml
+END
+GlyphLineView.xml
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/!svn/ver/1/packages/dialogKit/trunk/documentation/source/objects/GlyphLineView.xml
+END
+EditText.xml
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/!svn/ver/1/packages/dialogKit/trunk/documentation/source/objects/EditText.xml
+END
+Button.xml
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/!svn/ver/1/packages/dialogKit/trunk/documentation/source/objects/Button.xml
+END
+List.xml
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/!svn/ver/1/packages/dialogKit/trunk/documentation/source/objects/List.xml
+END
+ModalDialog.xml
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/!svn/ver/1/packages/dialogKit/trunk/documentation/source/objects/ModalDialog.xml
+END
+TextBox.xml
+K 25
+svn:wc:ra_dav:version-url
+V 77
+/!svn/ver/1/packages/dialogKit/trunk/documentation/source/objects/TextBox.xml
+END
+GlyphView.xml
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/!svn/ver/1/packages/dialogKit/trunk/documentation/source/objects/GlyphView.xml
+END
+PopUpButton.xml
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/!svn/ver/1/packages/dialogKit/trunk/documentation/source/objects/PopUpButton.xml
+END

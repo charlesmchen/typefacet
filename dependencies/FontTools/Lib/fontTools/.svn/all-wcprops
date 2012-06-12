@@ -1,0 +1,59 @@
+K 25
+svn:wc:ra_dav:version-url
+V 51
+/svnroot/fonttools/!svn/ver/590/trunk/Lib/fontTools
+END
+afmLib.py
+K 25
+svn:wc:ra_dav:version-url
+V 61
+/svnroot/fonttools/!svn/ver/393/trunk/Lib/fontTools/afmLib.py
+END
+t1Lib.py
+K 25
+svn:wc:ra_dav:version-url
+V 60
+/svnroot/fonttools/!svn/ver/549/trunk/Lib/fontTools/t1Lib.py
+END
+nfntLib.py
+K 25
+svn:wc:ra_dav:version-url
+V 62
+/svnroot/fonttools/!svn/ver/537/trunk/Lib/fontTools/nfntLib.py
+END
+fondLib.py
+K 25
+svn:wc:ra_dav:version-url
+V 62
+/svnroot/fonttools/!svn/ver/581/trunk/Lib/fontTools/fondLib.py
+END
+__init__.py
+K 25
+svn:wc:ra_dav:version-url
+V 63
+/svnroot/fonttools/!svn/ver/579/trunk/Lib/fontTools/__init__.py
+END
+ttx.py
+K 25
+svn:wc:ra_dav:version-url
+V 58
+/svnroot/fonttools/!svn/ver/590/trunk/Lib/fontTools/ttx.py
+END
+agl.py
+K 25
+svn:wc:ra_dav:version-url
+V 58
+/svnroot/fonttools/!svn/ver/555/trunk/Lib/fontTools/agl.py
+END
+cffLib.py
+K 25
+svn:wc:ra_dav:version-url
+V 61
+/svnroot/fonttools/!svn/ver/542/trunk/Lib/fontTools/cffLib.py
+END
+unicode.py
+K 25
+svn:wc:ra_dav:version-url
+V 62
+/svnroot/fonttools/!svn/ver/570/trunk/Lib/fontTools/unicode.py
+END

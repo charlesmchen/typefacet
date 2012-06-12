@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xml>
+
+    <synopsis generate="1"/>
+	<title>dialogKit: Objects: EditText</title>
+	
+	<include src="settings/main.xml" />
+	
+	<div class="content">
+
+<!-- 
+
+ -->
+
+	    <div class="sectionName">
+	        EditText
+	    </div>
+	    
+	    <div class="sectionDescription">
+	        Standard object that allows the user to enter some text.
+	    </div>
+
+<!-- 
+
+ -->
+
+	    <div class="method">
+	        
+	        <div class="init"><b>EditText</b>(posSize, text, callback=None)</div>
+	        
+	        <p>
+	           <b>posSize</b> The position and size of the text entry field. 
+	        </p>
+	        
+	        <p>
+	           <b>text</b> The text to be displayed in the text entry field.
+	        </p>
+	        
+	        <p>
+	           <b>callback</b> The callback that should be called when the user enters text in the text entry field.
+	        </p>
+	        
+	    </div>
+	    
+<!-- 
+
+ -->
+	        
+        <h4>Methods</h4>
+
+        <div class="method">
+	        <div class="methodName">show</div>
+	        <div class="arguments">value</div>
+	        <p>
+	            Show the text box by passing a value of <i>True</i> or hide it by passing a value of <i>False</i>.
+	        </p>
+	    </div>
+	    
+	    <div class="method">
+	        <div class="methodName">enable</div>
+	        <div class="arguments">value</div>
+	        <p>
+	            Enable the button by passing a value of <i>True</i> or disable it by passing a value of <i>False</i>.
+	        </p>
+	    </div>
+
+	    <div class="method">
+	        <div class="methodName">get</div>
+	        <p>
+	            Returns the text in the text entry field.
+	        </p>
+	    </div>
+        
+        <div class="method">
+	        <div class="methodName">set</div>
+	        <div class="arguments">value</div>
+	        <p>
+	            Set the text in the text entry field.
+	        </p>
+	    </div>
+
+<!-- 
+
+ -->
+
+	</div>
+
+</xml>

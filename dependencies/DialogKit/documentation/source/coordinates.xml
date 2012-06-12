@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xml>
+
+    <synopsis generate="1"/>
+	<title>dialogKit: Coordinates</title>
+	
+	<include src="settings/main.xml" />
+	
+	<div class="content">
+	    
+	    <div class="sectionName">
+	       Coordinates
+	    </div>
+	    
+	    <div class="sectionDescription">
+	       
+	        <p>
+                All of the dialogKit objects require a posSize argument during initialization. The passed data should be a tuple of the form <b>(left, top, width, height)</b> <i>except</i> in the case of ModalDialog. That object will accept a tuple of the form <b>(width, height)</b> as well as the standard form. The top left corner of the dialog (excluding the menu bar) is position 0, 0.
+	        </p>
+	        
+	    </div>
+	    
+	</div>
+
+</xml>

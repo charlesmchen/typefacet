@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xml>
+
+    <synopsis generate="1"/>
+	<title>dialogKit</title>
+	
+	<include src="settings/main.xml" />
+	
+	<div class="content">
+	    
+	    <div class="sectionName">
+	       Overview
+	    </div>
+	    
+	    <div class="sectionDescription">
+	       
+            <p>
+                dialogKit is a Python library for creating GUI dialogs in FontLab and Mac OS X Cocoa applications that have a Python layer.
+            </p>
+            
+            <p>
+            <a href="http://www.typesupply.com/openSource/dialogKit/downloads">
+                Download the library.
+            </a>
+            </p>
+
+            <p>
+               The library implements a subset of the <i>(as yet unreleased)</i> Vanilla library, which in turn was inspired by Just van Rossum’s classic <i>W</i> library. In FontLab, dialogKit wraps the built-in GUI classes <i>Dialog</i> and <i>Canvas</i> and adds a few things along the way. The goal is to provide a simple API and consistent, or as consistent as possible, behavior between applications.
+            </p>
+            
+            <p>
+                dialogKit is developed and maintained by <a href="http://www.talleming.com">Tal Leming</a>. Thanks to Erik van Blokland and Just van Rossum for offering excellent advice. Thanks to Cyril Murzin and Yuri Yarmola for squashing bugs in the underlying FontLab classes used by the FontLab implementation of dialogKit.
+            </p>
+	       
+	    </div>
+	    
+	</div>
+
+</xml>

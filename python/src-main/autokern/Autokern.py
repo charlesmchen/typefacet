@@ -303,7 +303,7 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
 +   +----+-------------+------------------+------------------------------------+
     '''
 
-    def hasUnicodeCategoryPrefix(self, glyph, *prefixes):
+    def hasUnicodeCategoryPrefix(self, glyph, prefixes, exceptions=None):
         '''
         The unicodedata glyph categories are:
         L Letter
@@ -320,19 +320,22 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
         if uc is not None:
             unicode_category = unicodedata.category(uc)
             if unicode_category is not None:
+                if exceptions:
+                    if unicode_category in exceptions:
+                        return False
                 if unicode_category[0] in prefixes:
                     return True
         return False
 
 
     def isLetterGlyph(self, glyph):
-        return self.hasUnicodeCategoryPrefix(glyph, 'L')
+        return self.hasUnicodeCategoryPrefix(glyph, prefixes=('L',))
 
     def isPunctuationGlyph(self, glyph):
-        return self.hasUnicodeCategoryPrefix(glyph, 'P')
+        return self.hasUnicodeCategoryPrefix(glyph, prefixes=('P',))
 
     def isSymbolGlyph(self, glyph):
-        return self.hasUnicodeCategoryPrefix(glyph, 'S')
+        return self.hasUnicodeCategoryPrefix(glyph, prefixes=('S',))
 
 
     def isPunctuationOrSymbolGlyph(self, glyph):
@@ -412,7 +415,7 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
         S Symbol
         C Other
         '''
-        if self.hasUnicodeCategoryPrefix(glyph, 'S', 'C', 'Z', 'M'):
+        if self.hasUnicodeCategoryPrefix(glyph, prefixes=('S', 'C', 'Z', 'M')):
             return True
 
         if glyph.unicode is not None:
@@ -661,26 +664,31 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
         return disparities
 
 
-    def logDisparities(self):
-
-        renderLog = self.log_dst is not None
-        if not renderLog:
-            return
-        if self.disparity_log_count < 1:
-            return
-
-        print 'Logging disparities...'
-
-        disparities = self.findDisparities()
+    def logDisparitiesGroup(self, disparities, groupName, unicodeCategoryPrefixes=None, unicodeCategoryExceptions=None):
 
         '''
         We're only interested in the top 100 disparities.
         '''
         self.disparity_log_count = max(0, self.disparity_log_count)
-        disparities = disparities[:self.disparity_log_count]
+
+        if unicodeCategoryPrefixes is not None:
+            filtered_disparities = []
+            for disparity in disparities:
+                if (self.hasUnicodeCategoryPrefix(disparity.srcKerning.ufoglyph0, prefixes=unicodeCategoryPrefixes, exceptions=unicodeCategoryExceptions) and
+                    self.hasUnicodeCategoryPrefix(disparity.srcKerning.ufoglyph1, prefixes=unicodeCategoryPrefixes, exceptions=unicodeCategoryExceptions)):
+                    filtered_disparities.append(disparity)
+                    if len(filtered_disparities) >= self.disparity_log_count:
+                        break
+            disparities = filtered_disparities
+        else:
+            disparities = disparities[:self.disparity_log_count]
+
+        if len(disparities) < 1:
+            return
 
         def getDisparityFilename(index):
-            return 'disparity-%d.html' % index
+            return 'disparity-%s-%d.html' % ( groupName.lower().replace(' ', '_'),
+                                              index, )
 
         disparityLinkMaps = []
         for index, disparity in enumerate(disparities):
@@ -704,12 +712,7 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
                                                            ),
                                              hGuidelines = ( disparity.dstKerning.kernedAdvance, ) )
 
-            import tfs.common.TFSProject as TFSProject
-            mustache_template_file = os.path.abspath(os.path.join(TFSProject.findProjectRootFolder(), 'data', 'autokern_disparity_template.txt'))
-            with open(mustache_template_file, 'rt') as f:
-                mustache_template = f.read()
-
-            pageTitle0 = u'Autokern Disparity:'
+            pageTitle0 = u'Autokern Disparity (%s):' % ( groupName, )
             pageTitle1 = u'%s vs. %s' % ( formatGlyphName(disparity.srcKerning.ufoglyph0),
                                           formatGlyphName(disparity.srcKerning.ufoglyph1), )
 
@@ -760,205 +763,38 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
             if kerningLogFilename in self.kerningPairLogFilenames:
                 mustacheMap['kerningLogFilename'] = kerningLogFilename
 
-            import pystache
-            logHtml = pystache.render(mustache_template, mustacheMap)
-
-            logFilename = getDisparityFilename(index)
-            logFile = os.path.abspath(os.path.join(self.html_folder, logFilename))
-            with open(logFile, 'wt') as f:
-                # TODO: explicitly encode unicode
-                f.write(logHtml)
+            self.writeLogFile('autokern_disparity_template.txt',
+                              getDisparityFilename(index),
+                              'Disparities: ' + groupName,
+                              '%d' % (index + 1),
+                              mustacheMap)
 
 
-    def findDisparities_old(self):
-
-        disparities = []
-        glyphs = self.dstUfoFont.getGlyphs()
-#        total = len(glyphs) * len(glyphs)
-#        count = 0
-#        startTime = time.time()
-        glyphs.sort(lambda glyph0, glyph1:cmp(glyph0.unicode, glyph1.unicode))
-        for ufoglyph0 in glyphs:
-            for ufoglyph1 in glyphs:
-
-                disparity = TFSMap()
-                disparity.dstUfoGlyph0 = ufoglyph0
-                disparity.dstUfoGlyph1 = ufoglyph1
-
-
-                disparity.srcUfoGlyph0 = self.srcUfoFont.getGlyphByName(ufoglyph0.name)
-                if disparity.srcUfoGlyph0 is None:
-                    raise Exception('Could not find glyph by name: %s %s' % (str(ufoglyph0.name),
-                                                                             str(ufoglyph0.unicode)))
-                disparity.srcUfoGlyph1 = self.srcUfoFont.getGlyphByName(ufoglyph1.name)
-                if disparity.srcUfoGlyph1 is None:
-                    raise Exception('Could not find glyph by name: %s %s' % (str(ufoglyph1.name),
-                                                                             str(ufoglyph1.unicode)))
-
-
-                disparity.srcMinmax0 = self.srcCache.getContoursMinmax(disparity.srcUfoGlyph0)
-                disparity.srcMinmax1 = self.srcCache.getContoursMinmax(disparity.srcUfoGlyph1)
-
-                disparity.dstMinmax0 = self.dstCache.getContoursMinmax(ufoglyph0)
-                disparity.dstMinmax1 = self.dstCache.getContoursMinmax(ufoglyph1)
-
-#                key = (ufoglyph0.name,
-#                       ufoglyph1.name,)
-#                if key not in self.advanceMap:
-#                    continue
-
-#                disparity.srcXAdvance = disparity.srcUfoGlyph0.xAdvance
-                disparity.dstAdvance = int(round(self.advanceMap[key]))
-                disparity.dstXAdvance = disparity.dstUfoGlyph0.xAdvance
-                disparity.dstKerning = disparity.dstAdvance - disparity.dstXAdvance
-
-                disparity.srcKerning = self.srcUfoFont.getKerningPair(ufoglyph0.name, ufoglyph1.name)
-                if disparity.srcKerning is None:
-                    disparity.srcKerning = 0
-                disparity.srcXAdvance = disparity.srcUfoGlyph0.xAdvance
-                disparity.srcAdvance = disparity.srcUfoGlyph0.xAdvance + disparity.srcKerning
-
-                disparity.srcContours0 = self.srcCache.getGlyphContours(disparity.srcUfoGlyph0)
-                disparity.srcContours1 = self.srcCache.getGlyphContours(disparity.srcUfoGlyph1)
-
-                disparity.srcOffset = disparity.srcAdvance + (-disparity.srcMinmax0.maxX) + (disparity.srcMinmax1.minX)
-
-                disparity.dstContours0 = self.dstCache.getGlyphContours(ufoglyph0)
-                disparity.dstContours1 = self.dstCache.getGlyphContours(ufoglyph1)
-
-                disparity.dstOffset = disparity.dstAdvance + (-disparity.dstMinmax0.maxX) + (disparity.dstMinmax1.minX)
-
-                disparity.offsetDifference = abs(disparity.srcOffset - disparity.dstOffset)
-                disparity.advanceDifference = abs(disparity.dstAdvance - disparity.srcAdvance)
-
-                if disparity.offsetDifference != 0:
-                    disparities.append(disparity)
-
-        def compareDisparities(disparity0, disparity1):
-            return cmp(disparity0.offsetDifference, disparity1.offsetDifference)
-
-        disparities.sort(compareDisparities, reverse=True)
-        return disparities
-
-
-    def logDisparities_old(self):
+    def logDisparities(self):
 
         renderLog = self.log_dst is not None
         if not renderLog:
             return
-        if self.disparity_log_count < 1:
+        if (self.disparity_log_count is None) or (self.disparity_log_count < 1):
             return
 
         print 'Logging disparities...'
 
         disparities = self.findDisparities()
 
-        '''
-        We're only interested in the top 100 disparities.
-        '''
-        self.disparity_log_count = max(0, self.disparity_log_count)
-        disparities = disparities[:self.disparity_log_count]
+        self.logDisparitiesGroup(disparities, 'All')
+        self.logDisparitiesGroup(disparities, 'Letters And Numbers', ('L','N',), ('Lm',))
 
-        def getDisparityFilename(index):
-            return 'disparity-%d.html' % index
-
-        disparityLinkMaps = []
-        for index, disparity in enumerate(disparities):
-            disparityLinkMaps.append({ 'filename': getDisparityFilename(index),
-                                      'name': str(index + 1),
-                                      })
-
-        for index, disparity in enumerate(disparities):
-
-            filenamePrefix = 'disparity-%d' % index
-            phase = 0
-            oldAdvanceSvg = self.renderSvgScene(None,
-                                             pathTuples = (
-                                                           ( 0x7f7faf7f, disparity.srcContours0, ),
-                                                           ( 0x7f7f7faf, [contour.applyPlus(TFSPoint(disparity.srcAdvance, 0)) for contour in disparity.srcContours1], ),
-                                                           ),
-                                             hGuidelines = ( disparity.srcAdvance, ) )
-            phase += 1
-
-            newAdvanceSvg = self.renderSvgScene(None,
-                                             pathTuples = (
-                                                           ( 0x7f7faf7f, disparity.dstContours0, ),
-                                                           ( 0x7f7f7faf, [contour.applyPlus(TFSPoint(disparity.dstAdvance, 0)) for contour in disparity.dstContours1], ),
-                                                           ),
-                                             hGuidelines = ( disparity.dstAdvance, ) )
-            phase += 1
-
-            import tfs.common.TFSProject as TFSProject
-            mustache_template_file = os.path.abspath(os.path.join(TFSProject.findProjectRootFolder(), 'data', 'autokern_disparity_template.txt'))
-            with open(mustache_template_file, 'rt') as f:
-                mustache_template = f.read()
-
-            pageTitle0 = u'Autokern Disparity:'
-            pageTitle1 = u'%s vs. %s' % ( formatGlyphName(disparity.dstUfoGlyph0),
-                                                             formatGlyphName(disparity.dstUfoGlyph1), )
-
-            def formatEmScalar(value):
-                return '%0.3f em' % (value / float(self.units_per_em))
-
-            def formatGlyphMap(glyph, srcMinmax, dstMinmax):
-                return {
-                           'glyphName': formatGlyphName(glyph),
-                           'srcMinX': formatEmScalar(srcMinmax.minX),
-                           'srcMaxX': formatEmScalar(srcMinmax.maxX),
-                           'dstMinX': formatEmScalar(dstMinmax.minX),
-                           'dstMaxX': formatEmScalar(dstMinmax.maxX),
-                        }
-
-            mustacheMap = self.makeDefaultMustacheMap(localsMap=locals())
-
-            mustacheMap.update({
-                           'pageTitle0': pageTitle0,
-                           'pageTitle1': pageTitle1,
-                           'disparityCount': self.disparity_log_count,
-                           'minmax0': disparity.dstMinmax0,
-                           'minmax1': disparity.dstMinmax1,
-                           'dstAdvance': formatEmScalar(disparity.dstAdvance),
-                           'srcAdvance': formatEmScalar(disparity.srcAdvance),
-                           'advanceDifference': formatEmScalar(disparity.advanceDifference),
-                           'srcOffset': formatEmScalar(disparity.srcOffset),
-                           'dstOffset': formatEmScalar(disparity.dstOffset),
-                           'offsetDifference': formatEmScalar(disparity.offsetDifference),
-                           'srcKerning': formatEmScalar(disparity.srcKerning),
-                           'srcXAdvance': formatEmScalar(disparity.srcXAdvance),
-                           'dstXAdvance': formatEmScalar(disparity.dstXAdvance),
-                           'dstKerning': formatEmScalar(disparity.dstKerning),
-
-                           'oldAdvanceSvg': oldAdvanceSvg,
-                           'newAdvanceSvg': newAdvanceSvg,
-
-                           'glyph0': formatGlyphName(disparity.dstUfoGlyph0),
-                           'glyph1': formatGlyphName(disparity.dstUfoGlyph1),
-
-                           'glyphMaps': ( formatGlyphMap(disparity.dstUfoGlyph0, disparity.srcMinmax0, disparity.dstMinmax0),
-                                          formatGlyphMap(disparity.dstUfoGlyph1, disparity.srcMinmax1, disparity.dstMinmax1),
-                                          ),
-                           'disparityLinkMaps': disparityLinkMaps,
-                           'firstDisparityLink': getDisparityFilename(0),
-                           'lastDisparityLink': getDisparityFilename(len(disparities) - 1),
-                           })
-            if index > 0:
-                mustacheMap['prevDisparityLink'] = {'filename': getDisparityFilename(index - 1), }
-            if index + 1 < len(disparities):
-                mustacheMap['nextDisparityLink'] = {'filename': getDisparityFilename(index + 1), }
-
-            kerningLogFilename = self.getKerningPairHtmlFilename(disparity.dstUfoGlyph0,
-                                                                 disparity.dstUfoGlyph1),
-            if kerningLogFilename in self.kerningPairLogFilenames:
-                mustacheMap['kerningLogFilename'] = kerningLogFilename
-
-            import pystache
-            logHtml = pystache.render(mustache_template, mustacheMap)
-
-            logFilename = getDisparityFilename(index)
-            logFile = os.path.abspath(os.path.join(self.html_folder, logFilename))
-            with open(logFile, 'wt') as f:
-                # TODO: explicitly encode unicode
-                f.write(logHtml)
+#        '''
+#        The unicodedata glyph categories are:
+#        L Letter
+#        M Mark
+#        N Number
+#        P Punctuation
+#        Z Separator
+#        S Symbol
+#        C Other
+#        '''
 
 
     def getFilenamePrefixPair(self, prefix, ufoglyph0, ufoglyph1):
@@ -1376,7 +1212,7 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
         debugKerning = True
         debugKerning = False
 
-        renderLog = (self.log_dst is not None) and not self.skip_kerning_pair_logs
+        renderLog = (self.log_dst is not None) and self.write_kerning_pair_logs
 
         contours0 = self.dstCache.getGlyphContours(ufoglyph0)
         contours1 = self.dstCache.getGlyphContours(ufoglyph1)
@@ -1660,11 +1496,6 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
 
             self.timing.mark('processKerningPair.8')
 
-            import tfs.common.TFSProject as TFSProject
-            mustache_template_file = os.path.abspath(os.path.join(TFSProject.findProjectRootFolder(), 'data', 'autokern_pair_pixel_template.txt'))
-            with open(mustache_template_file, 'rt') as f:
-                mustache_template = f.read()
-
             pageTitle0 = u'Autokern Log:'
             pageTitle1 = u'%s vs. %s' % ( formatGlyphName(ufoglyph0),
                                                          formatGlyphName(ufoglyph1), )
@@ -1706,19 +1537,13 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
                                           )
                            })
 
-            import pystache
-            logHtml = pystache.render(mustache_template, mustacheMap)
-
-            logFilename = self.getKerningPairHtmlFilename(ufoglyph0, ufoglyph1)
-            logFile = os.path.abspath(os.path.join(self.html_folder, logFilename))
-            with open(logFile, 'wt') as f:
-                # TODO: explicitly encode unicode
-                f.write(logHtml)
-
+            logFilename = self.getKerningPairHtmlFilename(ufoglyph0, ufoglyph1),
             self.kerningPairLogFilenames.add(logFilename)
-
-#            import sys
-#            sys.exit(0)
+            self.writeLogFile('autokern_pair_template.txt',
+                              logFilename,
+                              None,
+                              None,
+                              mustacheMap)
 
         self.timing.mark('processKerningPair.9')
 
@@ -1929,6 +1754,7 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
                 self.svg_folder = os.path.join(self.html_folder, 'svg')
 
             self.kerningPairLogFilenames = set()
+            self.logFileTuples = []
 
         self.units_per_em = int(round(self.dstUfoFont.units_per_em))
         self.precision = int(round(self.precision_ems * self.units_per_em))
@@ -2513,9 +2339,6 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
 
 
     def writeSamples(self):
-        '''
-        hh vs. nn
-        '''
 
         renderLog = self.log_dst is not None
         if not renderLog:
@@ -2534,6 +2357,9 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
                        'pqpiitt',
                        'ijiJn.',
                        'N-N=NtN',
+                       'LTLYPJFJ',
+                       'VAWML4TO',
+                       'hhnn',
                        )
         sampleTextsMaps = []
         for sampleText in sampleTexts:
@@ -2552,19 +2378,95 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
                    'sampleTextsMaps': sampleTextsMaps,
                    })
 
+        self.writeLogFile('autokern_samples_template.txt',
+                          'sample_texts.html',
+                          'Sample Texts',
+                          'Sample Texts',
+                          mustacheMap)
+
+
+    def writeLogIndex(self):
+
+        renderLog = self.log_dst is not None
+        if not renderLog:
+            return
+        print 'Writing log index...'
+
+        groupNames = []
+        groupItemsMap = {}
+        for groupName, filename, logShortname in self.logFileTuples:
+            groupItemsMap[groupName] = groupItemsMap.get(groupName, []) + [(filename, logShortname,)]
+            if groupName not in groupNames:
+                groupNames.append(groupName)
+
+        logGroupMaps = []
+        for groupName in groupNames:
+            logGroupItems = []
+            for filename, logShortname in groupItemsMap[groupName]:
+                logGroupItems.append({'groupName': groupName,
+                                      'filename': filename,
+                                      'logShortname': logShortname,
+                                      })
+            groupSuffix = ''
+            if len(logGroupItems) > 100:
+                logGroupItems = logGroupItems[:100]
+                groupSuffix = '...'
+            logGroupMaps.append({'logGroupName': groupName,
+                                 'logGroupItems': logGroupItems,
+                                 'groupSuffix': groupSuffix,
+                                 })
+
+
+        pageTitle = u'Autokern Results'
+
+        mustacheMap = self.makeDefaultMustacheMap(localsMap=locals())
+        mustacheMap.update({
+                   'pageTitle': pageTitle,
+                   'logGroupMaps': logGroupMaps,
+                   })
+
+        self.writeLogFile('autokern_index_template.txt',
+                          'index.html',
+                          None,
+                          None,
+                          mustacheMap)
+
+
+    def writeLogFile(self, templateFilename, logFilename, groupName, logShortname, mustacheMap):
+
         import tfs.common.TFSProject as TFSProject
-        mustache_template_file = os.path.abspath(os.path.join(TFSProject.findProjectRootFolder(), 'data', 'autokern_samples_template.txt'))
+#        dataFolder = os.path.abspath(os.path.join(TFSProject.findProjectRootFolder(), 'data'))
+        mustache_template_file = os.path.abspath(os.path.join(TFSProject.findProjectRootFolder(), 'data', templateFilename))
         with open(mustache_template_file, 'rt') as f:
             mustache_template = f.read()
 
         import pystache
+
+#        class CustomMustacheRenderer(pystache.renderer.Renderer):
+#
+#            def __init__(self):
+#                pystache.renderer.Renderer.__init__(self, search_dirs=[dataFolder,])
+#
+#            def load_template(self, template_name):
+#                print 'load_template', template_name
+#                return pystache.renderer.Renderer.load_template(self, template_name)
+#
+#
+#        renderer = CustomMustacheRenderer()
+#        renderer = pystache.renderer.Renderer(search_dirs=[dataFolder,],
+#                                              file_extension='.mustache')
+##        print 'renderer', renderer
+#        logHtml = renderer.render(mustache_template, mustacheMap)
+
         logHtml = pystache.render(mustache_template, mustacheMap)
 
-        logFilename = 'sample_texts.html'
         logFile = os.path.abspath(os.path.join(self.html_folder, logFilename))
         with open(logFile, 'wt') as f:
             # TODO: explicitly encode unicode
             f.write(logHtml)
+
+        if groupName is not None:
+            self.logFileTuples.append( (groupName, logFilename, logShortname,) )
 
 
     def process(self):
@@ -2595,11 +2497,14 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
         self.updateKerning()
         self.timing.mark('updateKerning.')
 
+        self.writeSamples()
+        self.timing.mark('writeSamples.')
+
         self.logDisparities()
         self.timing.mark('logDisparities.')
 
-        self.writeSamples()
-        self.timing.mark('writeSamples.')
+        self.writeLogIndex()
+        self.timing.mark('writeLogIndex.')
 
         self.dstUfoFont.update()
         self.dstUfoFont.save(self.ufo_dst)

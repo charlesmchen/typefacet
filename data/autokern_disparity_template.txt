@@ -12,6 +12,27 @@
     <!--[if lt IE 9]>
     <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
     <![endif]-->
+    
+
+<style type="text/css">
+<!--
+
+section div,
+section ul {
+	padding-top: 10px;
+}
+
+section h3 {
+	padding-top: 25px;
+}
+
+section div.back_link {
+	padding: 25px 0;
+}
+
+-->
+</style>
+
   </head>
   <body>
     <div class="wrapper">
@@ -67,6 +88,10 @@
         
       </header>
       <section>
+
+<div class="back_link">
+	Back to <a href="index.html">Log Index</a>
+</div>
       
         <h2>{{{pageTitle0}}}</h2>
         <h2>{{{pageTitle1}}}</h2>
@@ -171,6 +196,10 @@ Next
 
 <!--
 -->
+
+<div class="back_link">
+	Back to <a href="index.html">Log Index</a>
+</div>
 
       </section>
       <footer>

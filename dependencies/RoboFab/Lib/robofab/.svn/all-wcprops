@@ -1,0 +1,59 @@
+K 25
+svn:wc:ra_dav:version-url
+V 31
+/!svn/ver/555/trunk/Lib/robofab
+END
+glifLib.py
+K 25
+svn:wc:ra_dav:version-url
+V 42
+/!svn/ver/180/trunk/Lib/robofab/glifLib.py
+END
+glifLib2.py
+K 25
+svn:wc:ra_dav:version-url
+V 43
+/!svn/ver/238/trunk/Lib/robofab/glifLib2.py
+END
+gString.py
+K 25
+svn:wc:ra_dav:version-url
+V 41
+/!svn/ver/67/trunk/Lib/robofab/gString.py
+END
+__init__.py
+K 25
+svn:wc:ra_dav:version-url
+V 43
+/!svn/ver/555/trunk/Lib/robofab/__init__.py
+END
+plistFromTree.py
+K 25
+svn:wc:ra_dav:version-url
+V 47
+/!svn/ver/67/trunk/Lib/robofab/plistFromTree.py
+END
+ufoLib.py
+K 25
+svn:wc:ra_dav:version-url
+V 41
+/!svn/ver/201/trunk/Lib/robofab/ufoLib.py
+END
+plistlib.py
+K 25
+svn:wc:ra_dav:version-url
+V 42
+/!svn/ver/67/trunk/Lib/robofab/plistlib.py
+END
+world.py
+K 25
+svn:wc:ra_dav:version-url
+V 40
+/!svn/ver/461/trunk/Lib/robofab/world.py
+END
+xmlTreeBuilder.py
+K 25
+svn:wc:ra_dav:version-url
+V 48
+/!svn/ver/67/trunk/Lib/robofab/xmlTreeBuilder.py
+END

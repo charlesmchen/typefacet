@@ -1,0 +1,35 @@
+K 25
+svn:wc:ra_dav:version-url
+V 47
+/svnroot/fonttools/!svn/ver/567/trunk/MetaTools
+END
+build_otData.py
+K 25
+svn:wc:ra_dav:version-url
+V 63
+/svnroot/fonttools/!svn/ver/318/trunk/MetaTools/build_otData.py
+END
+buildTableList.py
+K 25
+svn:wc:ra_dav:version-url
+V 65
+/svnroot/fonttools/!svn/ver/426/trunk/MetaTools/buildTableList.py
+END
+doco.diff
+K 25
+svn:wc:ra_dav:version-url
+V 57
+/svnroot/fonttools/!svn/ver/318/trunk/MetaTools/doco.diff
+END
+roundTrip.py
+K 25
+svn:wc:ra_dav:version-url
+V 60
+/svnroot/fonttools/!svn/ver/567/trunk/MetaTools/roundTrip.py
+END
+buildChangeLog.py
+K 25
+svn:wc:ra_dav:version-url
+V 65
+/svnroot/fonttools/!svn/ver/565/trunk/MetaTools/buildChangeLog.py
+END

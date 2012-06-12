@@ -1,0 +1,83 @@
+K 25
+svn:wc:ra_dav:version-url
+V 36
+/!svn/ver/471/trunk/Lib/robofab/pens
+END
+filterPen.py
+K 25
+svn:wc:ra_dav:version-url
+V 49
+/!svn/ver/245/trunk/Lib/robofab/pens/filterPen.py
+END
+quartzPen.py
+K 25
+svn:wc:ra_dav:version-url
+V 48
+/!svn/ver/67/trunk/Lib/robofab/pens/quartzPen.py
+END
+angledMarginPen.py
+K 25
+svn:wc:ra_dav:version-url
+V 55
+/!svn/ver/471/trunk/Lib/robofab/pens/angledMarginPen.py
+END
+pointPen.py
+K 25
+svn:wc:ra_dav:version-url
+V 47
+/!svn/ver/67/trunk/Lib/robofab/pens/pointPen.py
+END
+boundsPen.py
+K 25
+svn:wc:ra_dav:version-url
+V 49
+/!svn/ver/471/trunk/Lib/robofab/pens/boundsPen.py
+END
+__init__.py
+K 25
+svn:wc:ra_dav:version-url
+V 47
+/!svn/ver/67/trunk/Lib/robofab/pens/__init__.py
+END
+mathPens.py
+K 25
+svn:wc:ra_dav:version-url
+V 47
+/!svn/ver/67/trunk/Lib/robofab/pens/mathPens.py
+END
+marginPen.py
+K 25
+svn:wc:ra_dav:version-url
+V 49
+/!svn/ver/471/trunk/Lib/robofab/pens/marginPen.py
+END
+digestPen.py
+K 25
+svn:wc:ra_dav:version-url
+V 49
+/!svn/ver/260/trunk/Lib/robofab/pens/digestPen.py
+END
+reverseContourPointPen.py
+K 25
+svn:wc:ra_dav:version-url
+V 61
+/!svn/ver/67/trunk/Lib/robofab/pens/reverseContourPointPen.py
+END
+flPen.py
+K 25
+svn:wc:ra_dav:version-url
+V 45
+/!svn/ver/230/trunk/Lib/robofab/pens/flPen.py
+END
+rfUFOPen.py
+K 25
+svn:wc:ra_dav:version-url
+V 47
+/!svn/ver/67/trunk/Lib/robofab/pens/rfUFOPen.py
+END
+adapterPens.py
+K 25
+svn:wc:ra_dav:version-url
+V 50
+/!svn/ver/67/trunk/Lib/robofab/pens/adapterPens.py
+END

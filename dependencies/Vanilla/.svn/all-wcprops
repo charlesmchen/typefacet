@@ -1,0 +1,35 @@
+K 25
+svn:wc:ra_dav:version-url
+V 37
+/!svn/ver/1121/packages/vanilla/trunk
+END
+License.txt
+K 25
+svn:wc:ra_dav:version-url
+V 48
+/!svn/ver/512/packages/vanilla/trunk/License.txt
+END
+ToDo.txt
+K 25
+svn:wc:ra_dav:version-url
+V 43
+/!svn/ver/1/packages/vanilla/trunk/ToDo.txt
+END
+Install.txt
+K 25
+svn:wc:ra_dav:version-url
+V 48
+/!svn/ver/512/packages/vanilla/trunk/Install.txt
+END
+setup.py
+K 25
+svn:wc:ra_dav:version-url
+V 45
+/!svn/ver/512/packages/vanilla/trunk/setup.py
+END
+MANIFEST.in
+K 25
+svn:wc:ra_dav:version-url
+V 48
+/!svn/ver/512/packages/vanilla/trunk/MANIFEST.in
+END
