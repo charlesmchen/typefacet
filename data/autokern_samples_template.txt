@@ -43,6 +43,9 @@ section h3 {
 	        	<b>Style: {{styleName}}</b>
         	</li>
         	<li>
+	        	<b>Units per em: {{units_per_em}}</b>
+        	</li>
+        	<li>
 	        	<b>Ascender: {{ascender_ems}}</b>
         	</li>
         	<li>
@@ -77,7 +80,7 @@ section h3 {
         <h2>{{{pageTitle}}}</h2>
 
 <div>
-	Labels are x-extrema offsets, not kerning values.
+	Labels are x-extrema offsets (in font units), not kerning values.
 	Kerning values can't be directly compared because the side bearings are likely to have changed.
 </div>
 <div>

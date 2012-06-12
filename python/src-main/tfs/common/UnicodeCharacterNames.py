@@ -124,6 +124,7 @@ validNameLetters.extend(('-', '_'))
 
 hexToShortNameMap = {}
 hexToLongNameMap = {}
+shortNameToHexMap = {}
 
 def readGlyphNames():
     import tfs.common.TFSProject as TFSProject
@@ -146,6 +147,7 @@ def readGlyphNames():
         hexCode = toNameKey(int(hexCode, 16))
         hexToShortNameMap[hexCode] = shortName
         hexToLongNameMap[hexCode] = longName
+        shortNameToHexMap[shortName] = hexCode
 
 
 unicodeCodeBlocks = []
@@ -291,5 +293,9 @@ def getUnicodeCharacterName(characterCode,
         return basename
     return validateName(basename)
 
+def getUnicodeForShortName(name):
+    if name in shortNameToHexMap:
+        return shortNameToHexMap[name]
+    return None
 
 #print getUnicodeLongName(0x01AB)

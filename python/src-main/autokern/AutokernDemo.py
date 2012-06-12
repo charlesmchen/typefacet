@@ -107,6 +107,8 @@ pseudo_argv = (
                 '--log-dst',
                 os.path.abspath(os.path.join(TFSProject.findProjectRootFolder(), 'out')),
                 '--skip-kerning-pair-logs',
+                '--disparity-log-count',
+                '100',
 
 #                '--glyph-pairs-to-kern',
 #                'r', 'f',
