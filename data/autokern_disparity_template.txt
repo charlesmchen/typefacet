@@ -49,7 +49,16 @@
 	        	<b>Maximum x-extrema Overlap: {{max_x_extrema_overlap_ems}}</b>
         	</li>
         	<li>
-	        	<b>Kerning Threshold: {{kerning_threshold_ems}}</b>
+	        	<b>Glyph Count: {{glyph_count}}</b>
+        	</li>
+        	<li>
+	        	<b>Kerned Pairs: {{kerned_pairs_count}}</b>
+        	</li>
+        	<li>
+	        	<b>Valid Kerned Pairs (--kerning-threshold-ems: {{kerning_threshold_ems}}): {{valid_kerned_pairs_count}}</b>
+        	</li>
+        	<li>
+	        	<b>Final Kerned Pairs (--max-kerning-pairs: {{max_kerning_pairs}}): {{final_kerned_pairs_count}}</b>
         	</li>
         </ul>
         <p>
@@ -94,34 +103,36 @@ Naive Spacing: {{naiveSpacing}}
 
 <h3>Original Kerning</h3>
 <p>
-	{{{oldAdvanceSvg}}}
+	{{{srcAdvanceSvg}}}
 </p>
 
 <h3>Autokern Kerning</h3>
 <p>
-	{{{newAdvanceSvg}}}
+	{{{dstAdvanceSvg}}}
 </p>
 
 <pre>
-{{#glyphMaps}}
-{{{glyphName}}} 
-	Original left extrema: {{srcMinX}}
-	Original right extrema: {{srcMaxX}}
-	No Side Bearings left extrema: {{dstMinX}}
-	No Side Bearings right extrema: {{dstMaxX}}
+{{{src_name0}}} 
+	Original left extrema: {{src0_minX}}
+	Original right extrema: {{src0_maxX}}
+	Autokern left extrema: {{dst0_minX}}
+	Autokern right extrema: {{dst0_maxX}}
 
-{{/glyphMaps}}
+{{{src_name1}}} 
+	Original left extrema: {{src1_minX}}
+	Original right extrema: {{src1_maxX}}
+	Autokern left extrema: {{dst1_minX}}
+	Autokern right extrema: {{dst1_maxX}}
 
-Original x-advance: {{srcXAdvance}}
-No Side Bearings x-advance: {{dstXAdvance}}
-Original kerning: {{srcKerning}}
-Autokern kerning: {{dstKerning}}
-Original Kerned Advance: {{srcAdvance}}
-No Side Bearings Kerned Advance: {{dstAdvance}}
-No Side Bearings Kerned Advance Difference: {{advanceDifference}}
-Original extrema offset: {{srcOffset}}
-Autokern extrema offset: {{dstOffset}}
-Extrema offset difference: {{offsetDifference}}
+Original x-advance: {{src_xAdvance}}
+Autokern x-advance: {{dst_xAdvance}}
+Original kerning: {{src_kerningValue}}
+Autokern kerning: {{dst_kerningValue}}
+Original Kerned Advance: {{src_kernedAdvance}}
+Autokern Kerned Advance: {{dst_kernedAdvance}}
+Original extrema offset: {{src_x_extrema_overlap}}
+Autokern extrema offset: {{dst_x_extrema_overlap}}
+Extrema offset difference: {{disparity}}
 </pre>
 
 {{#kerningLogFilename}}

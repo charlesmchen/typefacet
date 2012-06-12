@@ -102,7 +102,7 @@ TFSMath.setDefaultPrecisionDigits(1)
 AUTOKERN_SEGMENT_PRECISION = 16
 
 USE_CACHED_KERNING_MAP = False
-#USE_CACHED_KERNING_MAP = True
+USE_CACHED_KERNING_MAP = True
 
 
 def formatGlyphUnicode(glyph):
@@ -129,8 +129,32 @@ def formatGlyphName(glyph):
     return u'%s (%s)' % ( name,
                           formatGlyphUnicode(glyph), )
 
-def getCachedMinmax(contours):
-    return minmaxPaths(contours)
+
+class AutokernCache(TFSMap):
+
+    def __init__(self):
+        TFSMap.__init__(self)
+        self.valueCache = {}
+
+    def getCachedValue(self, key, func, *argv):
+        if key in self.valueCache:
+            return self.valueCache[key]
+        result = func(*argv)
+        self.valueCache[key] = result
+        return result
+
+    def getGlyphContours(self, ufoglyph):
+        def getCachedContours():
+            contours = ufoglyph.getContours(warnings=False)
+            return contours
+        return self.getCachedValue('getCachedContours %s' % ufoglyph.name, getCachedContours)
+
+    def getContoursMinmax(self, ufoglyph):
+        def getCachedMinmax():
+            contours = self.getGlyphContours(ufoglyph)
+            return minmaxPaths(contours)
+        return self.getCachedValue('getCachedMinmax %s' % ufoglyph.name, getCachedMinmax)
+
 
 class Autokern(TFSMap):
 
@@ -149,6 +173,11 @@ class Autokern(TFSMap):
                                     types.UnicodeType,
                                     types.StringType, ):
                 return
+
+            if type(value) in ( types.IntType,
+                                    types.LongType):
+                value = locale.format("%d", value, grouping=True)
+
             if key not in mustacheMap:
                 mustacheMap[key] = value
 
@@ -203,6 +232,76 @@ class Autokern(TFSMap):
 
         return mustacheMap
 
+    '''
+
+http://bugs.python.org/file19991/unicodedata-doc.diff
+
++   +--------------------------------------------------------------------------+
++   | **General Categories**                                                   |
++   +----+-------------+------------------+------------------------------------+
++   |Name|Major        |Minor             |Examples                            |
++   +====+=============+==================+====================================+
++   |Lu  | Letter      | uppercase        |                                    |
++   +----+-------------+------------------+------------------------------------+
++   |Ll  | Letter      | lowercase        |                                    |
++   +----+-------------+------------------+------------------------------------+
++   |Lt  | Letter      | titlecase        |                                    |
++   +----+-------------+------------------+------------------------------------+
++   |Lm  | Letter      | modifier         |                                    |
++   +----+-------------+------------------+------------------------------------+
++   |Lo  | Letter      | other            |                                    |
++   +----+-------------+------------------+------------------------------------+
++   |Mn  | Mark        | nonspacing       |                                    |
++   +----+-------------+------------------+------------------------------------+
++   |Mc  | Mark        | spacing combining|                                    |
++   +----+-------------+------------------+------------------------------------+
++   |Me  | Mark        | enclosing        |                                    |
++   +----+-------------+------------------+------------------------------------+
++   |Nd  | Number      | decimal digit    |                                    |
++   +----+-------------+------------------+------------------------------------+
++   |Nl  | Number      | letter           |                                    |
++   +----+-------------+------------------+------------------------------------+
++   |No  | Number      | other            |                                    |
++   +----+-------------+------------------+------------------------------------+
++   |Pc  | Punctuation | connector        |                                    |
++   +----+-------------+------------------+------------------------------------+
++   |Pd  | Punctuation | dash             |                                    |
++   +----+-------------+------------------+------------------------------------+
++   |Ps  | Punctuation | open             |                                    |
++   +----+-------------+------------------+------------------------------------+
++   |Pe  | Punctuation | close            |                                    |
++   +----+-------------+------------------+------------------------------------+
++   |Pi  | Punctuation | initial quote    |                                    |
++   +----+-------------+------------------+------------------------------------+
++   |Pf  | Punctuation | final quote      |                                    |
++   +----+-------------+------------------+------------------------------------+
++   |Po  | Punctuation | other            |                                    |
++   +----+-------------+------------------+------------------------------------+
++   |Sm  | Symbol      | math             |                                    |
++   +----+-------------+------------------+------------------------------------+
++   |Sc  | Symbol      | currency         |                                    |
++   +----+-------------+------------------+------------------------------------+
++   |Sk  | Symbol      | modifier         |                                    |
++   +----+-------------+------------------+------------------------------------+
++   |So  | Symbol      | other            |                                    |
++   +----+-------------+------------------+------------------------------------+
++   |Zs  | Separator   | space            |                                    |
++   +----+-------------+------------------+------------------------------------+
++   |Zl  | Separator   | line             |                                    |
++   +----+-------------+------------------+------------------------------------+
++   |Zp  | Separator   | paragraph        |                                    |
++   +----+-------------+------------------+------------------------------------+
++   |Cc  | Other       | control          |                                    |
++   +----+-------------+------------------+------------------------------------+
++   |Cf  | Other       | format           |                                    |
++   +----+-------------+------------------+------------------------------------+
++   |Cs  | Other       | surrogate        |                                    |
++   +----+-------------+------------------+------------------------------------+
++   |Co  | Other       | private use      |                                    |
++   +----+-------------+------------------+------------------------------------+
++   |Cn  | Other       | not assigned     |                                    |
++   +----+-------------+------------------+------------------------------------+
+    '''
 
     def hasUnicodeCategoryPrefix(self, glyph, *prefixes):
         '''
@@ -500,26 +599,178 @@ class Autokern(TFSMap):
             return svgdata
 
 
-    def getSrcGlyphContours(self, ufoglyph):
-#        ufoglyph = self.srcUfoFont.getGlyphByName(ufoglyph.name)
-#        if ufoglyph is None:
-#            return None
-        if ufoglyph.name in self.srcContoursCache:
-            return self.srcContoursCache[ufoglyph.name]
-        contours = ufoglyph.getContours(warnings=False)
-        self.srcContoursCache[ufoglyph.name] = contours
-        return contours
+    def buildKerningInfoMap(self, ufofont, ufoglyph0, ufoglyph1, cache):
+        if (ufoglyph0.name is None) or (ufoglyph1.name is None):
+            return None
+        kerningInfo = TFSMap()
+        kerningInfo.ufoglyph0 = ufoglyph0
+        kerningInfo.ufoglyph1 = ufoglyph1
+        kerningInfo.name0 = ufoglyph0.name
+        kerningInfo.name1 = ufoglyph1.name
+        kerningInfo.kerningValue = ufofont.getKerningPair(ufoglyph0.name, ufoglyph1.name)
+        if kerningInfo.kerningValue is None:
+            kerningInfo.kerningValue = 0
+        kerningInfo.contours0 = cache.getGlyphContours(ufoglyph0)
+        if (kerningInfo.contours0 is None) or (len(kerningInfo.contours0) < 1):
+            return None
+        kerningInfo.contours1 = cache.getGlyphContours(ufoglyph1)
+        if (kerningInfo.contours1 is None) or (len(kerningInfo.contours1) < 1):
+            return None
+        kerningInfo.minmax0 = cache.getContoursMinmax(ufoglyph0)
+        kerningInfo.minmax1 = cache.getContoursMinmax(ufoglyph1)
+        kerningInfo.xAdvance = ufoglyph0.xAdvance
+        kerningInfo.kernedAdvance = kerningInfo.xAdvance + kerningInfo.kerningValue
+        kerningInfo.x_extrema_overlap = kerningInfo.minmax0.maxX - (kerningInfo.minmax1.minX + kerningInfo.kernedAdvance)
+        return kerningInfo
 
 
-    def getGlyphContours(self, ufoglyph):
-        if ufoglyph.name in self.dstContoursCache:
-            return self.dstContoursCache[ufoglyph.name]
-        contours = ufoglyph.getContours(warnings=False)
-        self.dstContoursCache[ufoglyph.name] = contours
-        return contours
+    def buildKerningInfoMaps(self, ufofont, ufoglyphs, cache):
+        result = {}
+        for ufoglyph0 in ufoglyphs:
+            for ufoglyph1 in ufoglyphs:
+                kerningInfo = self.buildKerningInfoMap(ufofont, ufoglyph0, ufoglyph1, cache)
+                if kerningInfo is not None:
+                    result[(ufoglyph0.name, ufoglyph1.name,)] = kerningInfo
+        return result
 
 
     def findDisparities(self):
+
+        srcGlyphs = self.srcUfoFont.getGlyphs()
+        dstGlyphs = self.dstUfoFont.getGlyphs()
+
+        srcKerningInfoMap = self.buildKerningInfoMaps(self.srcUfoFont, srcGlyphs, self.srcCache)
+        dstKerningInfoMap = self.buildKerningInfoMaps(self.dstUfoFont, dstGlyphs, self.dstCache)
+
+        disparities = []
+        for key, srcKerning in srcKerningInfoMap.items():
+            if key not in dstKerningInfoMap:
+                print 'Missing output kerning info for pair:', key
+                continue
+            dstKerning = dstKerningInfoMap[key]
+            disparity = TFSMap()
+            disparity.key = key
+            disparity.srcKerning = srcKerning
+            disparity.dstKerning = dstKerning
+            disparity.disparity = abs(srcKerning.x_extrema_overlap - dstKerning.x_extrema_overlap)
+            disparities.append(disparity)
+
+        def cmpDisparities(d0, d1):
+            return cmp(d0.disparity, d1.disparity)
+        disparities.sort(cmpDisparities, reverse=True)
+        return disparities
+
+
+    def logDisparities(self):
+
+        renderLog = self.log_dst is not None
+        if not renderLog:
+            return
+        if self.disparity_log_count < 1:
+            return
+
+        print 'Logging disparities...'
+
+        disparities = self.findDisparities()
+
+        '''
+        We're only interested in the top 100 disparities.
+        '''
+        self.disparity_log_count = max(0, self.disparity_log_count)
+        disparities = disparities[:self.disparity_log_count]
+
+        def getDisparityFilename(index):
+            return 'disparity-%d.html' % index
+
+        disparityLinkMaps = []
+        for index, disparity in enumerate(disparities):
+            disparityLinkMaps.append({ 'filename': getDisparityFilename(index),
+                                      'name': str(index + 1),
+                                      })
+
+        for index, disparity in enumerate(disparities):
+            filenamePrefix = 'disparity-%d' % index
+            srcAdvanceSvg = self.renderSvgScene(None,
+                                             pathTuples = (
+                                                           ( 0x7f7faf7f, disparity.srcKerning.contours0, ),
+                                                           ( 0x7f7f7faf, [contour.applyPlus(TFSPoint(disparity.srcKerning.kernedAdvance, 0)) for contour in disparity.srcKerning.contours1], ),
+                                                           ),
+                                             hGuidelines = ( disparity.srcKerning.kernedAdvance, ) )
+
+            dstAdvanceSvg = self.renderSvgScene(None,
+                                             pathTuples = (
+                                                           ( 0x7f7faf7f, disparity.dstKerning.contours0, ),
+                                                           ( 0x7f7f7faf, [contour.applyPlus(TFSPoint(disparity.dstKerning.kernedAdvance, 0)) for contour in disparity.dstKerning.contours1], ),
+                                                           ),
+                                             hGuidelines = ( disparity.dstKerning.kernedAdvance, ) )
+
+            import tfs.common.TFSProject as TFSProject
+            mustache_template_file = os.path.abspath(os.path.join(TFSProject.findProjectRootFolder(), 'data', 'autokern_disparity_template.txt'))
+            with open(mustache_template_file, 'rt') as f:
+                mustache_template = f.read()
+
+            pageTitle0 = u'Autokern Disparity:'
+            pageTitle1 = u'%s vs. %s' % ( formatGlyphName(disparity.srcKerning.ufoglyph0),
+                                          formatGlyphName(disparity.srcKerning.ufoglyph1), )
+
+            def formatEmScalar(value):
+                return '%0.3f em' % (value / float(self.units_per_em))
+
+            def formatGlyphMap(glyph, srcMinmax, dstMinmax):
+                return {
+                           'glyphName': formatGlyphName(glyph),
+                           'srcMinX': formatEmScalar(srcMinmax.minX),
+                           'srcMaxX': formatEmScalar(srcMinmax.maxX),
+                           'dstMinX': formatEmScalar(dstMinmax.minX),
+                           'dstMaxX': formatEmScalar(dstMinmax.maxX),
+                        }
+
+            localsMap = {}
+            localsMap.update(locals())
+            localsMap.update(disparity)
+
+            def mergeMapsItems(srcMap, dstMap, prefix):
+                for key, value in srcMap.items():
+                    dstMap[prefix + key] = value
+
+            mergeMapsItems(disparity.srcKerning, localsMap, 'src_')
+            mergeMapsItems(disparity.srcKerning.minmax0, localsMap, 'src0_')
+            mergeMapsItems(disparity.srcKerning.minmax1, localsMap, 'src1_')
+            mergeMapsItems(disparity.dstKerning, localsMap, 'dst_')
+            mergeMapsItems(disparity.dstKerning.minmax0, localsMap, 'dst0_')
+            mergeMapsItems(disparity.dstKerning.minmax1, localsMap, 'dst1_')
+
+            mustacheMap = self.makeDefaultMustacheMap(localsMap=localsMap)
+
+            mustacheMap.update({
+                           'pageTitle0': pageTitle0,
+                           'pageTitle1': pageTitle1,
+
+                           'disparityLinkMaps': disparityLinkMaps,
+                           'firstDisparityLink': getDisparityFilename(0),
+                           'lastDisparityLink': getDisparityFilename(len(disparities) - 1),
+                           })
+            if index > 0:
+                mustacheMap['prevDisparityLink'] = {'filename': getDisparityFilename(index - 1), }
+            if index + 1 < len(disparities):
+                mustacheMap['nextDisparityLink'] = {'filename': getDisparityFilename(index + 1), }
+
+            kerningLogFilename = self.getKerningPairHtmlFilename(disparity.srcKerning.ufoglyph0,
+                                                                 disparity.srcKerning.ufoglyph1),
+            if kerningLogFilename in self.kerningPairLogFilenames:
+                mustacheMap['kerningLogFilename'] = kerningLogFilename
+
+            import pystache
+            logHtml = pystache.render(mustache_template, mustacheMap)
+
+            logFilename = getDisparityFilename(index)
+            logFile = os.path.abspath(os.path.join(self.html_folder, logFilename))
+            with open(logFile, 'wt') as f:
+                # TODO: explicitly encode unicode
+                f.write(logHtml)
+
+
+    def findDisparities_old(self):
 
         disparities = []
         glyphs = self.dstUfoFont.getGlyphs()
@@ -529,19 +780,10 @@ class Autokern(TFSMap):
         glyphs.sort(lambda glyph0, glyph1:cmp(glyph0.unicode, glyph1.unicode))
         for ufoglyph0 in glyphs:
             for ufoglyph1 in glyphs:
-                key = (ufoglyph0.name,
-                       ufoglyph1.name,)
-                if key not in self.advanceMap:
-                    continue
 
                 disparity = TFSMap()
                 disparity.dstUfoGlyph0 = ufoglyph0
                 disparity.dstUfoGlyph1 = ufoglyph1
-
-#                disparity.srcXAdvance = disparity.srcUfoGlyph0.xAdvance
-                disparity.dstAdvance = int(round(self.advanceMap[key]))
-                disparity.dstXAdvance = disparity.dstUfoGlyph0.xAdvance
-                disparity.dstKerning = disparity.dstAdvance - disparity.dstXAdvance
 
 
                 disparity.srcUfoGlyph0 = self.srcUfoFont.getGlyphByName(ufoglyph0.name)
@@ -553,24 +795,37 @@ class Autokern(TFSMap):
                     raise Exception('Could not find glyph by name: %s %s' % (str(ufoglyph1.name),
                                                                              str(ufoglyph1.unicode)))
 
+
+                disparity.srcMinmax0 = self.srcCache.getContoursMinmax(disparity.srcUfoGlyph0)
+                disparity.srcMinmax1 = self.srcCache.getContoursMinmax(disparity.srcUfoGlyph1)
+
+                disparity.dstMinmax0 = self.dstCache.getContoursMinmax(ufoglyph0)
+                disparity.dstMinmax1 = self.dstCache.getContoursMinmax(ufoglyph1)
+
+#                key = (ufoglyph0.name,
+#                       ufoglyph1.name,)
+#                if key not in self.advanceMap:
+#                    continue
+
+#                disparity.srcXAdvance = disparity.srcUfoGlyph0.xAdvance
+                disparity.dstAdvance = int(round(self.advanceMap[key]))
+                disparity.dstXAdvance = disparity.dstUfoGlyph0.xAdvance
+                disparity.dstKerning = disparity.dstAdvance - disparity.dstXAdvance
+
                 disparity.srcKerning = self.srcUfoFont.getKerningPair(ufoglyph0.name, ufoglyph1.name)
                 if disparity.srcKerning is None:
                     disparity.srcKerning = 0
                 disparity.srcXAdvance = disparity.srcUfoGlyph0.xAdvance
                 disparity.srcAdvance = disparity.srcUfoGlyph0.xAdvance + disparity.srcKerning
 
+                disparity.srcContours0 = self.srcCache.getGlyphContours(disparity.srcUfoGlyph0)
+                disparity.srcContours1 = self.srcCache.getGlyphContours(disparity.srcUfoGlyph1)
 
-                disparity.srcContours0 = self.getSrcGlyphContours(disparity.srcUfoGlyph0)
-                disparity.srcContours1 = self.getSrcGlyphContours(disparity.srcUfoGlyph1)
-
-                disparity.srcMinmax0 = self.getSrcCachedValue('getCachedMinmax %s' % ufoglyph0.name, getCachedMinmax, disparity.srcContours0)
-                disparity.srcMinmax1 = self.getSrcCachedValue('getCachedMinmax %s' % ufoglyph1.name, getCachedMinmax, disparity.srcContours1)
                 disparity.srcOffset = disparity.srcAdvance + (-disparity.srcMinmax0.maxX) + (disparity.srcMinmax1.minX)
 
-                disparity.dstContours0 = self.getGlyphContours(ufoglyph0)
-                disparity.dstContours1 = self.getGlyphContours(ufoglyph1)
-                disparity.dstMinmax0 = self.getDstCachedValue('getCachedMinmax %s' % ufoglyph0.name, getCachedMinmax, disparity.dstContours0)
-                disparity.dstMinmax1 = self.getDstCachedValue('getCachedMinmax %s' % ufoglyph1.name, getCachedMinmax, disparity.dstContours1)
+                disparity.dstContours0 = self.dstCache.getGlyphContours(ufoglyph0)
+                disparity.dstContours1 = self.dstCache.getGlyphContours(ufoglyph1)
+
                 disparity.dstOffset = disparity.dstAdvance + (-disparity.dstMinmax0.maxX) + (disparity.dstMinmax1.minX)
 
                 disparity.offsetDifference = abs(disparity.srcOffset - disparity.dstOffset)
@@ -586,7 +841,7 @@ class Autokern(TFSMap):
         return disparities
 
 
-    def logDisparities(self):
+    def logDisparities_old(self):
 
         renderLog = self.log_dst is not None
         if not renderLog:
@@ -704,21 +959,6 @@ class Autokern(TFSMap):
             with open(logFile, 'wt') as f:
                 # TODO: explicitly encode unicode
                 f.write(logHtml)
-
-
-    def getDstCachedValue(self, key, func, *argv):
-        if key in self.dstValueCache:
-            return self.dstValueCache[key]
-        result = func(*argv)
-        self.dstValueCache[key] = result
-        return result
-
-    def getSrcCachedValue(self, key, func, *argv):
-        if key in self.srcValueCache:
-            return self.srcValueCache[key]
-        result = func(*argv)
-        self.srcValueCache[key] = result
-        return result
 
 
     def getFilenamePrefixPair(self, prefix, ufoglyph0, ufoglyph1):
@@ -1117,6 +1357,8 @@ class Autokern(TFSMap):
         self.timing.mark('processKerningPair.0.')
 #        print 'processKerningPair', ufoglyph0.name, ufoglyph1.name
 
+        if (ufoglyph0.name is None) or (ufoglyph1.name is None):
+            return
         if self.pairsToKern is not None:
             if (ufoglyph0.name, ufoglyph1.name) not in self.pairsToKern:
                 return False
@@ -1136,15 +1378,15 @@ class Autokern(TFSMap):
 
         renderLog = (self.log_dst is not None) and not self.skip_kerning_pair_logs
 
-        contours0 = self.getGlyphContours(ufoglyph0)
-        contours1 = self.getGlyphContours(ufoglyph1)
+        contours0 = self.dstCache.getGlyphContours(ufoglyph0)
+        contours1 = self.dstCache.getGlyphContours(ufoglyph1)
         if (not contours0) or (not contours1):
             return False
 
         self.timing.mark('processKerningPair.01')
 
-        minmax0 = self.getDstCachedValue('getCachedMinmax %s' % ufoglyph0.name, getCachedMinmax, contours0)
-        minmax1 = self.getDstCachedValue('getCachedMinmax %s' % ufoglyph1.name, getCachedMinmax, contours1)
+        minmax0 = self.dstCache.getContoursMinmax(ufoglyph0)
+        minmax1 = self.dstCache.getContoursMinmax(ufoglyph1)
 
         self.timing.mark('processKerningPair.010')
 
@@ -1164,25 +1406,25 @@ class Autokern(TFSMap):
         def getRightContour():
 #            return self.makeProfile(func=max, paths=contours0, debug=True)
             return self.makeProfile(func=max, paths=contours0)
-        profile0 = self.getDstCachedValue('getRightContour %s' % ufoglyph0.name, getRightContour)
+        profile0 = self.dstCache.getCachedValue('getRightContour %s' % ufoglyph0.name, getRightContour)
 
         self.timing.mark('processKerningPair.011')
 
         def getLeftContour():
             return self.makeProfile(func=min, paths=contours1)
-        profile1 = self.getDstCachedValue('getLeftContour %s' % ufoglyph1.name, getLeftContour)
+        profile1 = self.dstCache.getCachedValue('getLeftContour %s' % ufoglyph1.name, getLeftContour)
 
         self.timing.mark('processKerningPair.012')
 
         def getLeftContourInflateMin():
             return self.makeInflatedProfile(func=min, contours=contours1, radius=self.min_distance)
-        profileMin1 = self.getDstCachedValue('getLeftContourInflateMin %s' % ufoglyph1.name, getLeftContourInflateMin)
+        profileMin1 = self.dstCache.getCachedValue('getLeftContourInflateMin %s' % ufoglyph1.name, getLeftContourInflateMin)
 
         self.timing.mark('processKerningPair.013')
 
         def getLeftContourInflateMax():
             return self.makeInflatedProfile(func=min, contours=contours1, radius=self.max_distance)
-        profileMax1 = self.getDstCachedValue('getLeftContourInflateMax %s' % ufoglyph1.name, getLeftContourInflateMax)
+        profileMax1 = self.dstCache.getCachedValue('getLeftContourInflateMax %s' % ufoglyph1.name, getLeftContourInflateMax)
 
         self.timing.mark('processKerningPair.014')
 
@@ -1290,15 +1532,15 @@ class Autokern(TFSMap):
                 raise Exception('Could not find glyph by name: %s %s' % (str(ufoglyph1.name),
                                                                          str(ufoglyph1.unicode)))
 
-            srcContours0 = self.getSrcGlyphContours(srcufoglyph0)
-            srcContours1 = self.getSrcGlyphContours(srcufoglyph1)
+            srcContours0 = self.srcCache.getGlyphContours(srcufoglyph0)
+            srcContours1 = self.srcCache.getGlyphContours(srcufoglyph1)
             srcKerning = self.dstUfoFont.getKerningPair(ufoglyph0.name, ufoglyph1.name)
             if srcKerning is None:
                 srcKerning = 0
             srcAdvance = srcufoglyph0.xAdvance + srcKerning
 
-            srcminmax0 = self.getSrcCachedValue('getCachedMinmax %s' % ufoglyph0.name, getCachedMinmax, srcContours0)
-            srcminmax1 = self.getSrcCachedValue('getCachedMinmax %s' % ufoglyph1.name, getCachedMinmax, srcContours1)
+            srcminmax0 = self.srcCache.getContoursMinmax(srcufoglyph0)
+            srcminmax1 = self.srcCache.getContoursMinmax(srcufoglyph1)
 
             srcAdvanceAdjusted = srcAdvance + (-srcminmax0.minX) + srcminmax1.minX
             advanceAdjusted = advance + (-minmax0.minX) + minmax1.minX
@@ -1546,7 +1788,7 @@ class Autokern(TFSMap):
 
                 def formatTimeDuration(value):
                     if value < 60:
-                        return time.strftime('%S seconds', time.gmtime(value))
+                        return '%d seconds' % int(round(value))
                     if value < 60 * 60:
                         return time.strftime('%M:%S', time.gmtime(value))
                     if value < 60 * 60 * 24:
@@ -1616,6 +1858,10 @@ class Autokern(TFSMap):
 
     def configure(self):
 
+        self.dstCache = AutokernCache()
+        self.srcCache = AutokernCache()
+
+
         ufo_src = self.ufo_src
         if ufo_src is None:
             raise Exception('Missing ufo_src')
@@ -1684,7 +1930,7 @@ class Autokern(TFSMap):
 
             self.kerningPairLogFilenames = set()
 
-        self.units_per_em = float(self.dstUfoFont.units_per_em)
+        self.units_per_em = int(round(self.dstUfoFont.units_per_em))
         self.precision = int(round(self.precision_ems * self.units_per_em))
         self.min_distance = self.min_distance_ems * self.units_per_em
         self.max_distance = self.max_distance_ems * self.units_per_em
@@ -1714,12 +1960,8 @@ class Autokern(TFSMap):
         self.advanceMap = {}
 #        self.minAdvanceMap = defaultdict(0)
         self.rasterCache = {}
-        self.srcContoursCache = {}
-        self.dstContoursCache = {}
 #        self.dstContoursInflateMinDistanceCache = {}
 #        self.dstContoursInflateMaxDistanceCache = {}
-        self.dstValueCache = {}
-        self.srcValueCache = {}
         self.pixelsCache = {}
         self.pairsToKern = None
         self.glyphsToKern = None
@@ -1750,7 +1992,7 @@ class Autokern(TFSMap):
 
         minmax = None
         for ufoglyph in self.dstUfoFont.getGlyphs():
-            contours = self.getGlyphContours(ufoglyph)
+            contours = self.dstCache.getGlyphContours(ufoglyph)
             if len(contours) < 1:
                 continue
             glyphMinmax = minmaxPaths(contours)
@@ -1764,25 +2006,44 @@ class Autokern(TFSMap):
         self.dstUfoFont.clearKerning()
 
         glyphs = self.dstUfoFont.getGlyphs()
-        glyphs.sort(lambda glyph0, glyph1:cmp(glyph0.unicode, glyph1.unicode))
-        for ufoglyph0 in glyphs:
-            for ufoglyph1 in glyphs:
-                key = (ufoglyph0.name,
-                       ufoglyph1.name,)
-                if key not in self.advanceMap:
-                    continue
-                advance = self.advanceMap[key]
-                advance = int(round(advance))
+        glyphWidthMap = {}
+        for ufoglyph in glyphs:
+            if ufoglyph.name is None:
+                continue
+            glyphWidthMap[ufoglyph.name] = ufoglyph.xAdvance
 
-                '''
-                TODO: add support for re-aligning glyph contours (ie. adjusting side bearings).
-                '''
-                kerningValue = advance - ufoglyph0.xAdvance
+        kerningTuples = []
+        for key in self.advanceMap:
+            advance = self.advanceMap[key]
+            name0, name1 = key
+            kerningValue = advance - glyphWidthMap[name0]
+            if abs(kerningValue) < self.kerning_threshold:
+                continue
+            kerningTuples.append( ( name0, name1, kerningValue, ) )
 
-                if abs(kerningValue) >= self.kerning_threshold:
-                    self.dstUfoFont.setKerningPair(ufoglyph0.name,
-                                                ufoglyph1.name, kerningValue)
-#                    print 'kerning', ufoglyph0.name, ufoglyph1.name, kerningValue, 'advance, ufoglyph0.xAdvance', advance, ufoglyph0.xAdvance
+        def cmpKerningTuples(value0, value1):
+            return cmp(abs(value0[-1]), abs(value1[-1]))
+        kerningTuples.sort(cmpKerningTuples, reverse=True)
+
+#        print 'kerningTuples', kerningTuples[0]
+#        print 'kerningTuples[-1]', kerningTuples[-1]
+
+        self.glyph_count = len(glyphs)
+        self.kerned_pairs_count = len(self.advanceMap)
+        self.valid_kerned_pairs_count = len(kerningTuples)
+
+#        for i in xrange(len(kerningTuples) / 1000):
+#            index = i * 1000
+#            print 'kerningTuples[%d]' % index, kerningTuples[index]
+
+        if self.max_kerning_pairs:
+            self.max_kerning_pairs = max(0, self.max_kerning_pairs)
+            kerningTuples = kerningTuples[:self.max_kerning_pairs]
+
+        self.final_kerned_pairs_count = len(kerningTuples)
+
+        for name0, name1, kerningValue in kerningTuples:
+            self.dstUfoFont.setKerningPair(name0, name1, kerningValue)
 
 
     def clearSideBearings(self):
@@ -1807,7 +2068,7 @@ class Autokern(TFSMap):
 #                '''
 #                continue
 
-            contours = self.getGlyphContours(ufoglyph)
+            contours = self.dstCache.getGlyphContours(ufoglyph)
 #            contours = ufoglyph.getContours()
             if len(contours) == 0:
                 '''
@@ -1830,9 +2091,8 @@ class Autokern(TFSMap):
             ufoglyph.setContours(contours, correctDirection=False)
             ufoglyph.setXAdvance(minmax.maxX - minmax.minX)
 
-        # Clear the contours cache.
-        self.dstContoursCache = {}
-        self.dstValueCache = {}
+        # Clear the dst cache.
+        self.dstCache = AutokernCache()
 
 
     def updateSideBearings(self):
@@ -1859,6 +2119,8 @@ class Autokern(TFSMap):
 
         glyphWidthMap = {}
         for ufoglyph in glyphs:
+            if ufoglyph.name is None:
+                continue
             glyphWidthMap[ufoglyph.name] = ufoglyph.xAdvance
 
         #
@@ -1882,8 +2144,8 @@ class Autokern(TFSMap):
 
         if USE_CACHED_KERNING_MAP:
             for ufoglyph in glyphs:
-                contours = self.getGlyphContours(ufoglyph)
-            print
+                contours = self.dstCache.getGlyphContours(ufoglyph)
+#            print
 
 #        for key in self.advanceMap:
 #            if key in (
@@ -1900,7 +2162,7 @@ class Autokern(TFSMap):
             elif self.isIgnoredGlyph(ufoglyph):
                 continue
 
-            contours = self.getGlyphContours(ufoglyph)
+            contours = self.dstCache.getGlyphContours(ufoglyph)
 
             if len(contours) == 0:
                 '''
@@ -2009,14 +2271,16 @@ class Autokern(TFSMap):
         Replace the advance map.
         '''
         self.advanceMap = modifiedAdvanceMap
-        self.dstContoursCache = {}
-        self.dstValueCache = {}
+
+        # Clear the dst cache.
+        self.dstCache = AutokernCache()
 
 
     def assessKerningPair(self, ufoglyph0, ufoglyph1):
 
-        contours0 = self.getGlyphContours(ufoglyph0)
-        contours1 = self.getGlyphContours(ufoglyph1)
+        contours0 = self.dstCache.getGlyphContours(ufoglyph0)
+        contours1 = self.dstCache.getGlyphContours(ufoglyph1)
+
         if (not contours0) or (not contours1):
             return None
 
@@ -2139,7 +2403,8 @@ class Autokern(TFSMap):
 #                if len(contours) < 1:
 #                    continue
 
-            contours = ufoglyph.getContours(warnings=False)
+            contours = self.dstCache.getGlyphContours(ufoglyph)
+#            contours = ufoglyph.getContours(warnings=False)
 #                contours = self.getGlyphContours(ufoglyph)
 
             '''
@@ -2320,8 +2585,6 @@ class Autokern(TFSMap):
         self.timing.mark('processAllKerningPairs.')
 
 #        print 'logDisparities'
-        self.logDisparities()
-        self.timing.mark('logDisparities.')
 
         if not self.do_not_modify_side_bearings:
 #            print 'updateSideBearings'
@@ -2331,6 +2594,9 @@ class Autokern(TFSMap):
 #        print 'updateKerning'
         self.updateKerning()
         self.timing.mark('updateKerning.')
+
+        self.logDisparities()
+        self.timing.mark('logDisparities.')
 
         self.writeSamples()
         self.timing.mark('writeSamples.')

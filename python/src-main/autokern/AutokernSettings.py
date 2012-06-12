@@ -237,5 +237,8 @@ class AutokernSettings(TFBaseSettings):
                             type=self.em01Type,
                             default=0.01,
                             help='Kerning values smaller than this threshold will be ignored.  0.0 <= x <= 1.0. Default: 0.01 em')
+        parser.add_argument('--max-kerning-pairs',
+                            type=int,
+                            help='Limits the number of kerning values.')
 
         return parser
