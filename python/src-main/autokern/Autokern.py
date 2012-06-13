@@ -102,7 +102,7 @@ TFSMath.setDefaultPrecisionDigits(1)
 AUTOKERN_SEGMENT_PRECISION = 16
 
 USE_CACHED_KERNING_MAP = False
-USE_CACHED_KERNING_MAP = True
+#USE_CACHED_KERNING_MAP = True
 
 
 def formatGlyphUnicode(glyph):
@@ -129,6 +129,12 @@ def formatGlyphName(glyph):
     return u'%s (%s)' % ( name,
                           formatGlyphUnicode(glyph), )
 
+def mergeMustacheMaps(srcMap, dstMap, prefix):
+    for key, value in srcMap.items():
+        dstMap[prefix + key] = value
+
+def formatEms(value):
+    return '%0.3f em' % (value,)
 
 class AutokernCache(TFSMap):
 
@@ -161,6 +167,8 @@ class Autokern(TFSMap):
     def __init__(self):
         TFSMap.__init__(self)
 
+    def formatUnitsInEms(self, value):
+        return formatEms(value / float(self.units_per_em))
 
     def makeDefaultMustacheMap(self, localsMap=None):
 
@@ -194,12 +202,12 @@ class Autokern(TFSMap):
 
         for key, value in self.items():
             if key.endswith('_ems'):
-                value = '%0.3f em' % (value, )
+                value = formatEms(value)
             elif type(value) in ( types.IntType,
                                     types.FloatType,
                                     types.LongType,):
                 emsKey = key + '_in_ems'
-                emsValue = '%0.3f em' % (value / float(self.units_per_em))
+                emsValue = formatEms(value / float(self.units_per_em))
                 addToMustacheMap(emsKey, emsValue)
             addToMustacheMap(key, value)
 
@@ -209,7 +217,7 @@ class Autokern(TFSMap):
                                     types.FloatType,
                                     types.LongType,):
                     emsKey = key + '_in_ems'
-                    emsValue = '%0.3f em' % (value / float(self.units_per_em))
+                    emsValue = formatEms(value / float(self.units_per_em))
                     addToMustacheMap(emsKey, emsValue)
                 addToMustacheMap(key, value)
 
@@ -717,7 +725,7 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
                                           formatGlyphName(disparity.srcKerning.ufoglyph1), )
 
             def formatEmScalar(value):
-                return '%0.3f em' % (value / float(self.units_per_em))
+                return formatEms(value / float(self.units_per_em))
 
             def formatGlyphMap(glyph, srcMinmax, dstMinmax):
                 return {
@@ -732,16 +740,12 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
             localsMap.update(locals())
             localsMap.update(disparity)
 
-            def mergeMapsItems(srcMap, dstMap, prefix):
-                for key, value in srcMap.items():
-                    dstMap[prefix + key] = value
-
-            mergeMapsItems(disparity.srcKerning, localsMap, 'src_')
-            mergeMapsItems(disparity.srcKerning.minmax0, localsMap, 'src0_')
-            mergeMapsItems(disparity.srcKerning.minmax1, localsMap, 'src1_')
-            mergeMapsItems(disparity.dstKerning, localsMap, 'dst_')
-            mergeMapsItems(disparity.dstKerning.minmax0, localsMap, 'dst0_')
-            mergeMapsItems(disparity.dstKerning.minmax1, localsMap, 'dst1_')
+            mergeMustacheMaps(disparity.srcKerning, localsMap, 'src_')
+            mergeMustacheMaps(disparity.srcKerning.minmax0, localsMap, 'src0_')
+            mergeMustacheMaps(disparity.srcKerning.minmax1, localsMap, 'src1_')
+            mergeMustacheMaps(disparity.dstKerning, localsMap, 'dst_')
+            mergeMustacheMaps(disparity.dstKerning.minmax0, localsMap, 'dst0_')
+            mergeMustacheMaps(disparity.dstKerning.minmax1, localsMap, 'dst1_')
 
             mustacheMap = self.makeDefaultMustacheMap(localsMap=localsMap)
 
@@ -857,7 +861,7 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
         return result
 
 
-    def makeProfile(self, func, paths=None, segments=None, debug=False):
+    def makeProfile(self, paths=None, segments=None, debug=False):
         maxYunits = int(math.ceil((self.allGlyphsMaxY + self.max_distance) / float(self.precision)))
         minYunits = int(math.floor((self.allGlyphsMinY - self.max_distance) / float(self.precision)))
         yHeightUnits = 1 + maxYunits - minYunits
@@ -869,7 +873,8 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
 #        print 'self.precision', self.precision
 #        print 'yHeightUnits', yHeightUnits
 
-        profile = list((None,) * yHeightUnits)
+        maxProfile = list((None,) * yHeightUnits)
+        minProfile = list((None,) * yHeightUnits)
 
         # combine paths and segments parameters
         allSegments = []
@@ -880,13 +885,14 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
                 allSegments.extend(path.segments)
 
         def addProfilePoint(yIndex, xValue):
-            if yIndex < 0 or yIndex >= len(profile):
+            if yIndex < 0 or yIndex >= len(maxProfile):
                 raise Exception('Invalid yIndex: %d' % yIndex)
 #                print 'yIndex', yIndex, 'len(profile)', len(profile)
-            if profile[yIndex] is None:
-                profile[yIndex] = xValue
+            if maxProfile[yIndex] is None:
+                minProfile[yIndex] = maxProfile[yIndex] = xValue
             else:
-                profile[yIndex] = func(profile[yIndex], xValue)
+                minProfile[yIndex] = min(minProfile[yIndex], xValue)
+                maxProfile[yIndex] = max(maxProfile[yIndex], xValue)
 
         def addSegmentSection(point0, point1):
             '''
@@ -905,7 +911,8 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
 
             if y0u == y1u:
                 yIndex = y0u - minYunits
-                addProfilePoint(yIndex, func(point0.x, point1.x))
+                addProfilePoint(yIndex, point0.x)
+                addProfilePoint(yIndex, point1.x)
                 return
 
             if y0u < y1u:
@@ -937,7 +944,7 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
                         addSegmentSection(lastPoint, point)
                     lastPoint = point
 
-        return profile
+        return minProfile, maxProfile
 
 
     def isValidProfileIntrusion(self, profile0, profile1, advance):
@@ -1053,7 +1060,7 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
         for edge0, edge1 in itertools.izip(profile0, profile1):
             if edge0 is None or edge1 is None:
                 continue
-            diff = 1 + edge0 - edge1
+            diff = edge0 - edge1
             if contactAdvance is None:
                 contactAdvance = diff
             else:
@@ -1164,7 +1171,7 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
             return None
 
 
-    def makeInflatedProfile(self, func, contours, radius):
+    def makeInflatedProfile(self, contours, radius):
         segments = []
 
         def addEndpointRounding(point):
@@ -1180,7 +1187,7 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
                 if inflatedSegment is not None:
                     segments.append(inflatedSegment)
 
-        return self.makeProfile(func, segments=segments)
+        return self.makeProfile(segments=segments)
 
 
     def processKerningPair(self, ufoglyph0, ufoglyph1):
@@ -1239,46 +1246,62 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
 #            self.timing.mark('processKerningPair.010a')
 #            return
 
-        def getRightContour():
-#            return self.makeProfile(func=max, paths=contours0, debug=True)
-            return self.makeProfile(func=max, paths=contours0)
-        profile0 = self.dstCache.getCachedValue('getRightContour %s' % ufoglyph0.name, getRightContour)
+        def getGlyphProfiles(contours):
+            return self.makeProfile(paths=contours)
+        def getGlyphProfilesInflateMin(contours):
+            return self.makeInflatedProfile(contours=contours, radius=self.min_distance)
+        def getGlyphProfilesInflateMax(contours):
+            return self.makeInflatedProfile(contours=contours, radius=self.max_distance)
 
+        _, profile0 = self.dstCache.getCachedValue('getGlyphProfiles %s' % ufoglyph0.name, getGlyphProfiles, contours0)
         self.timing.mark('processKerningPair.011')
 
-        def getLeftContour():
-            return self.makeProfile(func=min, paths=contours1)
-        profile1 = self.dstCache.getCachedValue('getLeftContour %s' % ufoglyph1.name, getLeftContour)
-
+        _, profileMin0 = self.dstCache.getCachedValue('getGlyphProfilesInflateMin %s' % ufoglyph0.name, getGlyphProfilesInflateMin, contours0)
         self.timing.mark('processKerningPair.012')
 
-        def getLeftContourInflateMin():
-            return self.makeInflatedProfile(func=min, contours=contours1, radius=self.min_distance)
-        profileMin1 = self.dstCache.getCachedValue('getLeftContourInflateMin %s' % ufoglyph1.name, getLeftContourInflateMin)
-
+        _, profileMax0 = self.dstCache.getCachedValue('getGlyphProfilesInflateMax %s' % ufoglyph0.name, getGlyphProfilesInflateMax, contours0)
         self.timing.mark('processKerningPair.013')
 
-        def getLeftContourInflateMax():
-            return self.makeInflatedProfile(func=min, contours=contours1, radius=self.max_distance)
-        profileMax1 = self.dstCache.getCachedValue('getLeftContourInflateMax %s' % ufoglyph1.name, getLeftContourInflateMax)
-
+        profile1, _ = self.dstCache.getCachedValue('getGlyphProfiles %s' % ufoglyph1.name, getGlyphProfiles, contours1)
         self.timing.mark('processKerningPair.014')
 
-        minDistanceAdvance = self.findMinProfileAdvance(profile0, profileMin1)
+        profileMin1, _ = self.dstCache.getCachedValue('getGlyphProfilesInflateMin %s' % ufoglyph1.name, getGlyphProfilesInflateMin, contours1)
+        self.timing.mark('processKerningPair.015')
+
+        profileMax1, _ = self.dstCache.getCachedValue('getGlyphProfilesInflateMax %s' % ufoglyph1.name, getGlyphProfilesInflateMax, contours1)
+        self.timing.mark('processKerningPair.016')
+
+        minDistanceAdvance0 = self.findMinProfileAdvance(profile0, profileMin1)
+        self.timing.mark('processKerningPair.020')
+        minDistanceAdvance1 = self.findMinProfileAdvance(profileMin0, profile1)
         self.timing.mark('processKerningPair.021')
+
+        def maxAdvance(advance0, advance1):
+            if advance0 is None and advance1 is None:
+                return None
+            if advance0 is None:
+                return advance1
+            if advance1 is None:
+                return advance0
+            return max(advance0, advance1)
+
+        minDistanceAdvance = maxAdvance(minDistanceAdvance0, minDistanceAdvance1)
+        minDistanceAdvance = int(round(minDistanceAdvance))
         if debugKerning:
-            print 'minDistanceAdvance', minDistanceAdvance
+            print 'minDistanceAdvance0', minDistanceAdvance0, 'minDistanceAdvance1', minDistanceAdvance1, 'minDistanceAdvance', minDistanceAdvance
 
-        intrudingAdvance = self.findMinProfileAdvance_withIntrusion(profile0, profileMax1)
-#        print 'intrudingAdvance.1', intrudingAdvance
-
+        intrudingAdvance0 = self.findMinProfileAdvance_withIntrusion(profile0, profileMax1)
+        self.timing.mark('processKerningPair.022')
+        intrudingAdvance1 = self.findMinProfileAdvance_withIntrusion(profileMax0, profile1)
         self.timing.mark('processKerningPair.023')
+
+        intrudingAdvance = maxAdvance(intrudingAdvance0, intrudingAdvance1)
+        intrudingAdvance = int(round(intrudingAdvance))
         if debugKerning:
-            print 'intrudingAdvance', intrudingAdvance
+            print 'intrudingAdvance0', intrudingAdvance0, 'intrudingAdvance1', intrudingAdvance1, 'intrudingAdvance', intrudingAdvance
 
 #        intruding_x_extrema_overlap = minmax0.maxX - (minmax1.minX + intrudingAdvance)
 #        print 'intruding_x_extrema_overlap', intruding_x_extrema_overlap
-
 
         '''
         Now combine results into the final advance value.
@@ -1290,7 +1313,8 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
 #            advance = minmax0.maxX + self.min_distance - minmax1.minX
 #            advance = minDistanceAdvance
 
-        if minDistanceAdvance is None and intrudingAdvance is None:
+        advance = maxAdvance(minDistanceAdvance, intrudingAdvance)
+        if advance is None:
             '''
             If no collisions between the glyph profiles, use x-extrema
             plus the min_distance argument.
@@ -1298,19 +1322,6 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
             TODO: should we use the max_distance instead?
             '''
             advance = minmax0.maxX + self.min_distance - minmax1.minX
-#            print '!!!', '.1', minmax0.maxX, self.min_distance, minmax1.minX
-#            print '!!!', '.1', advance, minDistanceAdvance, intrudingAdvance
-        elif minDistanceAdvance is None:
-            advance = intrudingAdvance
-#            print '!!!', '.2', advance, minDistanceAdvance, intrudingAdvance
-        elif intrudingAdvance is None:
-            advance = minDistanceAdvance
-#            print '!!!', '.3', advance, minDistanceAdvance, intrudingAdvance
-        else:
-            advance = max(minDistanceAdvance, intrudingAdvance)
-#            print '!!!', '.4', advance, minDistanceAdvance, intrudingAdvance
-
-#        advance = max(minDistanceAdvance, intrudingAdvance)
 
         '''
         3. Make sure the "x-extrema overlap" is not greater than the "max x-extrema overlap".
@@ -1318,6 +1329,13 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
 #        print '!!!', 'minDistanceAdvance, intrudingAdvance', minDistanceAdvance, intrudingAdvance
 #        print '!!!', 'minmax0.maxX, minmax1.minX, advance', minmax0.maxX, minmax1.minX, advance
         x_extrema_overlap = minmax0.maxX - (minmax1.minX + advance)
+
+        print
+        print ufoglyph0.name, 'vs.', ufoglyph1.name
+        print 'minDistanceAdvance0', minDistanceAdvance0, 'minDistanceAdvance1', minDistanceAdvance1, 'minDistanceAdvance', minDistanceAdvance
+        print 'intrudingAdvance0', intrudingAdvance0, 'intrudingAdvance1', intrudingAdvance1, 'intrudingAdvance', intrudingAdvance
+        print 'advance', advance
+        print 'x_extrema_overlap', x_extrema_overlap
 
         pair_max_x_extrema_overlap = self.max_x_extrema_overlap
 
@@ -1349,15 +1367,64 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
 
         if debugKerning:
             print '\t', ufoglyph0.unicode, ufoglyph1.unicode, advance
-#        import sys
-#        sys.exit(0)
 
         self.timing.mark('processKerningPair.5')
 
         if renderLog:
-#            from tfs.common.TFSSvg import *
-#            filenamePrefix = self.getKerningPairFilenamePrefix(ufoglyph0, ufoglyph1)
-#            phase = 1
+
+            logSections = []
+
+            def addLogSection(title,
+                              glyphXAdvance0,
+                              glyphContours0, glyphContours1,
+                              glyphProfile0, glyphProfile1,
+                              advanceValue,
+                              extraVariableTuples):
+                strokePathTuples = ()
+                if glyphProfile0 is not None:
+                    strokePathTuples = (
+                    ( 0xafff7faf, glyphProfile0, ),
+                    ( 0xafaf7fff, xTranslateContours(glyphProfile1, advanceValue), ),
+                    )
+
+                glyphMinmax0 = minmaxPaths(glyphContours0)
+                glyphMinmax1 = minmaxPaths(glyphContours1)
+                glyphContours1 = xTranslateContours(glyphContours1, advanceValue)
+                glyphMinmax1_ = minmaxPaths(glyphContours1)
+
+                variableTuples = (
+                                  ('%s (%s) left' % (ufoglyph0.name, formatUnicode(ufoglyph0.unicode),), (glyphMinmax0.minX), True,),
+                                  ('%s (%s) right' % (ufoglyph0.name, formatUnicode(ufoglyph0.unicode),), (glyphMinmax0.maxX), True,),
+                                  ('%s (%s) left' % (ufoglyph1.name, formatUnicode(ufoglyph1.unicode),), (glyphMinmax1.minX), True,),
+                                  ('%s (%s) right' % (ufoglyph1.name, formatUnicode(ufoglyph1.unicode),), (glyphMinmax1.maxX), True,),
+                                  ('%s x-advance' % (title,), self.formatUnitsInEms(glyphXAdvance0), True,),
+                                  ('%s kerning value' % (title,), self.formatUnitsInEms(advanceValue - glyphXAdvance0), True,),
+                                  ('%s kerned x-advance' % (title,), self.formatUnitsInEms(advanceValue), True,),
+                                  )
+
+                section_x_extrema_offset = glyphMinmax1_.minX - glyphMinmax0.maxX
+                if section_x_extrema_offset >= 0:
+                    variableTuples += ( (title + ' x-extrema offset', self.formatUnitsInEms(section_x_extrema_offset), True, ), )
+                else:
+                    variableTuples += ( (title + ' x-extrema overlap', self.formatUnitsInEms(-section_x_extrema_offset), True, ), )
+
+                variableTuples += extraVariableTuples
+
+                logSections.append({'title': title, # + ' Kerning',
+                                    'svg': self.renderSvgScene(None,
+                                                 pathTuples = (
+                                                               ( 0x7f7faf7f, glyphContours0, ),
+                                                               ( 0x7f7f7faf, glyphContours1, ),
+                                                               ),
+                                                 strokePathTuples = strokePathTuples,
+                                                 hGuidelines = ( advanceValue, # RSB
+                                                                 glyphXAdvance0, # LSB
+                                                                 min(glyphMinmax0.maxX, glyphMinmax1_.minX),
+                                                                 max(glyphMinmax0.maxX, glyphMinmax1_.minX),
+                                                                 ) ),
+                                    'variables': variableTuples,
+                                    })
+
 
             srcufoglyph0 = self.srcUfoFont.getGlyphByName(ufoglyph0.name)
             if srcufoglyph0 is None:
@@ -1373,73 +1440,68 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
             srcKerning = self.dstUfoFont.getKerningPair(ufoglyph0.name, ufoglyph1.name)
             if srcKerning is None:
                 srcKerning = 0
-            srcAdvance = srcufoglyph0.xAdvance + srcKerning
+            srcAdvance = srcufoglyph0.xAdvance
+            srcKernedAdvance = srcufoglyph0.xAdvance + srcKerning
 
-            srcminmax0 = self.srcCache.getContoursMinmax(srcufoglyph0)
-            srcminmax1 = self.srcCache.getContoursMinmax(srcufoglyph1)
+            self.timing.mark('processKerningPair.60')
 
-            srcAdvanceAdjusted = srcAdvance + (-srcminmax0.minX) + srcminmax1.minX
-            advanceAdjusted = advance + (-minmax0.minX) + minmax1.minX
+            def xTranslateContours(contours, value):
+                return [contour.applyPlus(TFSPoint(value, 0)) for contour in contours]
 
-            srcSpacingSvg = self.renderSvgScene(None,
-#                                                filenamePrefix + '-src-spacing',
-                                             pathTuples = (
-                                                           ( 0x7f7faf7f, srcContours0, ),
-                                                           ( 0x7f7f7faf, [contour.applyPlus(TFSPoint(srcAdvance, 0)) for contour in srcContours1], ),
-                                                           ),
-                                             hGuidelines = ( srcAdvance, ) )
-#            phase += 1
+            addLogSection('Original',
+                          srcufoglyph0.xAdvance,
+                          srcContours0, srcContours1,
+                          None, None,
+                          srcKernedAdvance,
+                          (
+                          ))
 
-            self.timing.mark('processKerningPair.6')
+            self.timing.mark('processKerningPair.61')
 
             # -----------
 
             profilePaths0 = self.convertProfileToLogPaths(profile0, isLeft=True)
-#            profilePaths1 = self.convertProfileToLogPaths(profile1, isLeft=False, offset=TFSPoint(advance, 0))
-#            profileMinPaths1 = self.convertProfileToLogPaths(profileMin1, isLeft=False, offset=TFSPoint(advance, 0))
+            profileMinPaths0 = self.convertProfileToLogPaths(profileMin0, isLeft=True)
+            profileMaxPaths0 = self.convertProfileToLogPaths(profileMax0, isLeft=True)
+            profilePaths1 = self.convertProfileToLogPaths(profile1, isLeft=False)
+            profileMinPaths1 = self.convertProfileToLogPaths(profileMin1, isLeft=False)
             profileMaxPaths1 = self.convertProfileToLogPaths(profileMax1, isLeft=False)
+
+            self.timing.mark('processKerningPair.62')
 
             # -----------
 
             contactAdvance = self.findMinProfileAdvance(profile0, profile1)
-            self.timing.mark('processKerningPair.020')
-            if debugKerning:
-                print 'contactAdvance', contactAdvance
-
             if contactAdvance is None:
-                '''
-                If no collisions between the glyph profiles, use x-extrema.
-                '''
                 contactAdvance = minmax0.maxX - minmax1.minX
+            contactAdvance = int(round(contactAdvance))
 
-            contactAdvanceSvg = self.renderSvgScene(None,
-                                             pathTuples = (
-                                                           ( 0x7f7faf7f, contours0, ),
-                                                           ( 0x7f7f7faf, [contour.applyPlus(TFSPoint(contactAdvance, 0)) for contour in contours1], ),
-                                                           ),
-                                             strokePathTuples = (
-                                                           ( 0xafff7faf, profilePaths0, ),
-                                                           ( 0xafaf7fff, self.convertProfileToLogPaths(profile1, isLeft=False, offset=TFSPoint(contactAdvance, 0)), ),
-                                                           ),
-                                             hGuidelines = ( contactAdvance, ) )
+            self.timing.mark('processKerningPair.63')
+
+            addLogSection('Contact',
+                          ufoglyph0.xAdvance,
+                          contours0, contours1,
+                          profilePaths0, profilePaths1,
+                          contactAdvance,
+                          (
+                          ))
+
+            self.timing.mark('processKerningPair.64')
 
             # -----------
 
-            minDistanceAdvanceSvg = self.renderSvgScene(None,
-                                             pathTuples = (
-                                                           ( 0x7f7faf7f, contours0, ),
-                                                           ( 0x7f7f7faf, [contour.applyPlus(TFSPoint(minDistanceAdvance, 0)) for contour in contours1], ),
-                                                           ),
-                                             strokePathTuples = (
-                                                           ( 0xafff7faf, profilePaths0, ),
-                                                           ( 0xafaf7fff, self.convertProfileToLogPaths(profileMin1, isLeft=False, offset=TFSPoint(minDistanceAdvance, 0)), ),
-                                                           ),
-                                             hGuidelines = ( minDistanceAdvance, ) )
+            addLogSection('Minimum Distance',
+                          ufoglyph0.xAdvance,
+                          contours0, contours1,
+                          profilePaths0, profileMinPaths1,
+                          minDistanceAdvance,
+                          (
+                              ('--min-distance-ems', 'min_distance_ems',),
+                          ))
 
             # -----------
 
             maxDistanceAdvance = self.findMinProfileAdvance(profile0, profileMax1)
-            self.timing.mark('processKerningPair.022')
             if debugKerning:
                 print 'maxDistanceAdvance', maxDistanceAdvance
 
@@ -1449,59 +1511,52 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
                 plus the max_distance argument.
                 '''
                 maxDistanceAdvance = minmax0.maxX + self.max_distance - minmax1.minX
+            maxDistanceAdvance = int(round(maxDistanceAdvance))
 
-            maxDistanceAdvanceSvg = self.renderSvgScene(None,
-                                             pathTuples = (
-                                                           ( 0x7f7faf7f, contours0, ),
-                                                           ( 0x7f7f7faf, [contour.applyPlus(TFSPoint(maxDistanceAdvance, 0)) for contour in contours1], ),
-                                                           ),
-                                             strokePathTuples = (
-                                                           ( 0xafff7faf, profilePaths0, ),
-                                                           ( 0x7f7f7faf, [contour.applyPlus(TFSPoint(maxDistanceAdvance, 0)) for contour in profileMaxPaths1], ),
-                                                           ),
-                                             hGuidelines = ( maxDistanceAdvance, ) )
+            self.timing.mark('processKerningPair.65')
 
-            # -----------
-
-            intrudingAdvanceSvg = self.renderSvgScene(None,
-                                             pathTuples = (
-                                                           ( 0x7f7faf7f, contours0, ),
-                                                           ( 0x7f7f7faf, [contour.applyPlus(TFSPoint(intrudingAdvance, 0)) for contour in contours1], ),
-                                                           ),
-                                             strokePathTuples = (
-                                                           ( 0xafff7faf, profilePaths0, ),
-                                                           ( 0x7f7f7faf, [contour.applyPlus(TFSPoint(intrudingAdvance, 0)) for contour in profileMaxPaths1], ),
-                                                           ),
-                                             hGuidelines = ( intrudingAdvance, ) )
+            addLogSection('Maximum Distance',
+                          ufoglyph0.xAdvance,
+                          contours0, contours1,
+                          profilePaths0, profileMaxPaths1,
+                          maxDistanceAdvance,
+                          (
+                              ('--max-distance-ems', 'max_distance_ems',),
+                          ))
+            self.timing.mark('processKerningPair.66')
 
             # -----------
 
-            finalAdvanceSvg = self.renderSvgScene(None,
-                                             pathTuples = (
-                                                           ( 0x7f7faf7f, contours0, ),
-                                                           ( 0x7f7f7faf, [contour.applyPlus(TFSPoint(advance, 0)) for contour in contours1], ),
-                                                           ),
-                                             strokePathTuples = (
-                                                           ( 0xafff7faf, profilePaths0, ),
-                                                           ( 0x7f7f7faf, [contour.applyPlus(TFSPoint(advance, 0)) for contour in profileMaxPaths1], ),
-                                                           ),
-                                             hGuidelines = ( advance, ),
-                                             hRanges = ( ('x_extrema_overlap',
-                                                          min(minmax0.maxX, minmax1.minX + advance),
-                                                          max(minmax0.maxX, minmax1.minX + advance),
-                                                           ), ) )
+            addLogSection('Intruding',
+                          ufoglyph0.xAdvance,
+                          contours0, contours1,
+                          profilePaths0, profileMaxPaths1,
+                          intrudingAdvance,
+                          (
+                              ('--intrusion-tolerance-ems', 'intrusion_tolerance_ems',),
+                          ))
+            self.timing.mark('processKerningPair.67')
 
             # -----------
 
+            addLogSection('Final Autokern',
+                          ufoglyph0.xAdvance,
+                          contours0, contours1,
+                          profilePaths0, profileMaxPaths1,
+                          advance,
+                          (
+                              ('--max-x-extrema-overlap-ems', 'max_x_extrema_overlap_in_ems',),
+                          ))
+            self.timing.mark('processKerningPair.68')
 
-            self.timing.mark('processKerningPair.8')
+            # -----------
 
             pageTitle0 = u'Autokern Log:'
             pageTitle1 = u'%s vs. %s' % ( formatGlyphName(ufoglyph0),
                                                          formatGlyphName(ufoglyph1), )
 
             def formatEmScalar(value):
-                return '%0.3f em' % (value / float(self.units_per_em))
+                return formatEms(value / float(self.units_per_em))
 
             def formatGlyphMap(glyph, glyphMinmax):
                 return {
@@ -1514,35 +1569,38 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
 
             x_extrema_overlap = minmax0.maxX - (minmax1.minX + advance)
 
-            mustacheMap = self.makeDefaultMustacheMap(localsMap=locals())
+            localsMap = {}
+            localsMap.update(locals())
+
+            mustacheMap = self.makeDefaultMustacheMap(localsMap=localsMap)
+
+            logSectionMaps = []
+            for logSection in logSections:
+                logSectionMap = {}
+                logSectionMap['sectionTitle'] = logSection['title']
+                logSectionMap['sectionSvg'] = logSection['svg']
+                def formatSectionVariable(variableTuple):
+                    if len(variableTuple) == 2:
+                        name, var = variableTuple
+                        return {'varName': name, 'varValue':mustacheMap[var],}
+                    else:
+                        return {'varName': variableTuple[0], 'varValue':variableTuple[1],}
+
+                logSectionMap['sectionVariables'] = [formatSectionVariable(variableTuple) for variableTuple in logSection['variables']]
+                logSectionMaps.append(logSectionMap)
 
             mustacheMap.update({
                            'pageTitle0': pageTitle0,
                            'pageTitle1': pageTitle1,
-                           'minmax0': minmax0,
-                           'minmax1': minmax1,
-
-                           'srcSpacingSvg': srcSpacingSvg,
-                           'contactAdvanceSvg': contactAdvanceSvg,
-                           'minDistanceAdvanceSvg': minDistanceAdvanceSvg,
-                           'maxDistanceAdvanceSvg': maxDistanceAdvanceSvg,
-                           'intrudingAdvanceSvg': intrudingAdvanceSvg,
-                           'finalAdvanceSvg': finalAdvanceSvg,
-
-                           'glyph0': formatGlyphName(ufoglyph0),
-                           'glyph1': formatGlyphName(ufoglyph1),
-
-                           'glyphMaps': ( formatGlyphMap(ufoglyph0, minmax0),
-                                          formatGlyphMap(ufoglyph1, minmax1),
-                                          )
+                           'logSectionMaps': logSectionMaps,
                            })
 
-            logFilename = self.getKerningPairHtmlFilename(ufoglyph0, ufoglyph1),
+            logFilename = self.getKerningPairHtmlFilename(ufoglyph0, ufoglyph1)
             self.kerningPairLogFilenames.add(logFilename)
             self.writeLogFile('autokern_pair_template.txt',
                               logFilename,
-                              None,
-                              None,
+                              'Kerning Pairs',
+                              ('Kerning Pair: %s vs. %s' % (ufoglyph0.name, ufoglyph1.name,)),
                               mustacheMap)
 
         self.timing.mark('processKerningPair.9')
@@ -2193,7 +2251,7 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
                       )
 
         def formatEmScalar(value):
-            return '%0.3f em' % (value / float(self.units_per_em))
+            return formatEms(value / float(self.units_per_em))
 
         for reduceFunc, pairGroupName, pairs in pairGroups:
             print
