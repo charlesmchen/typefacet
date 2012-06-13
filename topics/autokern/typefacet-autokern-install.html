@@ -111,10 +111,6 @@ section pre {
       
         <h2>TypeFacet Autokern Installation</h2>
 
-	<div>
-	Back to the <a href="typefacet-autokern-manual.html">TypeFacet Autokern Manual</a>.
-	</div>
-
 	<h3>Step 1: Download TypeFacet</h3>
 	<ul>
 	  <li><a href="https://github.com/charlesmchen/typefacet/zipball/master">Download as .zip</a></li>
@@ -125,15 +121,30 @@ section pre {
 	</div>
 	
 	<h3>Step 2: Download the dependencies</h3>
+	<div>
+		<b>Python</b>
+	</div>
 	<ul>
-	  <li>Python 2.7 or later.  TypeFacet Autokern may work with earlier versions of Python.</li>
-	  <li><a href="http://robofab.org/">robofab</a></li>
-	  <li><a href="https://github.com/defunkt/pystache/">pystache</a> (only if using --log-dst option to write html logs)</li>
-	  <li><a href="http://packages.python.org/svgwrite/">svgwrite</a> (only if using --log-dst option to write html logs)</li> 
+	  <li><a href="http://www.python.org/">Python</a> 2.7 or later.  
+			Python comes pre-installed on Mac OS X.  It is easily installed on Windows.
+		  TypeFacet Autokern may also work with earlier versions of Python, but I haven't tested this.</li>
 	</ul>
 	<div>
-		It is not necessary to install these packages into your Python installation.
-		Instead, create a "dependencies" folder in your "typefacet" folder and move these packages there.
+		<b>Python Packages</b>
+	</div>
+	<ul>
+	  <li><a href="http://robofab.org/">robofab</a> package. Tested with rev.560. Make sure to download the distribution that contains robofab's dependencies.</li>
+	  <li><a href="https://github.com/defunkt/pystache/">pystache</a> package. Only necessary if using --log-dst option to write html logs.</li>
+	  <li><a href="http://pypi.python.org/pypi/svgwrite/1.0.1">svgwrite</a> package. Only necessary if using --log-dst option to write html logs.</li> 
+	</ul>
+	<div>
+		<u>I've pre-bundled the Python packages</u> with TypeFacet in the "dependencies" subfolder, so you don't need to download them.
+	</div>
+	<div>
+		It is <b>not</b> necessary to install the Python packages in your Python installation.
+	</div>
+	<div>
+		All of these Python packages are open source. 
 	</div>
 	
 	<h3>Step 3: Test Installation</h3>
@@ -141,6 +152,9 @@ section pre {
 	  <li>Go to your Typefacet folder in Console (Mac) or Command Prompt (Windows)</li>
 	</ul>
 <pre>
+# Examples assume you expanded the TypeFacet archive 
+# in your Downloads folder.  
+
 # Mac
 cd ~/Downloads/typefacet
 
@@ -151,7 +165,7 @@ cd Downloads/typefacet
 	  <li>Invoke Autokern With Usage Switch</li>
 	</ul>
 <pre>
-# We need to temporarily append our dependencies to the Python path.
+# Temporarily append the Python dependencies to the Python path.
 
 # Mac:
 env PYTHONPATH=dependencies/robofab:dependencies/pystache:dependencies/svgwrite:python/src-main python python/src-main/autokern/Autokern.py -h
@@ -161,27 +175,34 @@ set PYTHONPATH=%PYTHONPATH%;dependencies/robofab;dependencies/pystache;dependenc
 python python/src-main/autokern/Autokern.py -h
 </pre>
 	<div>
-		Using the -h help switch (as above) should output the usage message:
+		Using the -h help switch (as above) should output the usage message, 
+		which should look something like this:
 	</div>
 <pre>
-usage: Autokern.py [-h] --ufo-src UFO_SRC --ufo-dst UFO_DST
+usage: Autokern.py [-h]
+                   --ufo-src UFO_SRC 
+                   --ufo-dst UFO_DST
                    [--log-dst LOG_DST]
                    [--glyph-pairs-to-kern GLYPH_PAIRS_TO_KERN [GLYPH_PAIRS_TO_KERN ...]]
                    [--glyphs-to-kern GLYPHS_TO_KERN [GLYPHS_TO_KERN ...]]
                    [--min-distance-ems MIN_DISTANCE_EMS]
-                   [--max-distance-ems MAX_DISTANCE_EMS] [--assess-only]
+                   [--max-distance-ems MAX_DISTANCE_EMS] 
+                   [--assess-only]
                    [--do-not-modify-side-bearings]
-                   [--allow-negative-side-bearings] [--precision PRECISION]
+                   [--allow-negative-side-bearings] 
+                   [--precision PRECISION]
                    [--intrusion-tolerance INTRUSION_TOLERANCE]
-                   [--intrusion-limit-glyph-width-fraction INTRUSION_LIMIT_GLYPH_WIDTH_FRACTION]
-                   [--min-non-intrusion-ems MIN_NON_INTRUSION_EMS]
                    [--kerning-threshold-ems KERNING_THRESHOLD_EMS]
 
 etc.
 </pre>
 
 	<div>
-	Back to the <a href="typefacet-autokern-manual.html">TypeFacet Autokern Manual</a>.
+		Congratulations, installation is complete.
+	</div>
+	
+	<div>
+		<a href="index.html">TypeFacet Autokern Home</a>
 	</div>
 	
       </section>

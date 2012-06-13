@@ -108,16 +108,20 @@ section pre {
       </header>
       
       <section>
-      
+            
         <h2>TypeFacet Autokern Manual</h2>
 
 	<div>
 	<b>Warning</b>: 
-	You will not receive usable results from Typefacet Autokern if you do not read this manual.
+	Typefacet Autokern is finicky.
+	You will not receive usable results if you do not read this manual.
 	</div>
 
+
+
+
 	<h3>
-		Glyph Anatomy
+		Terminology
 	</h3>
 	
 	<div>
@@ -125,7 +129,7 @@ section pre {
 	</div>
 
 	<div>
-	For the purposes of kerning, a glyph has the elements:
+	For the purposes of kerning, a glyph has the following elements:
 	</div>
 	<ul>
 		<li>
@@ -165,6 +169,9 @@ section pre {
 	</ul>
 		
 	
+	
+	
+	
 	<h3>
 		Installation
 	</h3>
@@ -173,6 +180,9 @@ section pre {
 	</div>
 
 
+	
+	
+	
 	
 	<h3>
 		Overview
@@ -184,25 +194,27 @@ section pre {
 		</li>
 		<li>
 			There is no "correct" default behavior.  
-			Different font styles should be kerned in very different ways.  
-			Moreover kerning is dependent on the proclivities of the type designer.
-		</li>
-		<li>
-			Autokern's behavior is very dependent on its arguments.  
-			You will almost certainly need to try different combinations of arguments to arrive at a satisfactory result.
+			Different font styles are kerned in different ways.  
+			Kerning is also dependent on the proclivities of the type designer.
+			You will need to tune Autokern's arguments to arrive at a satisfactory result.
 		</li>
 		<li>
 			Autokern's performance is very dependent on its arguments.  
 			Writing the html logs (using the <b>--log-dst</b> argument) is slow and should probably not used when kerning an entire font.
-			The --precision-ems also has a significant effect on performance. 
+			The <b>--precision-ems</b> argument also has a significant effect on performance. 
 			Values smaller than the default (0.005) are more accurate but slower.
 		</li>
 		<li>
 			When tuning Autokern's arguments, use the <b>--glyph-pairs-to-kern</b> or <b>--glyphs-to-kern</b> arguments 
-			to autokern just a specific set of glyph combinations.  
-			This will be much faster than autokerning the entire font.
+			to kern just a specific subset of glyphs or glyph pairs.  
+			This is much faster than processing the entire font.
 		</li>
 	</ul>
+
+
+
+
+
 
 	<h3>
 		Invoking TypeFacet Autokern
@@ -225,8 +237,16 @@ set PYTHONPATH=%PYTHONPATH%;dependencies/robofab;dependencies/pystache;dependenc
 python python/src-main/autokern/Autokern.py -h
 </pre>
 	<div>
-		From here on, examples will only describe the arguments to use.  Replace -h in the example above with the new arguments.
+		The <b>-h</b> help argument will print the usage message which describes all of Autokern's arguments.
 	</div>
+	<div>
+		The examples below will only describe the arguments to use.  Replace -h in the example above with new arguments.
+	</div>
+
+
+
+
+
 
 	<h3>
 		Step 1: the --min-distance-ems argument
@@ -237,7 +257,7 @@ python python/src-main/autokern/Autokern.py -h
 	</div>
 	<div>
 		Tune the <b>--min-distance-ems</b> value by
-		kerning a pair of glyphs such as T vs. T, whose profiles meet at the endpoints of two horizontal strokes.
+		kerning a pair of glyphs such as T vs. T or t vs. t whose profiles meet at the endpoints of two horizontal strokes.
 	</div>
 
 	<div>
@@ -257,18 +277,26 @@ Autokern.py \
 	--min-distance-ems 0.04 \ <-- Tune these arguments together using the same value
 	--max-distance-ems 0.04 \ <-- Tune these arguments together using the same value
 	--max-x-extrema-overlap-ems 0.0 \
-	--intrusion-tolerance 0.1 \
+	--intrusion-tolerance-ems 0.0 \
 	--precision-ems 0.005 \
 	--log-dst out \
-	--glyph-pairs-to-kern T T
+	--glyph-pairs-to-kern T T \
+	--write-kerning-pair-logs
 </pre>
 
+<h3>
+	Tuning Autokern Arguments
+</h3>
 <div>
 	There are two ways to review the results.  
 	You can open the output .ufo file in a font editor. 
 	A more convenient alternative is to look at Autokern's HTML logs.  
-	The <b>--log-dst</b> argument is set to "out" in the example above, so Autokern will write a HTML log for the T vs T pair to this file: "out/html/autokern-0x4E-0x4E.html".
+	We've set the <b>--log-dst</b> and <b>--write-kerning-pair-logs</b> arguments, 
+	so Autokern will write a HTML log for the T vs T pair to this file: "out/html/autokern-0x4E-0x4E.html".
 	<a href="autokern-pair-example-0.html">Example</a>.
+</div>
+<div>
+	To tune an argument, modify it's value, re-run Autokern, then refresh the browser window that contains the HTML log.
 </div>
 
 
@@ -304,10 +332,11 @@ Autokern.py \
 	--min-distance-ems 0.04 \
 	--max-distance-ems 0.1 \ <-- Tune this value
 	--max-x-extrema-overlap-ems 0.0 \
-	--intrusion-tolerance 0.0 \
+	--intrusion-tolerance-ems 0.0 \
 	--precision-ems 0.005 \
 	--log-dst out \
-	--glyph-pairs-to-kern N N 
+	--glyph-pairs-to-kern N N \
+	--write-kerning-pair-logs
 </pre>
 
 
@@ -318,7 +347,6 @@ Autokern.py \
 	</h3>
 <div>
 	The <b>--intrusion-tolerance-ems</b> argument defines the maximum amount to which the glyphs can "intrude" into the spacing between them.
-	This argument defines not a length but an area: an area of size --intrusion-tolerance-ems X 1.0 em = intrusion area em^2.
 </div>
 <div>
 	For example, if you are working with a serif font, your results for the N vs. N kerning (see above) ought to look something like this:
@@ -351,10 +379,11 @@ Autokern.py \
 	--min-distance-ems 0.04 \
 	--max-distance-ems 0.1 \
 	--max-x-extrema-overlap-ems 0.0 \
-	--intrusion-tolerance 0.1 \ <-- Tune this value
+	--intrusion-tolerance-ems 0.1 \ <-- Tune this value
 	--precision-ems 0.005 \
 	--log-dst out \
-	--glyph-pairs-to-kern N N 
+	--glyph-pairs-to-kern N N \
+	--write-kerning-pair-logs
 </pre>
 
 
@@ -370,7 +399,7 @@ Autokern.py \
 
 	<div>
 		The <b>--max-x-extrema-overlap-ems</b> argument limits the extent to which the x-extrema of glyphs can overlap.  
-		x-extrema overlap does not mean contour overlap.
+		Do not confuse x-extrema overlap with contour overlap.
 	</div>
 	<div>
 		Tune the <b>--max-x-extrema-overlap-ems</b> value by
@@ -382,8 +411,8 @@ Autokern.py \
 	</div>
 
 <div>
-	If the <b>--max-x-extrema-overlap-ems</b> argument can be negative, it will have the effect
-	of maintaining a minimum spacing between the glyphs' x-extrema.
+	If the <b>--max-x-extrema-overlap-ems</b> argument is negative, Autokern
+	will maintain a minimum spacing between the glyphs' x-extrema.
 </div>
 
 <pre>
@@ -395,17 +424,69 @@ Autokern.py \
 	--min-distance-ems 0.04 \
 	--max-distance-ems 0.1 \
 	--max-x-extrema-overlap-ems 0.1 \ <-- Tune this value
-	--intrusion-tolerance 0.1 \ 
+	--intrusion-tolerance-ems 0.1 \ 
 	--precision-ems 0.005 \
 	--log-dst out \
-	--glyph-pairs-to-kern V A
+	--glyph-pairs-to-kern V A \
+	--write-kerning-pair-logs
 </pre>
 
+	<h3>
+		Further Tuning
+	</h3>
 
-
-
+	<ul>
+		<li>
+			To kern an entire font, remove the <b>--glyph-pairs-to-kern</b> or <b>--glyphs-to-kern</b> arguments.
+		</li>
+		<li>
+			When kerning an entire font, do not use the <b>--write-kerning-pair-logs</b> argument 
+			as writing a log file for each kerning pair combination will be very slow.
+		</li>
+		<li>
+			Use the <b>--disparity-log-count</b> argument to write "disparity" logs which document the largest differences 
+			between the original kerning and Autokern's kerning.
+			<a href="league_gothic_disparities/disparity-0.html">Example</a>.
+		</li>
+		<li>
+			The "sample texts" log compares a series of short texts with original and Autokern kerning. 
+			<a href="league_gothic_sample_texts.html">Example</a>.
+		</li>
+		<li>
+			If the <b>--do-not-modify-side-bearings</b> argument is present,
+			Autokern will preserve the original side bearings.
+		</li>
+		<li>
+			Side bearings can be negative, ie. within the x-extrema of a glyph.
+			The <b>--allow-negative-side-bearings</b> argument enables such side bearings.
+		</li>
+		<li>
+			If the <b>--kerning-threshold-ems</b> argument is present, 
+			Autokern will discard kerning values less than this value.
+		</li>
+		<li>
+			If the <b>--max-kerning-pairs</b> argument is present, 
+			Autokern will only output the N largest kerning values.
+		</li>
+		<li>
+			In addition to the <b>--max-x-extrema-overlap-ems</b> argument, 
+				you can use the <b>--x-extrema-overlap-scaling</b> argument to tune x-extrema overlap.
+			To scale down x-extrema overlaps to 1/3 of their normal size, 
+			use a <b>--x-extrema-overlap-scaling</b> value of 0.333.
+			<b>--x-extrema-overlap-scaling</b> does not effect kerning pairs that do not have x-extrema overlap.
+		</li>
+		<li>
+		</li>
+		<li>
+		</li>
+	</ul>
+	
 
 	<div>
+	</div>
+
+	<div>
+		<a href="index.html">TypeFacet Autokern Home</a>
 	</div>
 
 <a name="bottom"> </a>
