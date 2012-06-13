@@ -74,6 +74,9 @@ section div.back_link_bottom {
 	        	<b>Maximum x-extrema Overlap: {{max_x_extrema_overlap_ems}}</b>
         	</li>
         	<li>
+	        	<b>x-extrema Overlap Scaling: {{x_extrema_overlap_scaling}}</b>
+        	</li>
+        	<li>
 	        	<b>Kerning Threshold: {{kerning_threshold_ems}}</b>
         	</li>
         </ul>

@@ -104,6 +104,9 @@ AUTOKERN_SEGMENT_PRECISION = 16
 USE_CACHED_KERNING_MAP = False
 #USE_CACHED_KERNING_MAP = True
 
+DEBUG_h_n_ISSUE = True
+DEBUG_h_n_ISSUE = False
+
 
 def formatGlyphUnicode(glyph):
     if glyph.unicode is None:
@@ -770,6 +773,9 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
             self.writeLogFile('autokern_disparity_template.txt',
                               getDisparityFilename(index),
                               'Disparities: ' + groupName,
+                              '''
+    The top disparities between the original kerning and Autokern's kerning.
+                              ''',
                               '%d' % (index + 1),
                               mustacheMap)
 
@@ -971,6 +977,13 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
 #                    '''
 #                    rowSpacing = None
 
+#                if rowSpacing >= self.max_distance * 2:
+#                if rowSpacing >= self.max_distance:
+#                    '''
+#                    Treat gaps of more than N * --max-distance to be section breaks.
+#                    '''
+#                    rowSpacing = None
+
 #            print 'rowSpacing', rowSpacing
 
             if rowSpacing is None:
@@ -985,6 +998,64 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
 
         if len(sectionRowSpacings) > 0:
             sections.append(sectionRowSpacings)
+
+        if DEBUG_h_n_ISSUE:
+            print 'sections.0', len(sections), [len(section) for section in sections]
+            print 'sections.0', len(sections), sections
+
+
+        '''
+        We need to trim the sections that have huge gaps at the top and/or bottom.
+        Consider h vs. h.  The huge space between the top stems distorts the
+        profile and causes their bottoms to be kerned too closely.
+
+        To resolve this, we trim large continuous gaps at the top or bottom
+        of a section.  The gaps must be entirely greater than self.max_distance.
+
+        We leave up to self.max_distance * 0.5 of the gap, so that beaks
+        and arms are kerned closer.  For example, t vs. L or r vs. a.
+
+        This isn't an ideal solution.  It might better to add a new argument that
+        discards sections below a certain length.
+        '''
+        def trimSection(section):
+            headCount = 0
+            for index, x_offset in enumerate(section):
+#                print 'index, x_offset', index, x_offset
+                if x_offset < self.max_distance:
+                    break
+                headCount = index
+            tailCount = 0
+            for index, x_offset in enumerate(reversed(section)):
+#                print 'reversed index, x_offset', index, x_offset
+                if x_offset < self.max_distance:
+                    break
+                tailCount = index
+            maxPadding = int(round(self.max_distance * 0.5 / self.precision))
+            headTrimCount = max(0, headCount - maxPadding)
+            tailTrimCount = max(0, tailCount - maxPadding)
+            if headTrimCount + tailTrimCount >= len(section):
+                return []
+#            print 'section', len(section)
+#            print 'maxPadding', maxPadding, 'self.max_distance', self.max_distance, 'self.precision', self.precision
+#            print 'headCount', headCount, 'headTrimCount', headTrimCount
+#            print 'tailCount', tailCount, 'tailTrimCount', tailTrimCount
+            if tailTrimCount > 0:
+                return section[headTrimCount:-tailTrimCount]
+            else:
+                return section[headTrimCount:]
+
+        trimmedSections = []
+        for section in sections:
+            section = trimSection(section)
+            if len(section) > 0:
+                trimmedSections.append(section)
+        sections = trimmedSections
+
+
+        if DEBUG_h_n_ISSUE:
+            print 'sections.1', len(sections), [len(section) for section in sections]
+            print 'sections.1', len(sections), sections
 
 #        print 'sections', sections
 
@@ -1084,7 +1155,8 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
         highInvalidIntrusionOffset = int(math.ceil(self.intrusion_tolerance))
         while True:
             intrusionOffset = int(round((lowValidIntrusionOffset + highInvalidIntrusionOffset) / 2))
-#            print 'intrusionOffset', intrusionOffset, 'lowValidIntrusionOffset', lowValidIntrusionOffset, 'highInvalidIntrusionOffset', highInvalidIntrusionOffset
+            if DEBUG_h_n_ISSUE:
+                print 'intrusionOffset', intrusionOffset, 'lowValidIntrusionOffset', lowValidIntrusionOffset, 'highInvalidIntrusionOffset', highInvalidIntrusionOffset
 
             if intrusionOffset in ( lowValidIntrusionOffset,
                                     highInvalidIntrusionOffset, ):
@@ -1291,8 +1363,12 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
         profileMax1, _ = self.dstCache.getCachedValue('getGlyphProfilesInflateMax %s' % ufoglyph1.name, getGlyphProfilesInflateMax, contours1)
         self.timing.mark('processKerningPair.016')
 
+        if DEBUG_h_n_ISSUE:
+            print ufoglyph0.name, ufoglyph1.name, 'findMinProfileAdvance(profile0, profileMin1)'
         minDistanceAdvance0 = self.findMinProfileAdvance(profile0, profileMin1)
         self.timing.mark('processKerningPair.020')
+        if DEBUG_h_n_ISSUE:
+            print ufoglyph0.name, ufoglyph1.name, 'findMinProfileAdvance(profileMin0, profile1)'
         minDistanceAdvance1 = self.findMinProfileAdvance(profileMin0, profile1)
         self.timing.mark('processKerningPair.021')
 
@@ -1316,8 +1392,12 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
         if debugKerning:
             print 'minDistanceAdvance0', minDistanceAdvance0, 'minDistanceAdvance1', minDistanceAdvance1, 'minDistanceAdvance', minDistanceAdvance
 
+        if DEBUG_h_n_ISSUE:
+            print ufoglyph0.name, ufoglyph1.name, 'findMinProfileAdvance_withIntrusion(profile0, profileMax1)'
         intrudingAdvance0 = self.findMinProfileAdvance_withIntrusion(profile0, profileMax1)
         self.timing.mark('processKerningPair.022')
+        if DEBUG_h_n_ISSUE:
+            print ufoglyph0.name, ufoglyph1.name, 'findMinProfileAdvance_withIntrusion(profileMax0, profile1)'
         intrudingAdvance1 = self.findMinProfileAdvance_withIntrusion(profileMax0, profile1)
         self.timing.mark('processKerningPair.023')
 
@@ -1334,20 +1414,24 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
         if debugKerning:
             print 'intrudingAdvance0', intrudingAdvance0, 'intrudingAdvance1', intrudingAdvance1, 'intrudingAdvance', intrudingAdvance
 
+
 #        intruding_x_extrema_overlap = minmax0.maxX - (minmax1.minX + intrudingAdvance)
 #        print 'intruding_x_extrema_overlap', intruding_x_extrema_overlap
 
         '''
         Now combine results into the final advance value.
         1. Start with the "intruding advance."
-        2. Make sure advance is at least the "minimum advance."
         '''
 
 #        if minDistanceAdvance is None:
 #            advance = minmax0.maxX + self.min_distance - minmax1.minX
 #            advance = minDistanceAdvance
+        advance = intrudingAdvance
 
-        advance = maxAdvance(minDistanceAdvance, intrudingAdvance)
+        '''
+        2. Make sure advance is at least the "minimum advance."
+        '''
+        advance = maxAdvance(advance, intrudingAdvance)
 #        if advance is None:
 #            '''
 #            If no collisions between the glyph profiles, use x-extrema
@@ -1358,7 +1442,24 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
 #            advance = minmax0.maxX + self.min_distance - minmax1.minX
 
         '''
-        3. Make sure the "x-extrema overlap" is not greater than the "max x-extrema overlap".
+        3. Apply --x-extrema-overlap-scaling argument.
+        '''
+        x_extrema_overlap = minmax0.maxX - (minmax1.minX + advance)
+        if x_extrema_overlap > 0:
+            '''
+            If x-extrema are overlapping, adjust advance accordingly.
+            '''
+#            print
+#            print ufoglyph0.name, ufoglyph1.name
+#            print 'advance', advance
+#            print 'x_extrema_overlap, self.x_extrema_overlap_scaling', x_extrema_overlap, self.x_extrema_overlap_scaling
+            scaled_x_extrema_overlap = x_extrema_overlap * self.x_extrema_overlap_scaling
+#            print 'scaled_x_extrema_overlap', scaled_x_extrema_overlap
+            advance += x_extrema_overlap - scaled_x_extrema_overlap
+#            print 'advance\'', advance
+
+        '''
+        4. Make sure the "x-extrema overlap" is not greater than the "max x-extrema overlap".
         '''
 #        print '!!!', 'minDistanceAdvance, intrudingAdvance', minDistanceAdvance, intrudingAdvance
 #        print '!!!', 'minmax0.maxX, minmax1.minX, advance', minmax0.maxX, minmax1.minX, advance
@@ -1382,12 +1483,13 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
 
         if x_extrema_overlap > pair_max_x_extrema_overlap:
 #            print
-#            print 'overlap', ufoglyph0.name, ufoglyph1.name
-#            print 'minmax0.maxX, minmax1.minX', minmax0.maxX, minmax1.minX, 'advance', advance
-#            print 'x_extrema_overlap, self.max_x_extrema_overlap', x_extrema_overlap, self.max_x_extrema_overlap
-#            print 'advance.0', advance
+#            print ufoglyph0.name, ufoglyph1.name
+#            print 'advance', advance
+#            print 'x_extrema_overlap, pair_max_x_extrema_overlap', x_extrema_overlap, pair_max_x_extrema_overlap
             advance += x_extrema_overlap - pair_max_x_extrema_overlap
-#            print 'advance.1', advance
+#            print 'advance\'', advance
+
+        advance = int(round(advance))
 
 #        print 'advanceLimit', advanceLimit, 'advance', advance
 
@@ -1583,6 +1685,7 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
                           advance,
                           (
                               ('--max-x-extrema-overlap-ems', 'max_x_extrema_overlap_in_ems',),
+                              ('--x-extrema-overlap-scaling', 'x_extrema_overlap_scaling',),
                           ))
             self.timing.mark('processKerningPair.68')
 
@@ -1637,6 +1740,9 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
             self.writeLogFile('autokern_pair_template.txt',
                               logFilename,
                               'Kerning Pairs',
+                              '''
+    Logs that document the kerning process for each glyph pair kerned by Autokern.
+                              ''',
                               ('%s vs. %s' % (ufoglyph0.name, ufoglyph1.name,)),
                               mustacheMap)
 
@@ -2508,6 +2614,9 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
         self.writeLogFile('autokern_samples_template.txt',
                           'sample_texts.html',
                           'Sample Texts',
+                              '''
+    Side-by-side comparisons of short texts using the original kerning and Autokern's kerning.
+                              ''',
                           'Sample Texts',
                           mustacheMap)
 
@@ -2519,9 +2628,11 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
             return
         print 'Writing log index...'
 
+        groupDescriptionMap = {}
         groupNames = []
         groupItemsMap = {}
-        for groupName, filename, logShortname in self.logFileTuples:
+        for groupName, groupDescription, filename, logShortname in self.logFileTuples:
+            groupDescriptionMap[groupName] = groupDescription
             groupItemsMap[groupName] = groupItemsMap.get(groupName, []) + [(filename, logShortname,)]
             if groupName not in groupNames:
                 groupNames.append(groupName)
@@ -2539,6 +2650,7 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
                 logGroupItems = logGroupItems[:100]
                 groupSuffix = '...'
             logGroupMaps.append({'logGroupName': groupName,
+                                 'logGroupDescription': groupDescriptionMap[groupName],
                                  'logGroupItems': logGroupItems,
                                  'groupSuffix': groupSuffix,
                                  })
@@ -2556,10 +2668,14 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
                           'index.html',
                           None,
                           None,
+                          None,
                           mustacheMap)
 
 
-    def writeLogFile(self, templateFilename, logFilename, groupName, logShortname, mustacheMap):
+    def writeLogFile(self,
+                     templateFilename, logFilename,
+                     groupName, groupDescription,
+                     logShortname, mustacheMap):
 
         import tfs.common.TFSProject as TFSProject
 #        dataFolder = os.path.abspath(os.path.join(TFSProject.findProjectRootFolder(), 'data'))
@@ -2593,7 +2709,7 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
             f.write(logHtml)
 
         if groupName is not None:
-            self.logFileTuples.append( (groupName, logFilename, logShortname,) )
+            self.logFileTuples.append( (groupName, groupDescription, logFilename, logShortname,) )
 
 
     def process(self):

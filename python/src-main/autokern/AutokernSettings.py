@@ -65,12 +65,43 @@ END OF TERMS AND CONDITIONS
 '''
 
 
+import argparse
+import types
+
 from tfs.common.TFBaseSettings import TFBaseSettings
 #import tfs.common.UnicodeCharacterNames as UnicodeCharacterNames
-import argparse
 
 
 class AutokernSettings(TFBaseSettings):
+
+    def boundedFloat(self, minValue, maxValue):
+        def typeFunction(value):
+            try:
+                floatValue = float(value)
+            except ValueError, e:
+                raise argparse.ArgumentTypeError('Invalid value: ' + value)
+            if not (minValue <= floatValue <= maxValue):
+                raise argparse.ArgumentTypeError('%0.3f not between %0.3f and %0.3f' % ( floatValue, minValue, maxValue) )
+            return floatValue
+        return typeFunction
+
+    def boundedInt(self, minValue=None, maxValue=None):
+        def typeFunction(value):
+            try:
+                intValue = int(value)
+            except ValueError, e:
+                raise argparse.ArgumentTypeError('Invalid value: ' + value)
+            if minValue is not None and maxValue is not None:
+                if not (minValue <= intValue <= maxValue):
+                    raise argparse.ArgumentTypeError('%d not between %d and %d' % ( intValue, minValue, maxValue) )
+            elif minValue is not None:
+                if not (minValue <= intValue):
+                    raise argparse.ArgumentTypeError('%d not greater than %d' % ( intValue, minValue) )
+            elif maxValue is not None:
+                if not (intValue <= maxValue):
+                    raise argparse.ArgumentTypeError('%d not less than %d' % ( intValue, maxValue) )
+            return intValue
+        return typeFunction
 
 #    def codePointType(self, value):
 #        if value.startswith('0x'):
@@ -136,7 +167,7 @@ class AutokernSettings(TFBaseSettings):
                             action='store_true',
                             help='Write HTML logs for each kerning pair.')
         parser.add_argument('--disparity-log-count',
-                            type=int,
+                            type=self.boundedInt(minValue=0),
                             default=10,
                             help='The number of disparity logs to write. Default: 10')
 
@@ -167,11 +198,11 @@ class AutokernSettings(TFBaseSettings):
                             partners.adobe.com/public/developer/en/opentype/aglfn13.txt
                             ''')
         parser.add_argument('--min-distance-ems',
-                            type=self.em01Type,
+                            type=self.boundedFloat(0.0, 1.0),
                             default=0.025,
                             help='The absolute minimum distance between glyphs in ems. 0.0 <= x <= 1.0. Default: 0.025 em')
         parser.add_argument('--max-distance-ems',
-                            type=self.em01Type,
+                            type=self.boundedFloat(0.0, 1.0),
                             default=0.08,
                             help='''
                             The absolute maximum distance between glyphs in ems.
@@ -204,7 +235,7 @@ class AutokernSettings(TFBaseSettings):
 #                            help='The slope of oblique fonts is defined as rise/run (1.0/0.0 for non-oblique fonts).')
 
         parser.add_argument('--precision-ems',
-                            type=self.em01Type,
+                            type=self.boundedFloat(0.0, 1.0),
                             default=0.005,
                             help='''
                             Precision of the algorithm.
@@ -214,7 +245,7 @@ class AutokernSettings(TFBaseSettings):
                             Default: 0.005.
                             ''')
         parser.add_argument('--intrusion-tolerance-ems',
-                            type=self.em01Type,
+                            type=self.boundedFloat(0.0, 1.0),
                             default=0.05,
                             help='''
                             Intrusion tolerance in ems.
@@ -222,23 +253,32 @@ class AutokernSettings(TFBaseSettings):
                             Default: 0.1.
                             ''')
         parser.add_argument('--max-x-extrema-overlap-ems',
-                            type=self.em01Type,
+                            type=self.boundedFloat(-1.0, 1.0),
                             default=0.1,
                             help='''
                             The maximum overlap of the x-extrema of the glyphs being kerned in ems.
-                            0.0 <= x <= 1.0.
+                            A negative value implies a minimum x-extrema distance.
+                            -1.0 <= x <= 1.0.
                             Default: 0.1 em.
+                            ''')
+        parser.add_argument('--x-extrema-overlap-scaling',
+                            type=self.boundedFloat(0.0, 1.0),
+                            default=1.0,
+                            help='''
+                            Can be used to scale x-extrema overlap.
+                            0.0 <= x <= 1.0.
+                            Default: 1.0.
                             ''')
 #        parser.add_argument('--min-non-intrusion-ems',
 #                            type=self.em01Type,
 #                            default=0.2,
 #                            help='The minimum non-intruding height in ems.  0.0 <= x <= 1.0. Default: 0.2 em')
         parser.add_argument('--kerning-threshold-ems',
-                            type=self.em01Type,
+                            type=self.boundedFloat(0.0, 1.0),
                             default=0.01,
                             help='Kerning values smaller than this threshold will be ignored.  0.0 <= x <= 1.0. Default: 0.01 em')
         parser.add_argument('--max-kerning-pairs',
-                            type=int,
+                            type=self.boundedInt(minValue=1),
                             help='Limits the number of kerning values.')
 
         return parser
