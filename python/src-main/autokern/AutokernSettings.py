@@ -269,10 +269,6 @@ class AutokernSettings(TFBaseSettings):
                             0.0 <= x <= 1.0.
                             Default: 1.0.
                             ''')
-#        parser.add_argument('--min-non-intrusion-ems',
-#                            type=self.em01Type,
-#                            default=0.2,
-#                            help='The minimum non-intruding height in ems.  0.0 <= x <= 1.0. Default: 0.2 em')
         parser.add_argument('--kerning-threshold-ems',
                             type=self.boundedFloat(0.0, 1.0),
                             default=0.01,

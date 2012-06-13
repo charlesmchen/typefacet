@@ -139,17 +139,17 @@ def mergeMustacheMaps(srcMap, dstMap, prefix):
 def formatEms(value):
     return '%0.3f em' % (value,)
 
+
 class AutokernCache(TFSMap):
 
     def __init__(self):
         TFSMap.__init__(self)
-        self.valueCache = {}
 
     def getCachedValue(self, key, func, *argv):
-        if key in self.valueCache:
-            return self.valueCache[key]
+        if key in self:
+            return self[key]
         result = func(*argv)
-        self.valueCache[key] = result
+        self[key] = result
         return result
 
     def getGlyphContours(self, ufoglyph):
@@ -167,11 +167,66 @@ class AutokernCache(TFSMap):
 
 class Autokern(TFSMap):
 
-    def __init__(self):
+    def __init__(self, argumentsMap):
         TFSMap.__init__(self)
+        self.argumentsMap = argumentsMap
+        for key, value in argumentsMap.items():
+            setattr(self, key, value)
+
 
     def formatUnitsInEms(self, value):
         return formatEms(value / float(self.units_per_em))
+
+    def addSidebarMustacheMap(self, mustacheMap, kerned):
+        vars = (
+                ( 'Family', 'familyName',),
+                ( 'Style', 'styleName',),
+                ( 'Units per em', 'units_per_em',),
+                ( 'Ascender', 'ascender_ems',),
+                ( 'Descender', 'descender_ems',),
+                ( 'Minimum Distance', 'min_distance_ems',),
+                ( 'Maximum Distance', 'max_distance_ems',),
+                ( 'Precision', 'precision_ems',),
+                ( 'Intrusion Tolerance', 'intrusion_tolerance_ems',),
+                ( 'Maximum x-extrema Overlap', 'max_x_extrema_overlap_ems',),
+                ( 'x-extrema Overlap Scaling', 'x_extrema_overlap_scaling',),
+                ( 'Glyph Count', 'glyph_count',),
+                )
+        if kerned:
+            vars += (
+                ( 'Kerned Pairs', 'kerned_pairs_count',),
+                ( 'Valid Kerning Values', 'valid_kerned_pairs_count',),
+                ( 'Final Kerning Values', 'final_kerned_pairs_count',),
+                # (--kerning-threshold-ems', 'kerning_threshold_ems}})
+                # (--max-kerning-pairs', 'max_kerning_pairs}})
+                )
+        varMaps = []
+        for name, key in vars:
+            varMaps.append({'sidebarVarName': name,
+                            'sidebarVarValue': mustacheMap[key],
+                            })
+        mustacheMap['sidebarVars'] = varMaps
+
+        argMaps = []
+        for key, value in self.argumentsMap.items():
+            if key in ('ufo_src',
+                       'ufo_dst',
+                       'log_dst',
+                       ):
+                continue
+            if value is None:
+                continue
+            if type(value) == types.BooleanType:
+                if value:
+                    argMaps.append({'sidebarVarName': '--' + key.replace('_', '-'),
+                                    'sidebarVarValue': '',
+                                    })
+                continue
+            argMaps.append({'sidebarVarName': '--' + key.replace('_', '-'),
+                            'sidebarVarValue': value,
+                            })
+        mustacheMap['sidebarArgs'] = argMaps
+
 
     def makeDefaultMustacheMap(self, localsMap=None):
 
@@ -675,18 +730,20 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
         return disparities
 
 
-    def logDisparitiesGroup(self, disparities, groupName, unicodeCategoryPrefixes=None, unicodeCategoryExceptions=None):
+    def logDisparitiesGroup(self, disparities, groupName, filterFunc=None):
 
         '''
         We're only interested in the top 100 disparities.
         '''
         self.disparity_log_count = max(0, self.disparity_log_count)
 
-        if unicodeCategoryPrefixes is not None:
+        # Remove empty values.
+        disparities = [disparity for disparity in disparities if disparity.disparity != 0]
+
+        if filterFunc is not None:
             filtered_disparities = []
             for disparity in disparities:
-                if (self.hasUnicodeCategoryPrefix(disparity.srcKerning.ufoglyph0, prefixes=unicodeCategoryPrefixes, exceptions=unicodeCategoryExceptions) and
-                    self.hasUnicodeCategoryPrefix(disparity.srcKerning.ufoglyph1, prefixes=unicodeCategoryPrefixes, exceptions=unicodeCategoryExceptions)):
+                if filterFunc(disparity.srcKerning.ufoglyph0, disparity.srcKerning.ufoglyph1):
                     filtered_disparities.append(disparity)
                     if len(filtered_disparities) >= self.disparity_log_count:
                         break
@@ -751,6 +808,7 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
             mergeMustacheMaps(disparity.dstKerning.minmax1, localsMap, 'dst1_')
 
             mustacheMap = self.makeDefaultMustacheMap(localsMap=localsMap)
+            self.addSidebarMustacheMap(mustacheMap, kerned=True)
 
             mustacheMap.update({
                            'pageTitle0': pageTitle0,
@@ -793,18 +851,39 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
         disparities = self.findDisparities()
 
         self.logDisparitiesGroup(disparities, 'All')
-        self.logDisparitiesGroup(disparities, 'Letters And Numbers', ('L','N',), ('Lm',))
 
-#        '''
-#        The unicodedata glyph categories are:
-#        L Letter
-#        M Mark
-#        N Number
-#        P Punctuation
-#        Z Separator
-#        S Symbol
-#        C Other
-#        '''
+        '''
+        The unicodedata glyph categories are:
+        L Letter
+        M Mark
+        N Number
+        P Punctuation
+        Z Separator
+        S Symbol
+        C Other
+        '''
+        def lettersAndNumbersFilter(ufoglyph0, ufoglyph1):
+            unicodeCategoryPrefixes = ('L','N',)
+            unicodeCategoryExceptions = ('Lm',)
+            return (self.hasUnicodeCategoryPrefix(ufoglyph0, prefixes=unicodeCategoryPrefixes, exceptions=unicodeCategoryExceptions) and
+                    self.hasUnicodeCategoryPrefix(ufoglyph1, prefixes=unicodeCategoryPrefixes, exceptions=unicodeCategoryExceptions))
+        self.logDisparitiesGroup(disparities, 'Letters And Numbers', filterFunc=lettersAndNumbersFilter)
+
+        def isRomanLetter(ufoglyph):
+            if len(ufoglyph.name) != 1:
+                return False
+            return ord('A') <= ord(ufoglyph.name.upper()) <= ord('Z')
+        def romanLettersFilter(ufoglyph0, ufoglyph1):
+            return isRomanLetter(ufoglyph0) and isRomanLetter(ufoglyph1)
+        self.logDisparitiesGroup(disparities, 'Roman Letters', filterFunc=romanLettersFilter)
+
+        def isArabNumeral(ufoglyph):
+            if ufoglyph.unicode is None:
+                return False
+            return ord('0') <= ufoglyph.unicode <= ord('9')
+        def arabNumeralsFilter(ufoglyph0, ufoglyph1):
+            return isArabNumeral(ufoglyph0) and isArabNumeral(ufoglyph1)
+        self.logDisparitiesGroup(disparities, 'Arab Numerals', filterFunc=arabNumeralsFilter)
 
 
     def getFilenamePrefixPair(self, prefix, ufoglyph0, ufoglyph1):
@@ -1004,21 +1083,62 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
             print 'sections.0', len(sections), sections
 
 
-        '''
-        We need to trim the sections that have huge gaps at the top and/or bottom.
-        Consider h vs. h.  The huge space between the top stems distorts the
-        profile and causes their bottoms to be kerned too closely.
+        def splitSection(section):
+            '''
+            We need to split sections that have large internal gaps.
+            Consider C vs. O.  If the mouth of the C is too large,
+            it cases the upper and lower arms of the C to be kerned too
+            closely to the next glyph.
 
-        To resolve this, we trim large continuous gaps at the top or bottom
-        of a section.  The gaps must be entirely greater than self.max_distance.
+            To resolve this, we split sections with large continuous internal gaps.
+            The gaps must be entirely deeper and longer than self.max_distance.
 
-        We leave up to self.max_distance * 0.5 of the gap, so that beaks
-        and arms are kerned closer.  For example, t vs. L or r vs. a.
+            We leave up to self.max_distance of the gap around the split which
+            will be trimmed by the next phase anyhow.
+            '''
 
-        This isn't an ideal solution.  It might better to add a new argument that
-        discards sections below a certain length.
-        '''
+            maxGapLength = int(round(self.max_distance * 1.0 / self.precision))
+            lastValidIndex = None
+            for index, x_offset in enumerate(section):
+#                print 'index, x_offset', index, x_offset
+                if x_offset < self.max_distance:
+                    if lastValidIndex is not None:
+                        gapLength = index - lastValidIndex
+                        if gapLength >= maxGapLength:
+                            left = section[:index]
+                            right = section[lastValidIndex + 1:]
+#                            print 'maxGapLength', maxGapLength, 'gapLength', gapLength, 'self.max_distance', self.max_distance
+#                            print 'left', left
+#                            print 'right', right
+                            return splitSection(left) + splitSection(right)
+
+                    lastValidIndex = index
+
+            return [section,]
+
+#        print 'splitSections.0', len(sections)
+        splitSections = []
+        for section in sections:
+            splitSections.extend(splitSection(section))
+        sections = splitSections
+#        print 'splitSections.1', len(sections)
+
+
         def trimSection(section):
+            '''
+            We need to trim the sections that have huge gaps at the top and/or bottom.
+            Consider h vs. h.  The huge space between the top stems distorts the
+            profile and causes their bottoms to be kerned too closely.
+
+            To resolve this, we trim large continuous gaps at the top or bottom
+            of a section.  The gaps must be entirely greater than self.max_distance.
+
+            We leave up to self.max_distance * 0.5 of the gap, so that beaks
+            and arms are kerned closer.  For example, t vs. L or r vs. a.
+
+            This isn't an ideal solution.  It might better to add a new argument that
+            discards sections below a certain length.
+            '''
             headCount = 0
             for index, x_offset in enumerate(section):
 #                print 'index, x_offset', index, x_offset
@@ -1713,6 +1833,7 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
             localsMap.update(locals())
 
             mustacheMap = self.makeDefaultMustacheMap(localsMap=localsMap)
+            self.addSidebarMustacheMap(mustacheMap, kerned=False)
 
             logSectionMaps = []
             for logSection in logSections:
@@ -2606,6 +2727,7 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
         pageTitle = u'Autokern Sample Texts'
 
         mustacheMap = self.makeDefaultMustacheMap(localsMap=locals())
+        self.addSidebarMustacheMap(mustacheMap, kerned=True)
         mustacheMap.update({
                    'pageTitle': pageTitle,
                    'sampleTextsMaps': sampleTextsMaps,
@@ -2659,6 +2781,7 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
         pageTitle = u'Autokern Results'
 
         mustacheMap = self.makeDefaultMustacheMap(localsMap=locals())
+        self.addSidebarMustacheMap(mustacheMap, kerned=True)
         mustacheMap.update({
                    'pageTitle': pageTitle,
                    'logGroupMaps': logGroupMaps,

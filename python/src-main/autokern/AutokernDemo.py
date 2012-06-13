@@ -70,6 +70,8 @@ import os
 from Autokern import Autokern
 from AutokernSettings import AutokernSettings
 import tfs.common.TFSProject as TFSProject
+from tfs.common.TFSMap import TFSMap
+
 
 pseudo_argv = (
 #               '--assess-only',
@@ -80,8 +82,8 @@ pseudo_argv = (
 #               os.path.abspath(os.path.join(TFSProject.findProjectRootFolder(), 'out', 'Linden Hill-kerned.ufo')),
 
                '--ufo-src',
-               os.path.abspath(os.path.join(TFSProject.findProjectRootFolder(), 'data-ignore', 'League Gothic-kerned.old.ufo')),
-#               os.path.abspath(os.path.join(TFSProject.findProjectRootFolder(), 'data-ignore', 'theleagueof', 'theleagueof-league-gothic-4f9ff8d', 'source', 'League Gothic.ufo')),
+#               os.path.abspath(os.path.join(TFSProject.findProjectRootFolder(), 'data-ignore', 'League Gothic-kerned.old.ufo')),
+               os.path.abspath(os.path.join(TFSProject.findProjectRootFolder(), 'data-ignore', 'theleagueof', 'theleagueof-league-gothic-4f9ff8d', 'source', 'League Gothic.ufo')),
                '--ufo-dst',
                os.path.abspath(os.path.join(TFSProject.findProjectRootFolder(), 'out', 'League Gothic-kerned.ufo')),
 
@@ -111,9 +113,11 @@ pseudo_argv = (
                 os.path.abspath(os.path.join(TFSProject.findProjectRootFolder(), 'out')),
                 '--disparity-log-count',
 #                '0',
-                '10',
+#                '100',
+                '100',
 #                '--write-kerning-pair-logs',
 #                '--glyph-pairs-to-kern',
+#                'C', 'O',
 #                'h', 'h',
 #                'h', 'n',
 #                'r', 'f',
@@ -209,8 +213,9 @@ pseudo_argv = (
                )
 print 'pseudo_argv', ' '.join([str(arg) for arg in pseudo_argv])
 
-autokern = Autokern()
-AutokernSettings(autokern).getCommandLineSettings(*pseudo_argv)
+autokernArgs = TFSMap()
+AutokernSettings(autokernArgs).getCommandLineSettings(*pseudo_argv)
+autokern = Autokern(autokernArgs)
 autokern.process()
 
 print

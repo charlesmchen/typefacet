@@ -42,51 +42,23 @@ section div.back_link_bottom {
       <header>
         <h1>TypeFacet Autokern</h1>
         <ul>
+        
+{{#sidebarVars}}
         	<li>
-    	    	<b>Family: {{familyName}}</b>
+    	    	<b>{{sidebarVarName}}: {{sidebarVarValue}}</b>
         	</li>
+{{/sidebarVars}}
+        </ul>
+        
+        <h3>Arguments</h3>
+        <ul>
+
+{{#sidebarArgs}}
         	<li>
-	        	<b>Style: {{styleName}}</b>
+    	    	<b>{{sidebarVarName}}: {{sidebarVarValue}}</b>
         	</li>
-        	<li>
-	        	<b>Units per em: {{units_per_em}}</b>
-        	</li>
-        	<li>
-	        	<b>Ascender: {{ascender_ems}}</b>
-        	</li>
-        	<li>
-	        	<b>Descender: {{descender_ems}}</b>
-        	</li>
-        	<li>
-	        	<b>Minimum Distance: {{min_distance_ems}}</b>
-        	</li>
-        	<li>
-	        	<b>Maximum Distance: {{max_distance_ems}}</b>
-        	</li>
-        	<li>
-	        	<b>Precision: {{precision_ems}}</b>
-        	</li>
-        	<li>
-	        	<b>Intrusion Tolerance: {{intrusion_tolerance_ems}}</b>
-        	</li>
-        	<li>
-	        	<b>Maximum x-extrema Overlap: {{max_x_extrema_overlap_ems}}</b>
-        	</li>
-        	<li>
-	        	<b>x-extrema Overlap Scaling: {{x_extrema_overlap_scaling}}</b>
-        	</li>
-        	<li>
-	        	<b>Glyph Count: {{glyph_count}}</b>
-        	</li>
-        	<li>
-	        	<b>Kerned Pairs: {{kerned_pairs_count}}</b>
-        	</li>
-        	<li>
-	        	<b>Valid Kerned Pairs (--kerning-threshold-ems: {{kerning_threshold_ems}}): {{valid_kerned_pairs_count}}</b>
-        	</li>
-        	<li>
-	        	<b>Final Kerned Pairs (--max-kerning-pairs: {{max_kerning_pairs}}): {{final_kerned_pairs_count}}</b>
-        	</li>
+{{/sidebarArgs}}
+        
         </ul>
         <p>
           <a href="http://charlesmchen.github.com/typefacet/">TypeFacet project</a>
