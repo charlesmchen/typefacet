@@ -65,15 +65,6 @@ END OF TERMS AND CONDITIONS
 '''
 
 
-"""
-File: FTest.py
-Project: LivelyType1
-
-@author: Charles Matthew Chen (felasold@gmail.com)
-Copyright 2012 FelaSold Inc. All rights reserved.
-"""
-
-
 import unittest
 import tfs.common.TFSPoint
 

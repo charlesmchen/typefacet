@@ -887,7 +887,9 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
         def addProfilePoint(yIndex, xValue):
             if yIndex < 0 or yIndex >= len(maxProfile):
                 raise Exception('Invalid yIndex: %d' % yIndex)
-#                print 'yIndex', yIndex, 'len(profile)', len(profile)
+#            print 'yIndex', yIndex, 'len(profile)', len(profile)
+            if debug:
+                print 'yIndex', yIndex, 'xValue', xValue
             if maxProfile[yIndex] is None:
                 minProfile[yIndex] = maxProfile[yIndex] = xValue
             else:
@@ -1100,15 +1102,17 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
         if vDistance is None:
             vDistance = hDistance
 
-        if segment.startVector().length() == 0:
-            startTangent = segment.naiveEndpointTangent()
-        else:
-            startTangent = segment.startTangent()
+#        if segment.startVector().length() == 0:
+#            startTangent = segment.naiveEndpointTangent()
+#        else:
+#            startTangent = segment.startTangent()
+        startTangent = segment.startTangent()
 
-        if segment.endVector().length() == 0:
-            endTangent = segment.naiveEndpointTangent()
-        else:
-            endTangent = segment.endTangent()
+#        if segment.endVector().length() == 0:
+#            endTangent = segment.naiveEndpointTangent()
+#        else:
+#            endTangent = segment.endTangent()
+        endTangent = segment.endTangent()
 
 #        if (segment.startVector().length() == 0 or
 #            segment.endVector().length() == 0):
@@ -1140,8 +1144,8 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
             p0 = p0.plus(startOffset)
             p1 = p1.plus(endOffset)
             newScale = p0.distanceTo(p1)
-            cp0 = p0.plus(segment.startVector().scale(newScale / oldScale))
-            cp1 = p1.minus(segment.endVector().scale(newScale / oldScale))
+            cp0 = p0.plus(segment.naiveStartVector().scale(newScale / oldScale))
+            cp1 = p1.minus(segment.naiveEndVector().scale(newScale / oldScale))
             newPoints = (p0, cp0, cp1, p1)
         else:
             raise Exception('Invalid segment')
@@ -1172,9 +1176,25 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
 
 
     def makeInflatedProfile(self, contours, radius):
+
+#        segments = []
+#        circle = TFSOval(TFSPoint0(), hRadius=radius, vRadius=radius)
+#        segments.extend(circle.createPath().segments)
+#        profileLeft, profileRight = self.makeProfile(segments=segments)
+#        print 'profileLeft', len(profileLeft)
+#        print 'profileLeft', profileLeft
+#        print 'profileLeft.min', reduce(min, [value for value in profileLeft if value is not None])
+#        print 'profileLeft.max', reduce(max, [value for value in profileLeft if value is not None])
+#        print 'profileRight', len(profileRight)
+#        print 'profileRight', profileRight
+#        print 'profileRight.min', reduce(min, [value for value in profileRight if value is not None])
+#        print 'profileRight.max', reduce(max, [value for value in profileRight if value is not None])
+
         segments = []
 
         def addEndpointRounding(point):
+#            print
+#            print 'addEndpointRounding', point.description(), 'radius', radius
             circle = TFSOval(point, hRadius=radius, vRadius=radius)
             segments.extend(circle.createPath().segments)
 
@@ -1286,6 +1306,12 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
             return max(advance0, advance1)
 
         minDistanceAdvance = maxAdvance(minDistanceAdvance0, minDistanceAdvance1)
+        if minDistanceAdvance is None:
+            '''
+            If no collisions between the glyph profiles, use x-extrema
+            plus the min_distance argument.
+            '''
+            minDistanceAdvance = minmax0.maxX + self.min_distance - minmax1.minX
         minDistanceAdvance = int(round(minDistanceAdvance))
         if debugKerning:
             print 'minDistanceAdvance0', minDistanceAdvance0, 'minDistanceAdvance1', minDistanceAdvance1, 'minDistanceAdvance', minDistanceAdvance
@@ -1296,6 +1322,14 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
         self.timing.mark('processKerningPair.023')
 
         intrudingAdvance = maxAdvance(intrudingAdvance0, intrudingAdvance1)
+        if intrudingAdvance is None:
+            '''
+            If no collisions between the glyph profiles, use x-extrema
+            plus the min_distance argument.
+
+            TODO: should we use the max_distance instead?
+            '''
+            intrudingAdvance = minmax0.maxX + self.min_distance - minmax1.minX
         intrudingAdvance = int(round(intrudingAdvance))
         if debugKerning:
             print 'intrudingAdvance0', intrudingAdvance0, 'intrudingAdvance1', intrudingAdvance1, 'intrudingAdvance', intrudingAdvance
@@ -1314,14 +1348,14 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
 #            advance = minDistanceAdvance
 
         advance = maxAdvance(minDistanceAdvance, intrudingAdvance)
-        if advance is None:
-            '''
-            If no collisions between the glyph profiles, use x-extrema
-            plus the min_distance argument.
-
-            TODO: should we use the max_distance instead?
-            '''
-            advance = minmax0.maxX + self.min_distance - minmax1.minX
+#        if advance is None:
+#            '''
+#            If no collisions between the glyph profiles, use x-extrema
+#            plus the min_distance argument.
+#
+#            TODO: should we use the max_distance instead?
+#            '''
+#            advance = minmax0.maxX + self.min_distance - minmax1.minX
 
         '''
         3. Make sure the "x-extrema overlap" is not greater than the "max x-extrema overlap".
@@ -1330,12 +1364,12 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
 #        print '!!!', 'minmax0.maxX, minmax1.minX, advance', minmax0.maxX, minmax1.minX, advance
         x_extrema_overlap = minmax0.maxX - (minmax1.minX + advance)
 
-        print
-        print ufoglyph0.name, 'vs.', ufoglyph1.name
-        print 'minDistanceAdvance0', minDistanceAdvance0, 'minDistanceAdvance1', minDistanceAdvance1, 'minDistanceAdvance', minDistanceAdvance
-        print 'intrudingAdvance0', intrudingAdvance0, 'intrudingAdvance1', intrudingAdvance1, 'intrudingAdvance', intrudingAdvance
-        print 'advance', advance
-        print 'x_extrema_overlap', x_extrema_overlap
+#        print
+#        print ufoglyph0.name, 'vs.', ufoglyph1.name
+#        print 'minDistanceAdvance0', minDistanceAdvance0, 'minDistanceAdvance1', minDistanceAdvance1, 'minDistanceAdvance', minDistanceAdvance
+#        print 'intrudingAdvance0', intrudingAdvance0, 'intrudingAdvance1', intrudingAdvance1, 'intrudingAdvance', intrudingAdvance
+#        print 'advance', advance
+#        print 'x_extrema_overlap', x_extrema_overlap
 
         pair_max_x_extrema_overlap = self.max_x_extrema_overlap
 
@@ -1375,7 +1409,7 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
             logSections = []
 
             def addLogSection(title,
-                              glyphXAdvance0,
+                              glyphXAdvance0, glyphXAdvance1,
                               glyphContours0, glyphContours1,
                               glyphProfile0, glyphProfile1,
                               advanceValue,
@@ -1393,11 +1427,14 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
                 glyphMinmax1_ = minmaxPaths(glyphContours1)
 
                 variableTuples = (
-                                  ('%s (%s) left' % (ufoglyph0.name, formatUnicode(ufoglyph0.unicode),), (glyphMinmax0.minX), True,),
-                                  ('%s (%s) right' % (ufoglyph0.name, formatUnicode(ufoglyph0.unicode),), (glyphMinmax0.maxX), True,),
-                                  ('%s (%s) left' % (ufoglyph1.name, formatUnicode(ufoglyph1.unicode),), (glyphMinmax1.minX), True,),
-                                  ('%s (%s) right' % (ufoglyph1.name, formatUnicode(ufoglyph1.unicode),), (glyphMinmax1.maxX), True,),
-                                  ('%s x-advance' % (title,), self.formatUnitsInEms(glyphXAdvance0), True,),
+                                  ('%s (%s) lsb' % (ufoglyph0.name, formatUnicode(ufoglyph0.unicode),), (glyphMinmax0.minX), True,),
+                                  ('%s (%s) rsb' % (ufoglyph0.name, formatUnicode(ufoglyph0.unicode),), (glyphXAdvance0 - glyphMinmax0.maxX), True,),
+                                  ('%s (%s) right x-extrema' % (ufoglyph0.name, formatUnicode(ufoglyph0.unicode),), (glyphMinmax0.maxX), True,),
+                                  ('%s (%s) x-advance' % (ufoglyph0.name, formatUnicode(ufoglyph0.unicode),), (glyphXAdvance0), True,),
+                                  ('%s (%s) lsb' % (ufoglyph1.name, formatUnicode(ufoglyph1.unicode),), (glyphMinmax1.minX), True,),
+                                  ('%s (%s) rsb' % (ufoglyph1.name, formatUnicode(ufoglyph1.unicode),), (glyphXAdvance1 - glyphMinmax1.maxX), True,),
+                                  ('%s (%s) right x-extrema' % (ufoglyph0.name, formatUnicode(ufoglyph1.unicode),), (glyphMinmax1.maxX), True,),
+#                                  ('%s x-advance' % (title,), self.formatUnitsInEms(glyphXAdvance0), True,),
                                   ('%s kerning value' % (title,), self.formatUnitsInEms(advanceValue - glyphXAdvance0), True,),
                                   ('%s kerned x-advance' % (title,), self.formatUnitsInEms(advanceValue), True,),
                                   )
@@ -1449,7 +1486,7 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
                 return [contour.applyPlus(TFSPoint(value, 0)) for contour in contours]
 
             addLogSection('Original',
-                          srcufoglyph0.xAdvance,
+                          srcufoglyph0.xAdvance, srcufoglyph1.xAdvance,
                           srcContours0, srcContours1,
                           None, None,
                           srcKernedAdvance,
@@ -1479,7 +1516,7 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
             self.timing.mark('processKerningPair.63')
 
             addLogSection('Contact',
-                          ufoglyph0.xAdvance,
+                          ufoglyph0.xAdvance, ufoglyph1.xAdvance,
                           contours0, contours1,
                           profilePaths0, profilePaths1,
                           contactAdvance,
@@ -1491,7 +1528,7 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
             # -----------
 
             addLogSection('Minimum Distance',
-                          ufoglyph0.xAdvance,
+                          ufoglyph0.xAdvance, ufoglyph1.xAdvance,
                           contours0, contours1,
                           profilePaths0, profileMinPaths1,
                           minDistanceAdvance,
@@ -1516,7 +1553,7 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
             self.timing.mark('processKerningPair.65')
 
             addLogSection('Maximum Distance',
-                          ufoglyph0.xAdvance,
+                          ufoglyph0.xAdvance, ufoglyph1.xAdvance,
                           contours0, contours1,
                           profilePaths0, profileMaxPaths1,
                           maxDistanceAdvance,
@@ -1528,7 +1565,7 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
             # -----------
 
             addLogSection('Intruding',
-                          ufoglyph0.xAdvance,
+                          ufoglyph0.xAdvance, ufoglyph1.xAdvance,
                           contours0, contours1,
                           profilePaths0, profileMaxPaths1,
                           intrudingAdvance,
@@ -1539,8 +1576,8 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
 
             # -----------
 
-            addLogSection('Final Autokern',
-                          ufoglyph0.xAdvance,
+            addLogSection('Autokern Raw',
+                          ufoglyph0.xAdvance, ufoglyph1.xAdvance,
                           contours0, contours1,
                           profilePaths0, profileMaxPaths1,
                           advance,
@@ -1600,7 +1637,7 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
             self.writeLogFile('autokern_pair_template.txt',
                               logFilename,
                               'Kerning Pairs',
-                              ('Kerning Pair: %s vs. %s' % (ufoglyph0.name, ufoglyph1.name,)),
+                              ('%s vs. %s' % (ufoglyph0.name, ufoglyph1.name,)),
                               mustacheMap)
 
         self.timing.mark('processKerningPair.9')
@@ -1901,6 +1938,12 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
             advance = self.advanceMap[key]
             name0, name1 = key
             kerningValue = advance - glyphWidthMap[name0]
+
+#            if key in (
+#                       ('j', 'o',),
+#                        ):
+#                print 'updateKerning', key, kerningValue
+
             if abs(kerningValue) < self.kerning_threshold:
                 continue
             kerningTuples.append( ( name0, name1, kerningValue, ) )
@@ -1927,6 +1970,11 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
         self.final_kerned_pairs_count = len(kerningTuples)
 
         for name0, name1, kerningValue in kerningTuples:
+#            if (name0, name1) in (
+#                       ('j', 'o',),
+#                        ):
+#                print 'updateKerning.1', key, kerningValue
+
             self.dstUfoFont.setKerningPair(name0, name1, kerningValue)
 
 
@@ -2033,7 +2081,8 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
 
 #        for key in self.advanceMap:
 #            if key in (
-#                       ('N','N',),
+#                       ('j', 'o',),
+##                       ('N','N',),
 ##                       ('A','A',),
 ##                        ('A','F',),
 #                        ):
@@ -2092,7 +2141,8 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
                 rightSideBearing = max(0, rightSideBearing)
 
 #            if ufoglyph.name in (
-#                                 'N',
+#                       'j', 'o',
+##                                 'N',
 ##                                  'A',
 ##                                  'F',
 #                                   ):
@@ -2117,7 +2167,8 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
             ufoglyph.setXAdvance(ufoglyph.xAdvance + leftSideBearing + rightSideBearing)
 
 #            if ufoglyph.name in (
-#                                 'N',
+#                       'j', 'o',
+##                                 'N',
 ##                                  'A',
 ##                                  'F',
 #                                   ):
@@ -2138,14 +2189,16 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
 
 #        for key in self.advanceMap:
 #            if key in (
-#                       ('N','N',),
+#                       ('j', 'o',),
+##                       ('N','N',),
 ##                       ('A','A',),
 ##                        ('A','F',),
 #                        ):
 #                print 'self.advanceMap', key, self.advanceMap[key]
 #        for key in modifiedAdvanceMap:
 #            if key in (
-#                       ('N','N',),
+#                       ('j', 'o',),
+##                       ('N','N',),
 ##                       ('A','A',),
 ##                        ('A','F',),
 #                        ):
@@ -2270,7 +2323,7 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
         print
 
 
-    def convertTextToContours(self, text, ufoFont, lastKerningValues=None):
+    def convertTextToContours(self, text, ufoFont, cache, lastKerningValues=None):
         outsideContours = []
         insideContours = []
         labels = []
@@ -2287,7 +2340,7 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
 #                if len(contours) < 1:
 #                    continue
 
-            contours = self.dstCache.getGlyphContours(ufoglyph)
+            contours = cache.getGlyphContours(ufoglyph)
 #            contours = ufoglyph.getContours(warnings=False)
 #                contours = self.getGlyphContours(ufoglyph)
 
@@ -2315,12 +2368,23 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
                 else:
                     kerningValue = 0
 
+#            print
+#            print 'xOffset', xOffset
+#            print 'ufoglyph.name', ufoglyph.name
+#            print 'ufoglyph.xAdvance', ufoglyph.xAdvance
+#            print 'kerningValue', kerningValue
+#            minmax = minmaxPaths(contours)
+#            print 'minmax.raw', minmax
 
             contours = [contour.applyPlus(TFSPoint(xOffset, 0)) for contour in contours]
             minmax = minmaxPaths(contours)
 
+#            print 'minmax', minmax
+
             if kerningValue is not None:
                 xExtremaOverlap = minmax.minX - lastMinmax.maxX
+#                print 'lastMinmax', lastMinmax
+#                print 'xExtremaOverlap', xExtremaOverlap
 #                    text = '%0.0f/%s%0.0f' % (
 #                                                 float(kerningValue),
 #                                                 '+' if xExtremaOverlap > 0 else '-',
@@ -2332,6 +2396,11 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
                 if lastKerningValues is not None:
                     lastXExtremaOverlap = lastKerningValues[index - 1]
                     xExtremaOverlapDelta = xExtremaOverlap - lastXExtremaOverlap
+
+#                    print 'index', index
+#                    print 'lastXExtremaOverlap', lastXExtremaOverlap
+#                    print 'xExtremaOverlapDelta', xExtremaOverlapDelta
+
                     KERNING_HIGHLIGHT_LOW_THRESHOLD = 10
                     KERNING_HIGHLIGHT_HIGH_THRESHOLD = 20
                     if abs(xExtremaOverlapDelta) >= KERNING_HIGHLIGHT_HIGH_THRESHOLD:
@@ -2359,8 +2428,6 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
                 labels.append(label)
                 kerningValues.append( xExtremaOverlap )
 
-            lastMinmax = minmax
-
             for contour in contours:
                 if isClosedPathClockwise(contour):
                     outsideContours.append(contour)
@@ -2368,13 +2435,14 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
                     insideContours.append(contour)
 
             xOffset += ufoglyph.xAdvance
+            lastMinmax = minmax
             lastUfoGlyph = ufoglyph
 
         return outsideContours, insideContours, labels, kerningValues
 
 
-    def renderTextWithFont(self, text, ufoFont, source, fillColor, lastKerningValues=None):
-        converted = self.convertTextToContours(text, ufoFont, lastKerningValues=lastKerningValues)
+    def renderTextWithFont(self, text, ufoFont, cache, source, fillColor, lastKerningValues=None):
+        converted = self.convertTextToContours(text, ufoFont, cache, lastKerningValues=lastKerningValues)
         if converted is None:
             return {'errorMap': {'text': text,
                                  'source': source,
@@ -2417,13 +2485,14 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
                        'N-N=NtN',
                        'LTLYPJFJ',
                        'VAWML4TO',
-                       'hhnn',
+                       'hhnnhn',
+                       'JFrf',
                        )
         sampleTextsMaps = []
         for sampleText in sampleTexts:
-            sampleTextMap, kerningValues = self.renderTextWithFont(sampleText, self.srcUfoFont, 'Original', 0x7f7f7faf)
+            sampleTextMap, kerningValues = self.renderTextWithFont(sampleText, self.srcUfoFont, self.srcCache, 'Original', 0x7f7f7faf)
             sampleTextsMaps.append(sampleTextMap)
-            sampleTextMap, _ = self.renderTextWithFont(sampleText, self.dstUfoFont, 'Autokern', 0x7f7faf7f,
+            sampleTextMap, _ = self.renderTextWithFont(sampleText, self.dstUfoFont, self.dstCache, 'Autokern', 0x7f7faf7f,
                                                        lastKerningValues=kerningValues)
             sampleTextsMaps.append(sampleTextMap)
 

@@ -97,7 +97,7 @@ section h3 {
 
 <div>
 {{#logGroupItems}}
-	<a href="{{filename}}">{{logShortname}}</a>
+	<a href="{{filename}}">{{logShortname}}</a>,
 {{/logGroupItems}}
 
 {{groupSuffix}}

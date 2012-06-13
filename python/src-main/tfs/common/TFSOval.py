@@ -176,11 +176,17 @@ class TFSOval(object):
                                     self.center.x + self.hRadius,
                                     self.center.y + self.vRadius,
                                     self.center.y - self.vRadius)
+
+#        print 'self.hRadius', self.hRadius, 'self.vRadius', self.vRadius
+#        print 'self.center', self.center
+#        print 'ps', ps
+#        print 'check1', self.center.distanceTo(ps.lc)
+
         return TFSPath(True,
-                     self.createQuarterPathSegment(ps.lc, ps.tl, ps.tc),
-                     self.createQuarterPathSegment(ps.tc, ps.tr, ps.rc),
-                     self.createQuarterPathSegment(ps.rc, ps.br, ps.bc),
-                     self.createQuarterPathSegment(ps.bc, ps.bl, ps.lc))
+                       self.createQuarterPathSegment(ps.lc, ps.tl, ps.tc),
+                       self.createQuarterPathSegment(ps.tc, ps.tr, ps.rc),
+                       self.createQuarterPathSegment(ps.rc, ps.br, ps.bc),
+                       self.createQuarterPathSegment(ps.bc, ps.bl, ps.lc))
 
     def evaluate(self, angle):
         angle -= self.rotation

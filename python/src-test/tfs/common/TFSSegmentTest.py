@@ -65,15 +65,6 @@ END OF TERMS AND CONDITIONS
 '''
 
 
-"""
-File: TFSPathTest.py
-Project: LivelyType1
-
-@author: Charles Matthew Chen (felasold@gmail.com)
-Copyright 2012 FelaSold Inc. All rights reserved.
-"""
-
-
 import math
 from TFSTest import TFSTest
 from tfs.common.TFSPoint import TFSPoint, TFSPoint0

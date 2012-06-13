@@ -112,6 +112,10 @@ class TFSSegment(object):
                 raise TFSValidationException('Empty segment')
             startVector = self.startVector()
             endVector = self.endVector()
+            if startVector is None:
+                raise TFSValidationException('Empty start vector')
+            if endVector is None:
+                raise TFSValidationException('Empty end vector')
 #            if startVector.length() == 0:
 #                print 'startVector', startVector
 #                raise TFSValidationException('Empty start vector')
@@ -271,26 +275,125 @@ class TFSSegment(object):
 
     def startTangent(self):
         try:
-            return self.points[1].minus(self.points[0]).normalize()
+            return self.startVector().normalize()
+#            return self.points[1].minus(self.points[0]).normalize()
         except ZeroDivisionError, e:
             print 'Segment.normalize() ZeroDivisionError', self.description()
             raise e
 
     def endTangent(self):
-        return self.points[-1].minus(self.points[-2]).normalize()
+        try:
+            return self.endVector().normalize()
+#            return self.points[1].minus(self.points[0]).normalize()
+        except ZeroDivisionError, e:
+            print 'Segment.normalize() ZeroDivisionError', self.description()
+            raise e
+#        return self.points[-1].minus(self.points[-2]).normalize()
+
+#    def inferredEndTangent(self):
+#        '''
+#        Tangent derived simply by subtracting the endpoints.
+#        Does not reflect the actual endpoint tangents.
+#        '''
+#        try:
+#            return self.endPoint().minus(self.startPoint()).normalize()
+#        except ZeroDivisionError, e:
+#            print 'Segment.normalize() ZeroDivisionError', self.description()
+#            raise e
 
     def naiveEndpointTangent(self):
+        '''
+        Tangent derived simply by subtracting the endpoints.
+        Does not reflect the actual endpoint tangents.
+        '''
         try:
             return self.endPoint().minus(self.startPoint()).normalize()
         except ZeroDivisionError, e:
             print 'Segment.normalize() ZeroDivisionError', self.description()
             raise e
 
-    def startVector(self):
+    def naiveStartVector(self):
         return self.points[1].minus(self.points[0])
 
-    def endVector(self):
+    def startVector(self):
+#        return self.points[1].minus(self.points[0])
+
+        '''
+        Normally, we can derive the start vector by subtracting the first
+        point from the second point, regardless of whether this segment
+        is a straight line, quadratic or bezier curve.
+        '''
+        naiveResult = self.points[1].minus(self.points[0])
+        if naiveResult.x != 0 or naiveResult.y != 0:
+            return naiveResult
+
+        '''
+        Try to derive start vector using other means.
+        '''
+        if len(self.points) == 4:
+            '''
+            For quadratic bezier curves, if the first control point is same
+            as the startPoint, try to use the other control point.
+            '''
+            otherControlpointResult = self.points[-2].minus(self.points[0])
+            if otherControlpointResult.x != 0 or otherControlpointResult.y != 0:
+                return otherControlpointResult
+            '''
+            If both control points are the same as the startPoint,
+            curve is a straight line, try using the endpoints.
+            '''
+
+        '''
+        Default to returning the endpoint result, which may have zero length.
+        '''
+        endpointResult = self.points[-1].minus(self.points[0])
+        if endpointResult.x != 0 or endpointResult.y != 0:
+            return endpointResult
+#        return None
+        raise Exception('Invalid start vector')
+#        return naiveResult
+
+    def naiveEndVector(self):
         return self.points[-1].minus(self.points[-2])
+
+    def endVector(self):
+#        return self.points[-1].minus(self.points[-2])
+
+        '''
+        Normally, we can derive the end vector by subtracting the second-to-last
+        point from the last point, regardless of whether this segment
+        is a straight line, quadratic or bezier curve.
+        '''
+        naiveResult = self.points[-1].minus(self.points[-2])
+        if naiveResult.x != 0 or naiveResult.y != 0:
+            return naiveResult
+
+        '''
+        Try to derive end vector using other means.
+        '''
+        if len(self.points) == 4:
+            '''
+            For quadratic bezier curves, if the second control point is same
+            as the endPoint, try to use the other control point.
+            '''
+            otherControlpointResult = self.points[-1].minus(self.points[-3])
+            if otherControlpointResult.x != 0 or otherControlpointResult.y != 0:
+                return otherControlpointResult
+            '''
+            If both control points are the same as the endPoint,
+            curve is a straight line, try using the endpoints.
+            '''
+
+        '''
+        Default to returning the endpoint result, which may have zero length.
+        '''
+        endpointResult = self.points[-1].minus(self.points[0])
+        if endpointResult.x != 0 or endpointResult.y != 0:
+            return endpointResult
+#        return None
+        raise Exception('Invalid end vector')
+#        return naiveResult
+
 
     def evaluateRangeWithPrecision(self, precision):
         if len(self.points) == 2:

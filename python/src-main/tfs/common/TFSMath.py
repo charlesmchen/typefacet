@@ -69,6 +69,9 @@ import math
 from TFSRectangle import *
 
 
+def sqr(value):
+    return value * value
+
 _DEFAULT_PRECISION_DIGITS = 4
 
 def getDefaultPrecisionDigits():
