@@ -139,6 +139,18 @@ def mergeMustacheMaps(srcMap, dstMap, prefix):
 def formatEms(value):
     return '%0.3f em' % (value,)
 
+def formatTimeDuration(value):
+    if value < 60:
+        return '%d seconds' % int(round(value))
+    if value < 60 * 60:
+        return time.strftime('%M:%S', time.gmtime(value))
+    if value < 60 * 60 * 24:
+        return time.strftime('%H:%M:%S', time.gmtime(value))
+    hmsValue = value % (60 * 60 * 24)
+    daysValue = int(round((value - hmsValue) / (60 * 60 * 24)))
+    return '%d days, %s' % ( daysValue,
+                             time.strftime('%H:%M:%S', time.gmtime(hmsValue)), )
+
 
 class AutokernCache(TFSMap):
 
@@ -177,7 +189,7 @@ class Autokern(TFSMap):
     def formatUnitsInEms(self, value):
         return formatEms(value / float(self.units_per_em))
 
-    def addSidebarMustacheMap(self, mustacheMap, kerned):
+    def addSidebarMustacheMap(self, mustacheMap, kerned, complete=False):
         vars = (
                 ( 'Family', 'familyName',),
                 ( 'Style', 'styleName',),
@@ -188,18 +200,28 @@ class Autokern(TFSMap):
                 ( 'Maximum Distance', 'max_distance_ems',),
                 ( 'Precision', 'precision_ems',),
                 ( 'Intrusion Tolerance', 'intrusion_tolerance_ems',),
-                ( 'Maximum x-extrema Overlap', 'max_x_extrema_overlap_ems',),
+                ( 'Max. x-extrema Overlap', 'max_x_extrema_overlap_ems',),
                 ( 'x-extrema Overlap Scaling', 'x_extrema_overlap_scaling',),
                 ( 'Glyph Count', 'glyph_count',),
                 )
+
         if kerned:
             vars += (
+                ( 'Original Kerning Values', 'src_kerning_value_count',),
                 ( 'Kerned Pairs', 'kerned_pairs_count',),
                 ( 'Valid Kerning Values', 'valid_kerned_pairs_count',),
-                ( 'Final Kerning Values', 'final_kerned_pairs_count',),
-                # (--kerning-threshold-ems', 'kerning_threshold_ems}})
-                # (--max-kerning-pairs', 'max_kerning_pairs}})
                 )
+            if self.max_kerning_pairs:
+                vars += (
+                    ( 'Final Kerning Values', 'final_kerned_pairs_count',),
+                    )
+
+        if complete:
+            vars += (
+                ( 'Elapsed', 'elapsedDatetime',),
+                ( 'Completed', 'finishDatetime',),
+                )
+
         varMaps = []
         for name, key in vars:
             varMaps.append({'sidebarVarName': name,
@@ -1551,7 +1573,7 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
         '''
         2. Make sure advance is at least the "minimum advance."
         '''
-        advance = maxAdvance(advance, intrudingAdvance)
+        advance = maxAdvance(advance, minDistanceAdvance)
 #        if advance is None:
 #            '''
 #            If no collisions between the glyph profiles, use x-extrema
@@ -1933,18 +1955,6 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
                 totalTime = averageTime * total
                 remainingTime = totalTime - elapsedTime
 
-                def formatTimeDuration(value):
-                    if value < 60:
-                        return '%d seconds' % int(round(value))
-                    if value < 60 * 60:
-                        return time.strftime('%M:%S', time.gmtime(value))
-                    if value < 60 * 60 * 24:
-                        return time.strftime('%H:%M:%S', time.gmtime(value))
-                    hmsValue = value % (60 * 60 * 24)
-                    daysValue = int(round((value - hmsValue) / (60 * 60 * 24)))
-                    return '%d days, %s' % ( daysValue,
-                                             time.strftime('%H:%M:%S', time.gmtime(hmsValue)), )
-
                 remaining = '%s remaining' % ( formatTimeDuration(remainingTime), )
 
                 def formatUnicode(value):
@@ -2015,11 +2025,10 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
         if not (os.path.exists(ufo_src) and os.path.isdir(ufo_src) and os.path.basename(ufo_src).lower().endswith('.ufo')):
             raise Exception('Invalid ufo_src: %s' % ufo_src)
 
-    #    testFont = os.path.abspath(os.path.join('..', '..', 'data', 'TFSTest Plain.ufo'))
-#        self.dstUfoFont = TFSFontFromFile(ufo_src)
         self.srcUfoFont = TFSFontFromFile(ufo_src)
         self.dstUfoFont = TFSFontFromFile(ufo_src)
-#        self.dstUfoFont = TFSFontFromFile(ufo_src)
+        self.src_kerning_value_count = self.srcUfoFont.getKerningPairCount()
+        self.glyph_count = len(self.srcUfoFont.getGlyphs())
 
 
         if self.ufo_dst is None:
@@ -2079,37 +2088,27 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
             self.logFileTuples = []
 
         self.units_per_em = int(round(self.dstUfoFont.units_per_em))
-        self.precision = int(round(self.precision_ems * self.units_per_em))
-        self.min_distance = self.min_distance_ems * self.units_per_em
-        self.max_distance = self.max_distance_ems * self.units_per_em
-#        self.min_non_intrusion  = self.min_non_intrusion_ems * self.units_per_em
-        self.kerning_threshold  = self.kerning_threshold_ems * self.units_per_em
-        self.max_x_extrema_overlap  = self.max_x_extrema_overlap_ems * self.units_per_em
-        self.intrusion_tolerance  = self.intrusion_tolerance_ems * self.units_per_em
+        for key, value in self.argumentsMap.items():
+            if key.endswith('_ems'):
+                setattr(self, key[:-len('_ems')], value * self.units_per_em)
+        self.precision = int(round(self.precision))
 
         self.ascender = self.srcUfoFont.ascender
         self.descender = self.srcUfoFont.descender
         self.ascender_ems = self.srcUfoFont.ascender / float(self.units_per_em)
         self.descender_ems = self.srcUfoFont.descender / float(self.units_per_em)
 
-#        self.rounding = self.rounding_ems * self.dstUfoFont.units_per_em
         print 'units_per_em', self.units_per_em
         print 'precision', self.precision
         print 'min_distance', self.min_distance
         print 'max_distance', self.max_distance
         print 'intrusion_tolerance', self.intrusion_tolerance
-#        print 'min_non_intrusion', self.min_non_intrusion
         print 'kerning_threshold', self.kerning_threshold
         print 'max_x_extrema_overlap', self.max_x_extrema_overlap
-#        print 'self.rounding', self.rounding
-    #    kerning.fontMetadata = kerning.ufofont.info
 
         self.timing = TFTiming()
         self.advanceMap = {}
-#        self.minAdvanceMap = defaultdict(0)
         self.rasterCache = {}
-#        self.dstContoursInflateMinDistanceCache = {}
-#        self.dstContoursInflateMaxDistanceCache = {}
         self.pixelsCache = {}
         self.pairsToKern = None
         self.glyphsToKern = None
@@ -2182,7 +2181,6 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
 #        print 'kerningTuples', kerningTuples[0]
 #        print 'kerningTuples[-1]', kerningTuples[-1]
 
-        self.glyph_count = len(glyphs)
         self.kerned_pairs_count = len(self.advanceMap)
         self.valid_kerned_pairs_count = len(kerningTuples)
 
@@ -2781,7 +2779,7 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
         pageTitle = u'Autokern Results'
 
         mustacheMap = self.makeDefaultMustacheMap(localsMap=locals())
-        self.addSidebarMustacheMap(mustacheMap, kerned=True)
+        self.addSidebarMustacheMap(mustacheMap, kerned=True, complete=True)
         mustacheMap.update({
                    'pageTitle': pageTitle,
                    'logGroupMaps': logGroupMaps,
@@ -2836,6 +2834,8 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
 
 
     def process(self):
+        startTime = time.time()
+
         self.configure()
 
         if self.assess_only:
@@ -2868,6 +2868,9 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
 
         self.logDisparities()
         self.timing.mark('logDisparities.')
+
+        self.elapsedDatetime = formatTimeDuration(time.time() - startTime)
+        self.finishDatetime = time.strftime('%h. %d, %Y %H:%M:%S', time.localtime())
 
         self.writeLogIndex()
         self.timing.mark('writeLogIndex.')

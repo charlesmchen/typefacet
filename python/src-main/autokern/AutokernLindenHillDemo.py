@@ -1,6 +1,6 @@
 '''
 robofont-extensions-and-scripts
-TFSFont.py
+AutokernLindenHillDemo.py
 
 https://github.com/charlesmchen/robofont-extensions-and-scripts
 
@@ -66,158 +66,133 @@ END OF TERMS AND CONDITIONS
 
 
 import os
-import robofab.world
-from TFSGlyph import TFSGlyph
+
+from Autokern import Autokern
+from AutokernSettings import AutokernSettings
+import tfs.common.TFSProject as TFSProject
+from tfs.common.TFSMap import TFSMap
 
 
-class TFSFont(object):
+pseudo_argv = (
+#               '--assess-only',
 
-    def __init__(self, rffont):
-        self.rffont = rffont
+               '--ufo-src',
+               os.path.abspath(os.path.join(TFSProject.findProjectRootFolder(), 'data-ignore', 'theleagueof', 'theleagueof-linden-hill-a3f7ae6', 'source', 'Linden Hill.ufo')),
+               '--ufo-dst',
+               os.path.abspath(os.path.join(TFSProject.findProjectRootFolder(), 'out', 'Linden Hill-kerned.ufo')),
 
-    ascender = property(lambda self: self.rffont.info.ascender)
-    descender = property(lambda self: self.rffont.info.descender)
+                '--min-distance-ems',
+                '0.034',
+                '--max-distance-ems',
+#                '0.1',
+#                '0.080',
+                '0.100',
+                '--max-x-extrema-overlap-ems',
+                '1.0',
+#                '--x-extrema-overlap-scaling',
+#                '0.65',
+                '--intrusion-tolerance-ems',
+                '1.0',
+#                '--intrusion-limit-glyph-width-fraction',
+#                '0.05',
+#                '--intrusion-tolerance',
+#                '0.0',
+                '--precision-ems',
+                '0.005',
+                '--log-dst',
+                os.path.abspath(os.path.join(TFSProject.findProjectRootFolder(), 'out')),
+                '--disparity-log-count',
+                '0',
+##                '100',
+#                '5',
+                '--write-kerning-pair-logs',
+                '--glyph-pairs-to-kern',
+#                'C', 'O',
+#                'h', 'h',
+#                'h', 'n',
+#                'r', 'f',
+#                'r', 'a',
+#                'V', 'A',
+#                'L', 'L',
+#                't', 't',
+#                'L', 'T',
+#                'L', 'Y',
+#                'T', 'J',
+#                'A', 'Y',
+#                'P', 'J',
+#                'F', 'J',
+#                'n', 'j',
+#                '--glyphs-to-kern',
+#                'j', 'o',
+#                'J', 'F',
+#                'h', 'n',
+#                'n', 'n',
+#                'h', 'h',
+#                'n', 'h',
+#                'r', 'f',
+#                'o', 'o',
+#                'N', 'N',
+#                'O', 'O',
 
-    def clearKerning(self):
-        self.rffont.kerning.clear()
+                'e', 'n',
+                'n', 'j',
+                'j', 'o',
+                'o', 'y',
+                'y', 'i',
+                'i', 'n',
+                'n', 'g',
 
-    def update(self):
-        self.rffont.update()
+                'W', 'A',
+                'A', 'V',
+                'V', 'E',
 
-    def save(self, filepath):
-        self.rffont.save(filepath)
+#                'N', 'N',
+#                '--glyphs-to-kern',
+#                'z', 'A',
+#                '--glyphs-to-kern',
+#                'F', 'A',
+#                '--glyphs-to-kern',
+#                'A',
+#                'B',
+#                'grave',
+#                'acute',
+#                'AE',
+#                'backslash',
+#                'numbersign',
+#                'aacute',
+#                'slash',
+#                'd',
+#                'four',
+#                'h',
+#                'H',
+#                'A',
+#                'T',
+#                'V',
+#                'L',
+#                'J',
+#                'Y',
+#                'W',
+#                'N',
+#                'B',
+#                '--glyph-pairs-to-kern',
+#                'h', 'h',
+#                'n', 'n',
+#                'A','A',
+#                'Ccedilla.c2', 'f_hcircumflex',
+#                'V',
+#                'A',
+#                'N',
+#                'N',
+#                'T',
+#                'T',
 
-    def close(self):
-        self.rffont.close()
+               )
+print 'pseudo_argv', ' '.join([str(arg) for arg in pseudo_argv])
 
-    def glyphNames(self):
-        return self.rffont.keys()
+autokernArgs = TFSMap()
+AutokernSettings(autokernArgs).getCommandLineSettings(*pseudo_argv)
+autokern = Autokern(autokernArgs)
+autokern.process()
 
-    def glyphCodePoints(self):
-        result = [glyph.unicode for glyph in self.rffont]
-        return result
-
-    def getGlyphByName(self, key):
-        rfglyph = self.rffont.getGlyph(key)
-        return TFSGlyph(rfglyph)
-
-    def getGlyphByCodePoint(self, value):
-        for glyph in self.rffont:
-            if glyph.unicode == value:
-                return TFSGlyph(glyph)
-        return None
-#        raise Exception('Unknown code point: ' + str(value))
-#        return None
-
-    def getGlyphs(self):
-        return [TFSGlyph(glyph) for glyph in self.rffont]
-
-    units_per_em = property(lambda self: self.rffont.info.unitsPerEm)
-    info = property(lambda self: self.rffont.info)
-#    ascender = property(lambda self: self.rffont.info.ascender)
-#    descender = property(lambda self: self.rffont.info.descender)
-#    xHeight = property(lambda self: self.rffont.info.xHeight)
-#    capHeight = property(lambda self: self.rffont.info.capHeight)
-#    versionMajor = property(lambda self: self.rffont.info.versionMajor)
-#    versionMinor = property(lambda self: self.rffont.info.versionMinor)
-
-    def writeToFile(self, dstFile):
-        self.rffont.update()
-        self.rffont.autoUnicodes()
-        self.rffont.update()
-        self.rffont.save(dstFile)
-#        font.close()
-
-    def getGlyphName(self, codePoint):
-#        if codePoint is None:
-#            return  '.notdef'
-
-        import UnicodeCharacterNames
-        name = UnicodeCharacterNames.getUnicodeCharacterName(codePoint)
-        return name
-
-    def insertGlyph(self, codePoint, contours, xAdvance,
-                    glyphName=None, correctDirection=True):
-        if glyphName is None:
-            glyphName = self.getGlyphName(codePoint)
-        glyph = TFSGlyph(self.rffont.newGlyph(glyphName))
-        if codePoint is not None:
-            glyph.setUnicode(codePoint)
-        glyph.setContours(contours, correctDirection=correctDirection)
-        glyph.setXAdvance(xAdvance)
-        glyph.update()
-#        glyph.correctDirection()
-        return glyph
-
-
-    def insertGlyphDerivedFromGlyph(self, codePoint, contours, srcGlyph):
-        self.insertGlyph(codePoint, contours, srcGlyph.rfglyph.width)
-
-    def setKerningPair(self, glyphName0, glyphName1, value):
-        self.rffont.kerning[(glyphName0, glyphName1, )] = value
-
-    def getKerningPair(self, glyphName0, glyphName1):
-        '''
-        returns None if pair does not exist.
-        '''
-        return self.rffont.kerning[(glyphName0, glyphName1, )]
-
-    def getKerningPairCount(self):
-        return len(self.rffont.kerning)
-
-
-#font.info.ascender = formatOpentypeScalar(metadata.ascender)
-#font.info.descender = formatOpentypeScalar(metadata.descender)
-#font.info.unitsPerEm = formatOpentypeScalar(metadata.unitsPerEm)
-#font.info.xHeight = formatOpentypeScalar(metadata.xHeight)
-#font.info.capHeight = formatOpentypeScalar(metadata.capHeight)
-#font.info.versionMajor = metadata.versionMajor
-#font.info.versionMinor = metadata.versionMinor
-#
-#font.info.italicAngle = metadata.italicAngle
-##font.info.openTypeHeadFlags = metadata.openTypeHeadFlags
-#font.info.openTypeHheaAscender = font.info.ascender
-#font.info.openTypeHheaDescender = font.info.descender
-#font.info.openTypeHheaCaretSlopeRise = formatOpentypeScalar(metadata.caretSlopeRise)
-#font.info.openTypeHheaCaretSlopeRun = formatOpentypeScalar(metadata.caretSlopeRun)
-#font.info.openTypeHheaCaretOffset = 0
-#
-#font.update()
-#
-#
-#font.info.styleMapFamilyName = font.info.familyName
-#font.info.openTypeNamePreferredFamilyName = font.info.familyName
-#font.info.openTypeNamePreferredSubfamilyName = font.info.styleName
-#font.info.fullName = font.info.familyName + '-' + font.info.styleName
-#font.info.fontName = font.info.fullName.replace(' ', '')
-##font.info.postscriptUniqueID = font.info.fontName
-#font.info.postscriptFontName = font.info.fontName
-#font.info.postscriptFullName = font.info.fullName
-##font.info.weightName = font.info.fullName
-##font.info.postscriptFullName = font.info.fullName
-## TODO: remove
-#font.info.menuName = font.info.fullName
-## TODO: remove
-#font.info.fondName = font.info.familyName
-#font.info.macintoshFONDName = font.info.familyName
-#
-#font.info.otFamilyName = font.info.familyName
-#font.info.otStyleName = font.info.styleName
-#font.info.otMacName = font.info.fullName
-#font.info.openTypeNameCompatibleFullName = font.info.fullName
-#
-#font.info.designer = metadata.designer
-#font.info.openTypeNameDesigner = metadata.designer
-#font.info.createdBy = metadata.designer
-#font.info.year = metadata.year
-
-def TFSFontFromFile(filepath):
-#    filepath = os.path.abspath(filepath)
-    if not (os.path.exists(filepath) and
-            os.path.isdir(filepath) and
-            os.path.basename(filepath).lower().endswith('.ufo')):
-        raise Exception('Invalid .ufo file: ' + filepath)
-
-#    print 'filepath', filepath
-    rffont = robofab.world.OpenFont(filepath)
-    return TFSFont(rffont)
+print
+print 'complete.'
