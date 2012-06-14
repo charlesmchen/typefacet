@@ -197,6 +197,17 @@ class AutokernSettings(TFBaseSettings):
                             See the Adobe Glyph List for a list of glyph names:
                             partners.adobe.com/public/developer/en/opentype/aglfn13.txt
                             ''')
+        parser.add_argument('--kern-samples-only',
+                            action='store_true',
+                            help='''If present, Autokern will only kern the glyph pairs used in the sample text log.
+                            Other glyphs will be not kerned.
+                            Overridden by the --glyph-pairs-to-kern and --glyphs-to-kern arguments.
+                            ''')
+        parser.add_argument('--extra-sample-texts',
+#                            type=self.codePointType,
+                            nargs='+',
+                            help='''A list of short texts to render in the "sample text" log.
+                            ''')
         parser.add_argument('--min-distance-ems',
                             type=self.boundedFloat(0.0, 1.0),
                             default=0.025,

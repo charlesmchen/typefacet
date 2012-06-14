@@ -108,6 +108,24 @@ DEBUG_h_n_ISSUE = True
 DEBUG_h_n_ISSUE = False
 
 
+DEFAULT_SAMPLE_TEXTS = (
+               'Typography',
+               'WAVE',
+               'COLT',
+               'Style',
+               'enjoying',
+               'hamburgerfont',
+               'NNOOoo', # max distance
+               'pqpiitt',
+               'ijiJn.',
+               'N-N=NtN',
+               'TaLTLYPJ', # x-extrema overlap
+               'VAWML4TO',
+               'hhnnhn',
+               'JFrf',
+               )
+
+
 def formatGlyphUnicode(glyph):
     if glyph.unicode is None:
         return 'None'
@@ -191,6 +209,7 @@ class Autokern(TFSMap):
 
     def addSidebarMustacheMap(self, mustacheMap, kerned, complete=False):
         vars = (
+                ( 'Filename', 'srcFilename',),
                 ( 'Family', 'familyName',),
                 ( 'Style', 'styleName',),
                 ( 'Units per em', 'units_per_em',),
@@ -615,7 +634,8 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
                        hGuidelines=None,
                        hRanges=None,
                        textTuples=None,
-                       bottomPadding=0):
+                       width=None, height=None, maxWidth=None, maxHeight=None,
+                       padding=None):
 
         from tfs.common.TFSSvg import TFSSvg, TFSSvgPath
         if filename is None:
@@ -677,12 +697,18 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
                 GUIDELINE_COLOR = 0x7fdfdfdf
                 tfsSvg.addItem(TFSSvgPath(openPathWithPoints(p0, p1)).addStroke(GUIDELINE_COLOR, 1))
 
-        SVG_HEIGHT = 400
-        SVG_MAX_WIDTH = 800
+        if set((width, height, maxWidth, maxHeight,)) == set((None,)):
+            SVG_HEIGHT = 400
+            SVG_MAX_WIDTH = 800
+            height = SVG_HEIGHT
+            maxWidth = SVG_MAX_WIDTH
+
         self.timing.mark('renderSvgScene.0')
-        svgdata = tfsSvg.renderToFile(dstFile, margin=10, height=SVG_HEIGHT, maxWidth=SVG_MAX_WIDTH,
+        svgdata = tfsSvg.renderToFile(dstFile,
+                                      margin=10,
                                       timing=self.timing,
-                                      bottomPadding=bottomPadding)
+                                      width=width, height=height, maxWidth=maxWidth, maxHeight=maxHeight,
+                                      padding=padding)
         self.timing.mark('renderSvgScene.1')
         if filename is not None:
             return filename
@@ -1056,49 +1082,34 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
         return minProfile, maxProfile
 
 
-    def isValidProfileIntrusion(self, profile0, profile1, advance):
+    def isValidProfileIntrusion(self, profile0, profile1, referenceProfile, advance):
 
 #        print 'isValidProfileIntrusion', 'advance', advance
 
         '''
         Step 1
-        Split the profiles into sections of continuous values which are no more
-        than --max-distance apart.
+
+        Split the profiles into sections of continuous x-offset values.
         '''
         sections = []
-        sectionRowSpacings = []
+        sectionXOffsets = []
         for edge0, edge1 in itertools.izip(profile0, profile1):
-            rowSpacing = None
+            x_offset = None
             if (edge0 is not None) and (edge1 is not None):
-                rowSpacing = advance + edge1 - edge0
-#                print 'rowSpacing.0', rowSpacing, 'self.max_distance', self.max_distance, 'advance, edge1, edge0', advance, edge1, edge0
-#                if rowSpacing >= self.max_distance:
-#                    '''
-#                    Treat gaps of more than --max-distance to be section breaks.
-#                    '''
-#                    rowSpacing = None
+                x_offset = advance + edge1 - edge0
 
-#                if rowSpacing >= self.max_distance * 2:
-#                if rowSpacing >= self.max_distance:
-#                    '''
-#                    Treat gaps of more than N * --max-distance to be section breaks.
-#                    '''
-#                    rowSpacing = None
-
-#            print 'rowSpacing', rowSpacing
-
-            if rowSpacing is None:
-                if len(sectionRowSpacings) > 0:
-                    sections.append(sectionRowSpacings)
-                    sectionRowSpacings = []
+            if x_offset is None:
+                if len(sectionXOffsets) > 0:
+                    sections.append(sectionXOffsets)
+                    sectionXOffsets = []
                 continue
 
 #            print 'rowSpacing.0', rowSpacing, 'self.max_distance', self.max_distance, 'advance, edge1, edge0', advance, edge1, edge0
 
-            sectionRowSpacings.append(rowSpacing)
+            sectionXOffsets.append(x_offset)
 
-        if len(sectionRowSpacings) > 0:
-            sections.append(sectionRowSpacings)
+        if len(sectionXOffsets) > 0:
+            sections.append(sectionXOffsets)
 
         if DEBUG_h_n_ISSUE:
             print 'sections.0', len(sections), [len(section) for section in sections]
@@ -1107,6 +1118,8 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
 
         def splitSection(section):
             '''
+            Step 2
+
             We need to split sections that have large internal gaps.
             Consider C vs. O.  If the mouth of the C is too large,
             it cases the upper and lower arms of the C to be kerned too
@@ -1148,6 +1161,8 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
 
         def trimSection(section):
             '''
+            Step 3
+
             We need to trim the sections that have huge gaps at the top and/or bottom.
             Consider h vs. h.  The huge space between the top stems distorts the
             profile and causes their bottoms to be kerned too closely.
@@ -1173,7 +1188,8 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
                 if x_offset < self.max_distance:
                     break
                 tailCount = index
-            maxPadding = int(round(self.max_distance * 0.5 / self.precision))
+#            maxPadding = int(round(self.max_distance * 0.5 / self.precision))
+            maxPadding = int(round(self.max_distance * 1.0 / self.precision))
             headTrimCount = max(0, headCount - maxPadding)
             tailTrimCount = max(0, tailCount - maxPadding)
             if headTrimCount + tailTrimCount >= len(section):
@@ -1205,38 +1221,21 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
             '''
             No collision found.
             '''
-            return True
-
-#        '''
-#        Step 2
-#        Determine the intrusion tolerance area.
-#        '''
-#        totalSectionRowCount = reduce(int.__add__, [len(sectionRowSpacings) for sectionRowSpacings in sections])
-#        intrusionToleranceArea = self.intrusion_tolerance * totalSectionRowCount
+            return True, sections
 
         '''
-        Step 3
+        Step 4
         Now consider each section separately.
         '''
-#        intrusionTotal = 0
-#        extrusionTotal = 0
         for sectionRowSpacings in sections:
-#            '''
-#            Ignore extrusion within section greater than the max intrusion of section.
-#            '''
             intrusionTotal = 0
             extrusionTotal = 0
-#            maxIntrusion = reduce(min, sectionRowSpacings)
-#            extrusionLimit = abs(maxIntrusion)
-#            print 'maxIntrusion', maxIntrusion, 'extrusionLimit', extrusionLimit
             for rowSpacing in sectionRowSpacings:
                 rowIntrusion = max(0, -rowSpacing)
                 '''
                 Ignore extrusion greater than --max-distance argument.
                 '''
                 rowExtrusion = min(self.max_distance, max(0, +rowSpacing))
-
-#                rowExtrusion = min(extrusionLimit, max(0, rowSpacing))
 #                print 'edge0, edge1', edge0, edge1, 'diff', diff, 'advance', advance, 'rowIntrusion', rowIntrusion, 'rowExtrusion', rowExtrusion
                 intrusionTotal += rowIntrusion
                 extrusionTotal += rowExtrusion
@@ -1250,12 +1249,12 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
 #            INTRUSION_EXTRUSION_MIN_RATIO = 1.5
             INTRUSION_EXTRUSION_MIN_RATIO = 1.0
             if intrusionTotal > extrusionTotal * INTRUSION_EXTRUSION_MIN_RATIO:
-                return False
+                return False, sections
 
             intrusionToleranceArea = self.intrusion_tolerance * len(sectionRowSpacings)
 #            print 'intrusionToleranceArea', intrusionToleranceArea
             if intrusionTotal > intrusionToleranceArea:
-                return False
+                return False, sections
 
 #        print 'totalSectionRowCount', totalSectionRowCount, 'advance', advance
 #        print 'intrusionTotal', intrusionTotal, 'extrusionTotal', extrusionTotal, 'intrusionToleranceArea', intrusionToleranceArea
@@ -1264,7 +1263,7 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
 #            return False
 #        if intrusionTotal > intrusionToleranceArea:
 #            return False
-        return True
+        return True, sections
 
 
     def findMinProfileAdvance(self, profile0, profile1):
@@ -1284,7 +1283,7 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
         return contactAdvance
 
 
-    def findMinProfileAdvance_withIntrusion(self, profile0, profile1):
+    def findMinProfileAdvance_withIntrusion(self, profile0, profile1, referenceProfile):
         contactAdvance = self.findMinProfileAdvance(profile0, profile1)
 
         if contactAdvance is None:
@@ -1295,6 +1294,7 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
         '''
         lowValidIntrusionOffset = 0
         highInvalidIntrusionOffset = int(math.ceil(self.intrusion_tolerance))
+        lowValidSections = ()
         while True:
             intrusionOffset = int(round((lowValidIntrusionOffset + highInvalidIntrusionOffset) / 2))
             if DEBUG_h_n_ISSUE:
@@ -1302,10 +1302,13 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
 
             if intrusionOffset in ( lowValidIntrusionOffset,
                                     highInvalidIntrusionOffset, ):
-                return contactAdvance - lowValidIntrusionOffset
+                intrudingAdvance = contactAdvance - lowValidIntrusionOffset
+                return intrudingAdvance, lowValidSections
 
-            if self.isValidProfileIntrusion(profile0, profile1, contactAdvance - intrusionOffset):
+            isValid, sections = self.isValidProfileIntrusion(profile0, profile1, referenceProfile, contactAdvance - intrusionOffset)
+            if isValid:
                 lowValidIntrusionOffset = intrusionOffset
+                lowValidSections = sections
             else:
                 highInvalidIntrusionOffset = intrusionOffset
 
@@ -1427,8 +1430,6 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
     def processKerningPair(self, ufoglyph0, ufoglyph1):
         '''
         returns True iff pair is kerned.
-
-        TODO: handle empty glyphs with no contours
         '''
 
         self.timing.mark('processKerningPair.0.')
@@ -1466,19 +1467,6 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
         minmax1 = self.dstCache.getContoursMinmax(ufoglyph1)
 
         self.timing.mark('processKerningPair.010')
-
-#        if (self.isPunctuationGlyph(ufoglyph0) and
-#            self.isPunctuationGlyph(ufoglyph1)):
-#            '''
-#            Do not kern punctuation against each other.
-#            '''
-#
-#            advance = minmax0.maxX + self.max_distance - minmax1.minX
-#            self.advanceMap[(ufoglyph0.name,
-#                             ufoglyph1.name,)] = advance
-#
-#            self.timing.mark('processKerningPair.010a')
-#            return
 
         def getGlyphProfiles(contours):
             return self.makeProfile(paths=contours)
@@ -1536,11 +1524,11 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
 
         if DEBUG_h_n_ISSUE:
             print ufoglyph0.name, ufoglyph1.name, 'findMinProfileAdvance_withIntrusion(profile0, profileMax1)'
-        intrudingAdvance0 = self.findMinProfileAdvance_withIntrusion(profile0, profileMax1)
+        intrudingAdvance0, intrudingSections0 = self.findMinProfileAdvance_withIntrusion(profile0, profileMax1, referenceProfile=profile1)
         self.timing.mark('processKerningPair.022')
         if DEBUG_h_n_ISSUE:
             print ufoglyph0.name, ufoglyph1.name, 'findMinProfileAdvance_withIntrusion(profileMax0, profile1)'
-        intrudingAdvance1 = self.findMinProfileAdvance_withIntrusion(profileMax0, profile1)
+        intrudingAdvance1, intrudingSections1 = self.findMinProfileAdvance_withIntrusion(profileMax0, profile1, referenceProfile=profile0)
         self.timing.mark('processKerningPair.023')
 
         intrudingAdvance = maxAdvance(intrudingAdvance0, intrudingAdvance1)
@@ -1557,31 +1545,18 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
             print 'intrudingAdvance0', intrudingAdvance0, 'intrudingAdvance1', intrudingAdvance1, 'intrudingAdvance', intrudingAdvance
 
 
-#        intruding_x_extrema_overlap = minmax0.maxX - (minmax1.minX + intrudingAdvance)
-#        print 'intruding_x_extrema_overlap', intruding_x_extrema_overlap
-
         '''
         Now combine results into the final advance value.
         1. Start with the "intruding advance."
-        '''
 
-#        if minDistanceAdvance is None:
-#            advance = minmax0.maxX + self.min_distance - minmax1.minX
-#            advance = minDistanceAdvance
+        All subsequent steps should only serve to increase the advance.
+        '''
         advance = intrudingAdvance
 
         '''
         2. Make sure advance is at least the "minimum advance."
         '''
         advance = maxAdvance(advance, minDistanceAdvance)
-#        if advance is None:
-#            '''
-#            If no collisions between the glyph profiles, use x-extrema
-#            plus the min_distance argument.
-#
-#            TODO: should we use the max_distance instead?
-#            '''
-#            advance = minmax0.maxX + self.min_distance - minmax1.minX
 
         '''
         3. Apply --x-extrema-overlap-scaling argument.
@@ -1591,57 +1566,27 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
             '''
             If x-extrema are overlapping, adjust advance accordingly.
             '''
-#            print
-#            print ufoglyph0.name, ufoglyph1.name
-#            print 'advance', advance
-#            print 'x_extrema_overlap, self.x_extrema_overlap_scaling', x_extrema_overlap, self.x_extrema_overlap_scaling
             scaled_x_extrema_overlap = x_extrema_overlap * self.x_extrema_overlap_scaling
-#            print 'scaled_x_extrema_overlap', scaled_x_extrema_overlap
             advance += x_extrema_overlap - scaled_x_extrema_overlap
-#            print 'advance\'', advance
 
         '''
         4. Make sure the "x-extrema overlap" is not greater than the "max x-extrema overlap".
         '''
-#        print '!!!', 'minDistanceAdvance, intrudingAdvance', minDistanceAdvance, intrudingAdvance
-#        print '!!!', 'minmax0.maxX, minmax1.minX, advance', minmax0.maxX, minmax1.minX, advance
         x_extrema_overlap = minmax0.maxX - (minmax1.minX + advance)
-
-#        print
-#        print ufoglyph0.name, 'vs.', ufoglyph1.name
-#        print 'minDistanceAdvance0', minDistanceAdvance0, 'minDistanceAdvance1', minDistanceAdvance1, 'minDistanceAdvance', minDistanceAdvance
-#        print 'intrudingAdvance0', intrudingAdvance0, 'intrudingAdvance1', intrudingAdvance1, 'intrudingAdvance', intrudingAdvance
-#        print 'advance', advance
-#        print 'x_extrema_overlap', x_extrema_overlap
-
         pair_max_x_extrema_overlap = self.max_x_extrema_overlap
-
         if (self.isPunctuationGlyph(ufoglyph0) or
             self.isPunctuationGlyph(ufoglyph1)):
             '''
             Punctuation should keep x-extrema at least --min-distance apart.
             '''
             pair_max_x_extrema_overlap = -self.min_distance
-
         if x_extrema_overlap > pair_max_x_extrema_overlap:
-#            print
-#            print ufoglyph0.name, ufoglyph1.name
-#            print 'advance', advance
-#            print 'x_extrema_overlap, pair_max_x_extrema_overlap', x_extrema_overlap, pair_max_x_extrema_overlap
             advance += x_extrema_overlap - pair_max_x_extrema_overlap
-#            print 'advance\'', advance
 
         advance = int(round(advance))
 
-#        print 'advanceLimit', advanceLimit, 'advance', advance
-
-
         self.advanceMap[(ufoglyph0.name,
                          ufoglyph1.name,)] = advance
-
-#        if ufoglyph0.name == 'A' or ufoglyph1.name == 'A':
-#            print '\t', 'result', ufoglyph0.name, ufoglyph1.name, advance, 'spacing', advance - ufoglyph0.xAdvance
-#        print '\t', 'result', ufoglyph0.name, ufoglyph1.name, advance, 'spacing', advance - ufoglyph0.xAdvance, 'x-extrema offset', advance + minmax1.minX - minmax0.maxX
 
         if debugKerning:
             print '\t', ufoglyph0.unicode, ufoglyph1.unicode, advance
@@ -2027,6 +1972,7 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
 
         self.srcUfoFont = TFSFontFromFile(ufo_src)
         self.dstUfoFont = TFSFontFromFile(ufo_src)
+        self.srcFilename = os.path.basename(ufo_src)
         self.src_kerning_value_count = self.srcUfoFont.getKerningPairCount()
         self.glyph_count = len(self.srcUfoFont.getGlyphs())
 
@@ -2112,8 +2058,38 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
         self.pixelsCache = {}
         self.pairsToKern = None
         self.glyphsToKern = None
+        self.sampleTexts = list(DEFAULT_SAMPLE_TEXTS)
 
-        glyphNames = self.srcUfoFont.glyphNames()
+        #
+
+        glyphs = self.srcUfoFont.getGlyphs()
+        glyphCodePoints = set()
+        glyphNames = set()
+        glyphCodePointToNameMap = {}
+        for glyph in glyphs:
+            if glyph.unicode is not None:
+                glyphCodePoints.add(glyph.unicode)
+            if glyph.name is not None:
+                glyphNames.add(glyph.name)
+            if glyph.name is not None and glyph.unicode is not None:
+                glyphCodePointToNameMap[glyph.unicode] = glyph.name
+
+        #
+
+        if self.extra_sample_texts is not None:
+            if len(self.extra_sample_texts) < 1:
+                raise Exception('Missing --extra-sample-texts value')
+            for sampleText in self.extra_sample_texts:
+                if len(sampleText) < 1:
+                    raise Exception('Invalid --extra-sample-texts value: %s' % sampleText)
+                for glyph in sampleText:
+                    if ord(glyph) not in glyphCodePoints:
+                        raise Exception('--extra-sample-texts value: %s has unknown glyph: %s' % (sampleText, glyph,))
+
+            # Prepend extra sample texts.
+            self.sampleTexts = self.extra_sample_texts + self.sampleTexts
+
+        #
 
         if self.glyph_pairs_to_kern is not None:
             if len(self.glyph_pairs_to_kern) < 1:
@@ -2134,6 +2110,22 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
 #            print 'self.glyphs_to_kern', self.glyphs_to_kern
             for value in self.glyphs_to_kern:
                 self.glyphsToKern.add(self.parseCodePoint('--glyphs-to-kern', glyphNames, value))
+        elif self.kern_samples_only is not None:
+            self.pairsToKern = set()
+            for sampleText in self.sampleTexts:
+                lastGlyphName = None
+                for glyph in sampleText:
+                    if ord(glyph) not in glyphCodePointToNameMap:
+                        '''
+                        We've already validated the "extra" sample texts.
+                        Ignore missing characters in the default sample texts.
+                        '''
+                        continue
+                    glyphName = glyphCodePointToNameMap.get(ord(glyph))
+                    if glyphName is not None and lastGlyphName is not None:
+                        self.pairsToKern.add( (lastGlyphName, glyphName,) )
+                    lastGlyphName = glyphName
+            print 'kerning %d pairs' % len(self.pairsToKern)
         else:
             pass
 
@@ -2681,7 +2673,11 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
                                                                ( 0xffffffff, insideContours, ),
                                                                ),
                                             textTuples = labels,
-                                            bottomPadding = 20,
+                                            padding=(0,0,20,0),
+#                                            maxWidth = 800,
+#                                            maxHeight = 300,
+                                            maxWidth = 700,
+                                            maxHeight = 250,
                                             )
             return {'renderMap': {'text': text,
                    'source': source,
@@ -2696,25 +2692,8 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
             return
         print 'Writing samples...'
 
-
-        sampleTexts = (
-                       'Typography',
-                       'WAVE',
-                       'COLT',
-                       'Style',
-                       'enjoying',
-                       'hamburgerfont',
-                       'NNOOoo',
-                       'pqpiitt',
-                       'ijiJn.',
-                       'N-N=NtN',
-                       'LTLYPJFJ',
-                       'VAWML4TO',
-                       'hhnnhn',
-                       'JFrf',
-                       )
         sampleTextsMaps = []
-        for sampleText in sampleTexts:
+        for sampleText in self.sampleTexts:
             sampleTextMap, kerningValues = self.renderTextWithFont(sampleText, self.srcUfoFont, self.srcCache, 'Original', 0x7f7f7faf)
             sampleTextsMaps.append(sampleTextMap)
             sampleTextMap, _ = self.renderTextWithFont(sampleText, self.dstUfoFont, self.dstCache, 'Autokern', 0x7f7faf7f,
@@ -2739,6 +2718,26 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
                               ''',
                           'Sample Texts',
                           mustacheMap)
+
+#        unknownGlyphs = []
+#        for sampleText in sampleTexts:
+#            lastName = None
+#            for textGlyph in sampleText:
+#                codePoint = ord(textGlyph)
+#                ufoglyph = self.srcUfoFont.getGlyphByCodePoint(codePoint)
+#                if ufoglyph is None:
+#                    name = None
+#                else:
+#                    name = ufoglyph.name
+#
+#                if name is None:
+#                    unknownGlyphs.append(textGlyph)
+#                elif lastName is None:
+#                    pass
+#                else:
+#                    print '"%s", "%s",' % ( lastName, name, )
+#                lastName = name
+#        print 'unknownGlyphs', unknownGlyphs
 
 
     def writeLogIndex(self):

@@ -1,6 +1,6 @@
 '''
 robofont-extensions-and-scripts
-AutokernLindenHillDemo.py
+AutokernLeagueGothicDemo.py
 
 https://github.com/charlesmchen/robofont-extensions-and-scripts
 
@@ -77,23 +77,23 @@ pseudo_argv = (
 #               '--assess-only',
 
                '--ufo-src',
-               os.path.abspath(os.path.join(TFSProject.findProjectRootFolder(), 'data-ignore', 'theleagueof', 'theleagueof-linden-hill-a3f7ae6', 'source', 'Linden Hill.ufo')),
+#               os.path.abspath(os.path.join(TFSProject.findProjectRootFolder(), 'data-ignore', 'League Gothic-kerned.old.ufo')),
+               os.path.abspath(os.path.join(TFSProject.findProjectRootFolder(), 'data-ignore', 'theleagueof', 'theleagueof-league-gothic-4f9ff8d', 'source', 'League Gothic.ufo')),
                '--ufo-dst',
-               os.path.abspath(os.path.join(TFSProject.findProjectRootFolder(), 'out', 'Linden Hill-kerned.ufo')),
+               os.path.abspath(os.path.join(TFSProject.findProjectRootFolder(), 'out', 'League Gothic-kerned.ufo')),
 
                 '--min-distance-ems',
-                '0.034',
+                '0.018',
+#                '0.036',
                 '--max-distance-ems',
 #                '0.1',
-#                '0.080',
-                '0.100',
+                '0.080',
                 '--max-x-extrema-overlap-ems',
-                '0.075',
-#                '--x-extrema-overlap-scaling',
-#                '0.65',
+                '0.05',
+                '--x-extrema-overlap-scaling',
+                '0.65',
                 '--intrusion-tolerance-ems',
                 '0.05',
-#                '0.1',
 #                '--intrusion-limit-glyph-width-fraction',
 #                '0.05',
 #                '--intrusion-tolerance',
@@ -109,7 +109,9 @@ pseudo_argv = (
                 '--kern-samples-only',
                 '--write-kerning-pair-logs',
                 '--glyph-pairs-to-kern',
-                'a', 'm',
+                'h', 'n',
+#                '--write-kerning-pair-logs',
+#                '--glyph-pairs-to-kern',
 #                'C', 'O',
 #                'h', 'h',
 #                'h', 'n',
@@ -127,7 +129,7 @@ pseudo_argv = (
 #                'n', 'j',
 #                '--glyphs-to-kern',
 #                'j', 'o',
-#                'J', 'F',
+##                'J', 'F',
 #                'h', 'n',
 #                'n', 'n',
 #                'h', 'h',
@@ -136,7 +138,13 @@ pseudo_argv = (
 #                'o', 'o',
 #                'N', 'N',
 #                'O', 'O',
-
+#                'e', 'n',
+#                'n', 'j',
+#                'j', 'o',
+#                'o', 'y',
+#                'y', 'i',
+#                'i', 'n',
+#                'n', 'g',
 #                'N', 'N',
 #                '--glyphs-to-kern',
 #                'z', 'A',

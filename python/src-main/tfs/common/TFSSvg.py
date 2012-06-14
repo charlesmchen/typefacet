@@ -380,14 +380,25 @@ class TFSSvg(object):
             return svg_document.tostring()
 
 
-    def renderToFile(self, filepath, margin, height, maxWidth, bottomPadding=0, timing=None):
+    def renderToFile(self,
+                     filepath,
+                     margin,
+                     width=None, height=None, maxWidth=None, maxHeight=None,
+                     padding=None,
+                     timing=None):
+        '''
+        Padding in css order: top, right, bottom, left.
+        '''
         if timing is not None:
             timing.mark('TFSSvg.renderToFile.0')
 
-        margin = round(margin)
-        height = round(height)
-        maxWidth = round(maxWidth)
 
+        margin = round(margin)
+#        height = round(height)
+#        maxWidth = round(maxWidth)
+        if padding is None:
+            padding = (0,0,0,0,)
+        topPadding, rightPadding, bottomPadding, leftPadding = [int(round(value)) for value in padding]
 #        print 'margin, height, maxWidth', margin, height, maxWidth
 
         minmax = None
@@ -396,13 +407,59 @@ class TFSSvg(object):
                 minmax = item.minmax()
             else:
                 minmax = minmaxMerge(minmax, item.minmax())
+        itemsWidth = (minmax.maxX - minmax.minX)
+        itemsHeight = (minmax.maxY - minmax.minY)
 
-        scalingY = (height - (2 * margin + bottomPadding)) / (minmax.maxY - minmax.minY)
-        scalingX = (maxWidth - 2 * margin) / (minmax.maxX - minmax.minX)
+        hSpacing = (2 * margin + leftPadding + rightPadding)
+        vSpacing = (2 * margin + topPadding + bottomPadding)
+
+        if maxWidth is None:
+            maxWidth = width
+        if maxHeight is None:
+            maxHeight = height
+        if maxWidth is None or maxHeight is None:
+            raise Exception('Unknown combination of arguments: width: %s, height: %s, maxWidth: %s, maxHeight: %s' % ( [str(value) for value in ( width, height, maxWidth, maxHeight, ) ] ) )
+        scalingX = (maxWidth - hSpacing) / itemsWidth
+        scalingY = (maxHeight - vSpacing) / itemsHeight
         scaling = min(scalingX, scalingY)
-        contentWidth = math.ceil((minmax.maxX - minmax.minX) * scaling)
-        contentHeight = math.ceil((minmax.maxY - minmax.minY) * scaling)
-        width = contentWidth + 2 * margin
+        if width is None:
+            width = math.ceil(itemsWidth * scaling) + hSpacing
+        if height is None:
+            height = math.ceil(itemsHeight * scaling) + vSpacing
+
+#        if width is not None and height is not None:
+#            pass
+##            contentWidth = width - (2 * margin + leftPadding + rightPadding)
+##            contentHeight = height - (2 * margin + topPadding + bottomPadding)
+#        elif height is not None and maxWidth is not None:
+#            scalingX = (maxWidth - hSpacing) / itemsWidth
+#            scalingY = (height - vSpacing) / itemsHeight
+#            scaling = min(scalingX, scalingY)
+#            contentWidth = math.ceil(itemsWidth * scaling)
+#            width = contentWidth + hSpacing
+#        elif maxWidth is not None and maxHeight is not None:
+#            scalingX = (maxWidth - hSpacing) / itemsWidth
+#            scalingY = (maxHeight - vSpacing) / itemsHeight
+#            scalingX = (maxWidth - vSpacing) / (minmax.maxX - minmax.minX)
+#            scalingY = (height - hSpacing) / (minmax.maxY - minmax.minY)
+#            scaling = min(scalingX, scalingY)
+#            contentWidth = math.ceil((minmax.maxX - minmax.minX) * scaling)
+#            contentHeight = math.ceil((minmax.maxY - minmax.minY) * scaling)
+#            width = contentWidth + 2 * margin
+#        else:
+#            raise Exception('Unknown combination of arguments: width: %s, height: %s, maxWidth: %s, maxHeight: %s' % ( [str(value) for value in ( width, height, maxWidth, maxHeight, ) ] ) )
+
+        contentWidth = width - hSpacing
+        contentHeight = height - vSpacing
+
+        width = int(round(width))
+        height = int(round(height))
+        contentWidth = int(round(contentWidth))
+        contentHeight = int(round(contentHeight))
+
+        scalingX = contentWidth / itemsWidth
+        scalingY = contentHeight / itemsHeight
+        scaling = min(scalingX, scalingY)
 
 #        print 'scaling, contentWidth, contentHeight', scaling, contentWidth, contentHeight
 
@@ -414,8 +471,16 @@ class TFSSvg(object):
             fillSvgRect(svg_document, 0, 0, width, height, self.backgroundColor)
 
         def pointFunc(point):
-            return TFSPoint(margin + scaling * (point.x - minmax.minX),
-                            math.floor((height - contentHeight) / 2) + scaling * (point.y - minmax.minY))
+            x, y = point.x, point.y
+            x -= minmax.minX
+            y -= minmax.minY
+            x *= scaling
+            y *= scaling
+            x += math.floor((width - contentWidth) / 2)
+            y += math.floor((height - contentHeight) / 2)
+            return TFSPoint(x, y)
+#            return TFSPoint(margin + scaling * (point.x - minmax.minX),
+#                            math.floor((height - contentHeight) / 2) + scaling * (point.y - minmax.minY))
 
         if timing is not None:
             timing.mark('TFSSvg.renderToFile.6')

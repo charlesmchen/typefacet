@@ -56,7 +56,7 @@ section div.back_link_bottom {
 
 {{#sidebarArgs}}
         	<li>
-    	    	<b>{{sidebarVarName}}: {{sidebarVarValue}}</b>
+    	    	<b>{{sidebarVarName}}{{#sidebarVarValue}}:{{/sidebarVarValue}} {{sidebarVarValue}}</b>
         	</li>
 {{/sidebarArgs}}
         	
@@ -75,11 +75,11 @@ section div.back_link_bottom {
         <h2>{{{pageTitle}}}</h2>
 
 <div>
-	Labels are x-extrema offsets (in font units), not kerning values.
+	Labels are x-extrema offsets (in font units), <u>not kerning values</u>.
 	Kerning values can't be directly compared because the side bearings are likely to have changed.
 </div>
 <div>
-	Large changes to the x-extrema offsets are highlighted in red.
+	Large changes to the x-extrema offsets are <span style="color: #920000">highlighted in red</span>.
 </div>
 
 {{#sampleTextsMaps}}

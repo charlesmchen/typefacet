@@ -94,7 +94,7 @@ class TFSFont(object):
         return self.rffont.keys()
 
     def glyphCodePoints(self):
-        result = [glyph.unicode for glyph in self.rffont]
+        result = [glyph.unicode for glyph in self.rffont if glyph.unicode is not None]
         return result
 
     def getGlyphByName(self, key):
