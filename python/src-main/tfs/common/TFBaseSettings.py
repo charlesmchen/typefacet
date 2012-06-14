@@ -176,6 +176,9 @@ class TFBaseSettings(object):
     def createParser(self):
         raise Exception('Not Implemented')
 
+    def dumpCommandLineSettings(self):
+        return True
+
     def getCommandLineSettings(self, *replacementValues):
 
         parser = self.createParser()
@@ -197,6 +200,7 @@ class TFBaseSettings(object):
         for attr in sorted(dir(args)):
             if attr.startswith('_'):
                 continue
-            print 'arg', attr, getattr(args, attr)
+            if self.dumpCommandLineSettings():
+                print 'arg', attr, getattr(args, attr)
             setattr(self.target, attr, getattr(args, attr))
         print

@@ -81,7 +81,7 @@ class GiaSettings(TFBaseSettings):
                             help='The file or folders to scan.',
                             required=True)
 
-        parser.add_argument('--log-dst',
+        parser.add_argument('--log-path',
                             type=self.dstFolderType,
                             help='Folder in which to write HTML logs.  CAUTION: This folder will be completely overwritten.')
 

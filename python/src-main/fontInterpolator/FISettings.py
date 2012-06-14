@@ -121,12 +121,12 @@ def getCommandLineSettings(*replacementValues):
 
     parser = argparse.ArgumentParser(description='')
 
-    parser.add_argument('--ufo-src',
+    parser.add_argument('--ufo-src-path',
                         type=ufoSrcFolderType,
                         help='The .ufo source file to kern.',
 #                        ) # TODO:
                         required=True)
-    parser.add_argument('--ufo-dst',
+    parser.add_argument('--ufo-dst-path',
                         type=ufoDstFolderType,
                         help='The .ufo destination file.',
 #                        ) # TODO:
@@ -137,7 +137,7 @@ def getCommandLineSettings(*replacementValues):
                         ) # TODO:
 #                        required=True)
 
-    parser.add_argument('--log-dst',
+    parser.add_argument('--log-path',
                         type=folderType,
                         help='Optional folder in which to write HTML logs.  CAUTION: This folder will be completely overwritten.')
 
@@ -166,10 +166,10 @@ def getCommandLineSettings(*replacementValues):
 #    print 'args', args
 
     result = TFSMap()
-    result.ufo_src = args.ufo_src
-    result.ufo_dst = args.ufo_dst
+    result.ufo_src_path = args.ufo_src
+    result.ufo_dst_path = args.ufo_dst
     result.otf_dst = args.otf_dst
-    result.log_dst = args.log_dst
+    result.log_path = args.log_dst
     result.default_diacritical_distance_ems = args.default_diacritical_distance_ems
 
     result.top_join_centers = args.top_join_centers

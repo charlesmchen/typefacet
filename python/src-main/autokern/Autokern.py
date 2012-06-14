@@ -104,8 +104,8 @@ AUTOKERN_SEGMENT_PRECISION = 16
 USE_CACHED_KERNING_MAP = False
 #USE_CACHED_KERNING_MAP = True
 
-DEBUG_h_n_ISSUE = True
 DEBUG_h_n_ISSUE = False
+#DEBUG_h_n_ISSUE = True
 
 
 DEFAULT_SAMPLE_TEXTS = (
@@ -204,6 +204,181 @@ class Autokern(TFSMap):
             setattr(self, key, value)
 
 
+    def configureLogging(self):
+
+        if self.log_path is None:
+            return
+
+        OVERWRITE_LOGS = True
+#            OVERWRITE_LOGS = False
+
+        if OVERWRITE_LOGS:
+            if os.path.exists(self.log_path):
+                shutil.rmtree(self.log_path)
+            if os.path.exists(self.log_path):
+                raise Exception('Could not clear log_path: %s' % self.log_path)
+
+        if not os.path.exists(self.log_path):
+            os.mkdir(self.log_path)
+        if not (os.path.exists(self.log_path) and os.path.isdir(self.log_path)):
+            raise Exception('Invalid log_path: %s' % self.log_path)
+
+        if OVERWRITE_LOGS:
+            def makeLogSubfolder(parent, name):
+                subfolder = os.path.abspath(os.path.join(parent, name))
+                os.mkdir(subfolder)
+                if not (os.path.exists(subfolder) and os.path.isdir(subfolder)):
+                    raise Exception('Invalid log_path: %s' % self.log_path)
+                return subfolder
+
+            self.html_folder = makeLogSubfolder(self.log_path, 'html')
+            self.css_folder = makeLogSubfolder(self.html_folder, 'stylesheets')
+#            self.svg_folder = makeLogSubfolder(self.html_folder, 'svg')
+
+            import tfs.common.TFSProject as TFSProject
+            srcCssFile = os.path.abspath(os.path.join(TFSProject.findProjectRootFolder(), 'data', 'styles.css'))
+            dstCssFile = os.path.abspath(os.path.join(self.css_folder, os.path.basename(srcCssFile)))
+            shutil.copy(srcCssFile, dstCssFile)
+        else:
+            self.html_folder = os.path.join(self.log_path, 'html')
+            self.css_folder = os.path.join(self.html_folder, 'stylesheets')
+#            self.svg_folder = os.path.join(self.html_folder, 'svg')
+
+        self.kerningPairLogFilenames = set()
+        self.logFileTuples = []
+
+
+    def configure(self):
+
+        self.dstCache = AutokernCache()
+        self.srcCache = AutokernCache()
+
+        ufo_src_path = self.ufo_src_path
+        if ufo_src_path is None:
+            raise Exception('Missing ufo_src_path')
+        if not (os.path.exists(ufo_src_path) and os.path.isdir(ufo_src_path) and os.path.basename(ufo_src_path).lower().endswith('.ufo')):
+            raise Exception('Invalid ufo_src_path: %s' % ufo_src_path)
+
+        self.srcUfoFont = TFSFontFromFile(ufo_src_path)
+        self.dstUfoFont = TFSFontFromFile(ufo_src_path)
+        self.srcFilename = os.path.basename(ufo_src_path)
+        self.src_kerning_value_count = self.srcUfoFont.getKerningPairCount()
+        self.glyph_count = len(self.srcUfoFont.getGlyphs())
+
+
+        if self.ufo_dst_path is None:
+            raise Exception('Missing ufo_dst_path')
+        if os.path.exists(self.ufo_dst_path):
+            if os.path.isdir(self.ufo_dst_path):
+                shutil.rmtree(self.ufo_dst_path)
+            elif os.path.isfile(self.ufo_dst_path):
+                os.unlink(self.ufo_dst_path)
+            if os.path.exists(self.ufo_dst_path):
+                raise Exception('Could not overwrite: %s' % (self.ufo_dst_path,))
+
+
+        self.configureLogging()
+
+
+        self.units_per_em = int(round(self.dstUfoFont.units_per_em))
+        for key, value in self.argumentsMap.items():
+            if key.endswith('_ems'):
+                setattr(self, key[:-len('_ems')], value * self.units_per_em)
+        self.precision = int(round(self.precision))
+
+        self.ascender = self.srcUfoFont.ascender
+        self.descender = self.srcUfoFont.descender
+        self.ascender_ems = self.srcUfoFont.ascender / float(self.units_per_em)
+        self.descender_ems = self.srcUfoFont.descender / float(self.units_per_em)
+
+        self.timing = TFTiming()
+        self.advanceMap = {}
+        self.rasterCache = {}
+        self.pixelsCache = {}
+        self.pairsToKern = None
+        self.glyphsToKern = None
+        self.sampleTexts = list(DEFAULT_SAMPLE_TEXTS)
+
+        #
+
+        glyphs = self.srcUfoFont.getGlyphs()
+        glyphCodePoints = set()
+        glyphNames = set()
+        glyphCodePointToNameMap = {}
+        for glyph in glyphs:
+            if glyph.unicode is not None:
+                glyphCodePoints.add(glyph.unicode)
+            if glyph.name is not None:
+                glyphNames.add(glyph.name)
+            if glyph.name is not None and glyph.unicode is not None:
+                glyphCodePointToNameMap[glyph.unicode] = glyph.name
+
+        #
+
+        if self.extra_sample_texts is not None:
+            if len(self.extra_sample_texts) < 1:
+                raise Exception('Missing --extra-sample-texts value')
+            for sampleText in self.extra_sample_texts:
+                if len(sampleText) < 1:
+                    raise Exception('Invalid --extra-sample-texts value: %s' % sampleText)
+                for glyph in sampleText:
+                    if ord(glyph) not in glyphCodePoints:
+                        raise Exception('--extra-sample-texts value: %s has unknown glyph: %s' % (sampleText, glyph,))
+
+            # Prepend extra sample texts.
+            self.sampleTexts = self.extra_sample_texts + self.sampleTexts
+
+        #
+
+        if self.glyph_pairs_to_kern is not None:
+            if len(self.glyph_pairs_to_kern) < 1:
+                raise Exception('Missing --glyph-pairs-to-kern value')
+            if len(self.glyph_pairs_to_kern) % 2 != 0:
+                raise Exception('Uneven number of  --glyph-pairs-to-kern values')
+            self.pairsToKern = set()
+            for index in xrange(len(self.glyph_pairs_to_kern) / 2):
+                value0 = self.glyph_pairs_to_kern[index * 2 + 0]
+                value1 = self.glyph_pairs_to_kern[index * 2 + 1]
+                self.pairsToKern.add(( self.parseCodePoint('-glyph-pairs-to-kern', glyphNames, value0),
+                                       self.parseCodePoint('-glyph-pairs-to-kern', glyphNames, value1),
+                                       ))
+        elif self.glyphs_to_kern is not None:
+            if len(self.glyphs_to_kern) < 1:
+                raise Exception('Missing --glyphs-to-kern value')
+            self.glyphsToKern = set()
+#            print 'self.glyphs_to_kern', self.glyphs_to_kern
+            for value in self.glyphs_to_kern:
+                self.glyphsToKern.add(self.parseCodePoint('--glyphs-to-kern', glyphNames, value))
+        elif self.kern_samples_only is not None:
+            self.pairsToKern = set()
+            for sampleText in self.sampleTexts:
+                lastGlyphName = None
+                for glyph in sampleText:
+                    if ord(glyph) not in glyphCodePointToNameMap:
+                        '''
+                        We've already validated the "extra" sample texts.
+                        Ignore missing characters in the default sample texts.
+                        '''
+                        continue
+                    glyphName = glyphCodePointToNameMap.get(ord(glyph))
+                    if glyphName is not None and lastGlyphName is not None:
+                        self.pairsToKern.add( (lastGlyphName, glyphName,) )
+                    lastGlyphName = glyphName
+            print 'kerning %d pairs' % len(self.pairsToKern)
+        else:
+            pass
+
+        minmax = None
+        for ufoglyph in self.dstUfoFont.getGlyphs():
+            contours = self.dstCache.getGlyphContours(ufoglyph)
+            if len(contours) < 1:
+                continue
+            glyphMinmax = minmaxPaths(contours)
+            minmax = minmaxMerge(minmax, glyphMinmax)
+        self.allGlyphsMinY = minmax.minY
+        self.allGlyphsMaxY = minmax.maxY
+
+
     def formatUnitsInEms(self, value):
         return formatEms(value / float(self.units_per_em))
 
@@ -215,10 +390,12 @@ class Autokern(TFSMap):
                 ( 'Units per em', 'units_per_em',),
                 ( 'Ascender', 'ascender_ems',),
                 ( 'Descender', 'descender_ems',),
+                ( 'Precision', 'precision_ems',),
                 ( 'Minimum Distance', 'min_distance_ems',),
                 ( 'Maximum Distance', 'max_distance_ems',),
-                ( 'Precision', 'precision_ems',),
+                ( 'Tracking', 'tracking_ems',),
                 ( 'Intrusion Tolerance', 'intrusion_tolerance_ems',),
+#                ( 'Intrusion Min. Thickness', 'intrusion_min_thickness_ems',),
                 ( 'Max. x-extrema Overlap', 'max_x_extrema_overlap_ems',),
                 ( 'x-extrema Overlap Scaling', 'x_extrema_overlap_scaling',),
                 ( 'Glyph Count', 'glyph_count',),
@@ -249,11 +426,9 @@ class Autokern(TFSMap):
         mustacheMap['sidebarVars'] = varMaps
 
         argMaps = []
-        for key, value in self.argumentsMap.items():
-            if key in ('ufo_src',
-                       'ufo_dst',
-                       'log_dst',
-                       ):
+        for key in sorted(self.argumentsMap):
+            value = self.argumentsMap[key]
+            if key.endswith('_path'):
                 continue
             if value is None:
                 continue
@@ -263,6 +438,8 @@ class Autokern(TFSMap):
                                     'sidebarVarValue': '',
                                     })
                 continue
+            elif type(value) in ( types.ListType, types.TupleType, ):
+                value = ', '.join([str(item) for item in value])
             argMaps.append({'sidebarVarName': '--' + key.replace('_', '-'),
                             'sidebarVarValue': value,
                             })
@@ -888,7 +1065,7 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
 
     def logDisparities(self):
 
-        renderLog = self.log_dst is not None
+        renderLog = self.log_path is not None
         if not renderLog:
             return
         if (self.disparity_log_count is None) or (self.disparity_log_count < 1):
@@ -1082,9 +1259,11 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
         return minProfile, maxProfile
 
 
-    def isValidProfileIntrusion(self, profile0, profile1, referenceProfile, advance):
+    def isValidProfileIntrusion_old(self, profile0, profile1, referenceProfile, advance):
 
 #        print 'isValidProfileIntrusion', 'advance', advance
+
+        maxRowExtrusion = self.max_distance
 
         '''
         Step 1
@@ -1093,10 +1272,22 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
         '''
         sections = []
         sectionXOffsets = []
-        for edge0, edge1 in itertools.izip(profile0, profile1):
+        for edge0, edge1, reference in itertools.izip(profile0, profile1, referenceProfile):
             x_offset = None
             if (edge0 is not None) and (edge1 is not None):
                 x_offset = advance + edge1 - edge0
+
+            '''
+            A row is hollow if it only exists because one of the profiles was inflated,
+            ie. the top and bottom spacing around the glyph.
+            '''
+            hollow = reference is None
+            if hollow and x_offset >= 0:
+                '''
+                If a row is hollow and there is no intrusion, ignore it
+                so that it does not count towards extrusion.
+                '''
+                x_offset = None
 
             if x_offset is None:
                 if len(sectionXOffsets) > 0:
@@ -1136,7 +1327,7 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
             lastValidIndex = None
             for index, x_offset in enumerate(section):
 #                print 'index, x_offset', index, x_offset
-                if x_offset < self.max_distance:
+                if x_offset < maxRowExtrusion:
                     if lastValidIndex is not None:
                         gapLength = index - lastValidIndex
                         if gapLength >= maxGapLength:
@@ -1179,13 +1370,13 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
             headCount = 0
             for index, x_offset in enumerate(section):
 #                print 'index, x_offset', index, x_offset
-                if x_offset < self.max_distance:
+                if x_offset < maxRowExtrusion:
                     break
                 headCount = index
             tailCount = 0
             for index, x_offset in enumerate(reversed(section)):
 #                print 'reversed index, x_offset', index, x_offset
-                if x_offset < self.max_distance:
+                if x_offset < maxRowExtrusion:
                     break
                 tailCount = index
 #            maxPadding = int(round(self.max_distance * 0.5 / self.precision))
@@ -1235,7 +1426,7 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
                 '''
                 Ignore extrusion greater than --max-distance argument.
                 '''
-                rowExtrusion = min(self.max_distance, max(0, +rowSpacing))
+                rowExtrusion = min(maxRowExtrusion, max(0, +rowSpacing))
 #                print 'edge0, edge1', edge0, edge1, 'diff', diff, 'advance', advance, 'rowIntrusion', rowIntrusion, 'rowExtrusion', rowExtrusion
                 intrusionTotal += rowIntrusion
                 extrusionTotal += rowExtrusion
@@ -1266,6 +1457,232 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
         return True, sections
 
 
+    def isValidProfileIntrusion(self, profile0, profile1, referenceProfiles, advance):
+
+#        DEBUG_h_n_ISSUE = True
+#        print 'isValidProfileIntrusion', 'advance', advance
+
+        maxRowExtrusion = self.max_distance
+        maxSectionGapLength = int(round(self.max_distance * 1.0 / self.precision))
+        maxSectionPadding = int(round(self.max_distance * 0.5 / self.precision))
+        defaultMaxXOffset = maxRowExtrusion
+#        intrusionMinThicknessRows = int(round(self.intrusion_min_thickness / float(self.precision)))
+
+
+        def isValidRow(x_offset):
+            return (x_offset is not None) and (x_offset < maxRowExtrusion)
+
+        '''
+        Step 1
+
+        Evaluate the x-offset between the profiles for each row.
+        '''
+        allXOffsets = []
+        for values in itertools.izip(profile0, profile1, *referenceProfiles):
+            edge0 = values[0]
+            edge1 = values[1]
+            references = values[2:]
+#        for edge0, edge1, *references in itertools.izip(profile0, profile1, *referenceProfiles):
+            x_offset = None
+            if (edge0 is not None) and (edge1 is not None):
+                x_offset = advance + edge1 - edge0
+
+            '''
+            A row is hollow if it only exists because one of the profiles was inflated,
+            ie. the top and bottom spacing around the glyph.
+            '''
+            hollow = False
+            for reference in references:
+                if reference is None:
+                    hollow = True
+            if hollow and x_offset >= 0:
+                '''
+                If a row is hollow and there is no intrusion, ignore it
+                so that it does not count towards extrusion.
+                '''
+                x_offset = None
+
+#            if x_offset is None:
+#                '''
+#                Fill in missing rows with
+#                '''
+#                x_offset = 2 * maxRowExtrusion
+
+            allXOffsets.append(x_offset)
+
+#        if DEBUG_h_n_ISSUE:
+#            print 'sections.0', len(sections), [len(section) for section in sections]
+#            print 'sections.0', len(sections), sections
+
+        def splitSection(section):
+            '''
+            Step 2
+
+            We need to split sections that have large internal gaps.
+            Consider C vs. O.  If the mouth of the C is too large,
+            it cases the upper and lower arms of the C to be kerned too
+            closely to the next glyph.
+
+            To resolve this, we split sections with large continuous internal gaps.
+            The gaps must be entirely deeper and longer than self.max_distance.
+
+            We leave up to self.max_distance of the gap around the split which
+            will be trimmed by the next phase anyhow.
+            '''
+
+            lastValidIndex = None
+            for index, x_offset in enumerate(section):
+#                print 'index, x_offset', index, x_offset
+                if isValidRow(x_offset):
+                    if lastValidIndex is not None:
+                        gapLength = index - lastValidIndex
+                        if gapLength >= maxSectionGapLength:
+                            left = section[:index]
+                            right = section[lastValidIndex + 1:]
+#                            print 'maxGapLength', maxGapLength, 'gapLength', gapLength, 'self.max_distance', self.max_distance
+#                            print 'left', left
+#                            print 'right', right
+                            return splitSection(left) + splitSection(right)
+
+                    lastValidIndex = index
+
+            return [section,]
+
+#        print 'splitSections.0', len(sections)
+        sections = splitSection(allXOffsets)
+#        print 'splitSections.1', len(sections)
+
+
+        def trimSection(section):
+            '''
+            Step 3
+
+            We need to trim the sections that have huge gaps at the top and/or bottom.
+            Consider h vs. h.  The huge space between the top stems distorts the
+            profile and causes their bottoms to be kerned too closely.
+
+            To resolve this, we trim large continuous gaps at the top or bottom
+            of a section.  The gaps must be entirely greater than self.max_distance.
+
+            We leave up to self.max_distance * 0.5 of the gap, so that beaks
+            and arms are kerned closer.  For example, t vs. L or r vs. a.
+
+            This isn't an ideal solution.  It might better to add a new argument that
+            discards sections below a certain length.
+            '''
+            headCount = 0
+            for index, x_offset in enumerate(section):
+#                print 'index, x_offset', index, x_offset
+                if isValidRow(x_offset):
+                    break
+                headCount = index
+            tailCount = 0
+            for index, x_offset in enumerate(reversed(section)):
+#                print 'reversed index, x_offset', index, x_offset
+                if isValidRow(x_offset):
+                    break
+                tailCount = index
+#            maxPadding = int(round(self.max_distance * 0.5 / self.precision))
+            headTrimCount = max(0, headCount - maxSectionPadding)
+            tailTrimCount = max(0, tailCount - maxSectionPadding)
+            if headTrimCount + tailTrimCount >= len(section):
+                return []
+#            print 'section', len(section)
+#            print 'maxPadding', maxPadding, 'self.max_distance', self.max_distance, 'self.precision', self.precision
+#            print 'headCount', headCount, 'headTrimCount', headTrimCount
+#            print 'tailCount', tailCount, 'tailTrimCount', tailTrimCount
+            if tailTrimCount > 0:
+                result = section[headTrimCount:-tailTrimCount]
+            else:
+                result = section[headTrimCount:]
+
+            # Trim empty space
+            while (len(result) > 0) and (result[0] is None):
+                result = result[1:]
+            while (len(result) > 0) and (result[-1] is None):
+                result = result[:-1]
+
+            return result
+
+        trimmedSections = []
+        for section in sections:
+            section = trimSection(section)
+            if len(section) > 0:
+                trimmedSections.append(section)
+        sections = trimmedSections
+
+
+        if DEBUG_h_n_ISSUE:
+            print 'sections.1', len(sections), [len(section) for section in sections]
+            print 'sections.1', len(sections), sections
+
+#        print 'sections', sections
+
+        if len(sections) < 1:
+            '''
+            No collision found.
+            '''
+            return True
+
+        '''
+        Step 4
+        Now consider each section separately.
+        '''
+        for section in sections:
+            intrusionTotal = 0
+            extrusionTotal = 0
+
+#            x_offsets = []
+#            for x_offset in section:
+#                if x_offset is None:
+#                    x_offset = defaultMaxXOffset
+#                x_offsets.append(x_offset)
+#            x_offsets.sort()
+#            intrusionMinThicknessRows
+
+#            intrusionRowCount = 0
+            for x_offset in section:
+                if x_offset is None:
+                    '''
+                    Fill in missing gaps with maximum extrusion value.
+                    '''
+                    x_offset = defaultMaxXOffset
+                rowIntrusion = max(0, -x_offset)
+                '''
+                Ignore extrusion greater than --max-distance argument.
+                '''
+                rowExtrusion = min(maxRowExtrusion, max(0, +x_offset))
+#                print 'edge0, edge1', edge0, edge1, 'diff', diff, 'advance', advance, 'rowIntrusion', rowIntrusion, 'rowExtrusion', rowExtrusion
+                intrusionTotal += rowIntrusion
+                extrusionTotal += rowExtrusion
+#                if rowIntrusion > 0:
+#                    intrusionRowCount += 1
+#
+#            if intrusionRowCount < intrusionMinThicknessRows:
+#                continue
+
+            '''
+            Enforce
+            '''
+
+#            print 'advance', advance
+#            print 'intrusionTotal', intrusionTotal, 'extrusionTotal', extrusionTotal
+#            INTRUSION_EXTRUSION_MIN_RATIO = 1.5
+            INTRUSION_EXTRUSION_MIN_RATIO = 1.0
+            if intrusionTotal > extrusionTotal * INTRUSION_EXTRUSION_MIN_RATIO:
+                return False
+
+            intrusionToleranceArea = self.intrusion_tolerance * len(section)
+#            print 'intrusionToleranceArea', intrusionToleranceArea
+            if intrusionTotal > intrusionToleranceArea:
+                return False
+
+#        print 'totalSectionRowCount', totalSectionRowCount, 'advance', advance
+#        print 'intrusionTotal', intrusionTotal, 'extrusionTotal', extrusionTotal, 'intrusionToleranceArea', intrusionToleranceArea
+
+        return True
+
+
     def findMinProfileAdvance(self, profile0, profile1):
         if len(profile0) != len(profile1):
             raise Exception('profile heights do not match. %d != %d', len(profile0), len(profile1))
@@ -1283,7 +1700,7 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
         return contactAdvance
 
 
-    def findMinProfileAdvance_withIntrusion(self, profile0, profile1, referenceProfile):
+    def findMinProfileAdvance_withIntrusion(self, profile0, profile1, referenceProfiles):
         contactAdvance = self.findMinProfileAdvance(profile0, profile1)
 
         if contactAdvance is None:
@@ -1293,8 +1710,13 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
         Binary search for best intrusion offset.
         '''
         lowValidIntrusionOffset = 0
-        highInvalidIntrusionOffset = int(math.ceil(self.intrusion_tolerance))
-        lowValidSections = ()
+        '''
+        I'm not sure what the best way to determine an upper bound on this value is,
+        so I've erred on the side of accuracy by chosing a very high upper bound.
+        '''
+        maximumIntrusionOffset = int(math.ceil(2.0 * max(self.intrusion_tolerance,
+                                                         self.max_distance)))
+        highInvalidIntrusionOffset = maximumIntrusionOffset
         while True:
             intrusionOffset = int(round((lowValidIntrusionOffset + highInvalidIntrusionOffset) / 2))
             if DEBUG_h_n_ISSUE:
@@ -1303,12 +1725,10 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
             if intrusionOffset in ( lowValidIntrusionOffset,
                                     highInvalidIntrusionOffset, ):
                 intrudingAdvance = contactAdvance - lowValidIntrusionOffset
-                return intrudingAdvance, lowValidSections
+                return intrudingAdvance
 
-            isValid, sections = self.isValidProfileIntrusion(profile0, profile1, referenceProfile, contactAdvance - intrusionOffset)
-            if isValid:
+            if self.isValidProfileIntrusion(profile0, profile1, referenceProfiles, contactAdvance - intrusionOffset):
                 lowValidIntrusionOffset = intrusionOffset
-                lowValidSections = sections
             else:
                 highInvalidIntrusionOffset = intrusionOffset
 
@@ -1454,7 +1874,7 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
         debugKerning = True
         debugKerning = False
 
-        renderLog = (self.log_dst is not None) and self.write_kerning_pair_logs
+        renderLog = (self.log_path is not None) and self.write_kerning_pair_logs
 
         contours0 = self.dstCache.getGlyphContours(ufoglyph0)
         contours1 = self.dstCache.getGlyphContours(ufoglyph1)
@@ -1470,80 +1890,118 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
 
         def getGlyphProfiles(contours):
             return self.makeProfile(paths=contours)
-        def getGlyphProfilesInflateMin(contours):
-            return self.makeInflatedProfile(contours=contours, radius=self.min_distance)
-        def getGlyphProfilesInflateMax(contours):
-            return self.makeInflatedProfile(contours=contours, radius=self.max_distance)
 
-        _, profile0 = self.dstCache.getCachedValue('getGlyphProfiles %s' % ufoglyph0.name, getGlyphProfiles, contours0)
-        self.timing.mark('processKerningPair.011')
-
-        _, profileMin0 = self.dstCache.getCachedValue('getGlyphProfilesInflateMin %s' % ufoglyph0.name, getGlyphProfilesInflateMin, contours0)
-        self.timing.mark('processKerningPair.012')
-
-        _, profileMax0 = self.dstCache.getCachedValue('getGlyphProfilesInflateMax %s' % ufoglyph0.name, getGlyphProfilesInflateMax, contours0)
-        self.timing.mark('processKerningPair.013')
-
-        profile1, _ = self.dstCache.getCachedValue('getGlyphProfiles %s' % ufoglyph1.name, getGlyphProfiles, contours1)
-        self.timing.mark('processKerningPair.014')
-
-        profileMin1, _ = self.dstCache.getCachedValue('getGlyphProfilesInflateMin %s' % ufoglyph1.name, getGlyphProfilesInflateMin, contours1)
-        self.timing.mark('processKerningPair.015')
-
-        profileMax1, _ = self.dstCache.getCachedValue('getGlyphProfilesInflateMax %s' % ufoglyph1.name, getGlyphProfilesInflateMax, contours1)
-        self.timing.mark('processKerningPair.016')
-
-        if DEBUG_h_n_ISSUE:
-            print ufoglyph0.name, ufoglyph1.name, 'findMinProfileAdvance(profile0, profileMin1)'
-        minDistanceAdvance0 = self.findMinProfileAdvance(profile0, profileMin1)
-        self.timing.mark('processKerningPair.020')
-        if DEBUG_h_n_ISSUE:
-            print ufoglyph0.name, ufoglyph1.name, 'findMinProfileAdvance(profileMin0, profile1)'
-        minDistanceAdvance1 = self.findMinProfileAdvance(profileMin0, profile1)
-        self.timing.mark('processKerningPair.021')
-
-        def maxAdvance(advance0, advance1):
+        def maxAdvance(advance0, advance1, defaultAdvance):
             if advance0 is None and advance1 is None:
-                return None
-            if advance0 is None:
-                return advance1
-            if advance1 is None:
-                return advance0
-            return max(advance0, advance1)
+                result = defaultAdvance
+            elif advance0 is None:
+                result = advance1
+            elif advance1 is None:
+                result = advance0
+            else:
+                result = max(advance0, advance1)
+            result = int(round(result))
+            return result
 
-        minDistanceAdvance = maxAdvance(minDistanceAdvance0, minDistanceAdvance1)
-        if minDistanceAdvance is None:
-            '''
-            If no collisions between the glyph profiles, use x-extrema
-            plus the min_distance argument.
-            '''
-            minDistanceAdvance = minmax0.maxX + self.min_distance - minmax1.minX
-        minDistanceAdvance = int(round(minDistanceAdvance))
-        if debugKerning:
-            print 'minDistanceAdvance0', minDistanceAdvance0, 'minDistanceAdvance1', minDistanceAdvance1, 'minDistanceAdvance', minDistanceAdvance
+        HALF_STYLE = True
 
-        if DEBUG_h_n_ISSUE:
-            print ufoglyph0.name, ufoglyph1.name, 'findMinProfileAdvance_withIntrusion(profile0, profileMax1)'
-        intrudingAdvance0, intrudingSections0 = self.findMinProfileAdvance_withIntrusion(profile0, profileMax1, referenceProfile=profile1)
-        self.timing.mark('processKerningPair.022')
-        if DEBUG_h_n_ISSUE:
-            print ufoglyph0.name, ufoglyph1.name, 'findMinProfileAdvance_withIntrusion(profileMax0, profile1)'
-        intrudingAdvance1, intrudingSections1 = self.findMinProfileAdvance_withIntrusion(profileMax0, profile1, referenceProfile=profile0)
-        self.timing.mark('processKerningPair.023')
+        if HALF_STYLE:
+            def getGlyphProfilesInflateMin(contours):
+                return self.makeInflatedProfile(contours=contours, radius=self.min_distance * 0.5)
+            def getGlyphProfilesInflateMax(contours):
+                return self.makeInflatedProfile(contours=contours, radius=self.max_distance * 0.5)
 
-        intrudingAdvance = maxAdvance(intrudingAdvance0, intrudingAdvance1)
-        if intrudingAdvance is None:
-            '''
-            If no collisions between the glyph profiles, use x-extrema
-            plus the min_distance argument.
+            _, profile0 = self.dstCache.getCachedValue('getGlyphProfiles %s' % ufoglyph0.name, getGlyphProfiles, contours0)
+            self.timing.mark('processKerningPair.011')
 
-            TODO: should we use the max_distance instead?
-            '''
-            intrudingAdvance = minmax0.maxX + self.min_distance - minmax1.minX
-        intrudingAdvance = int(round(intrudingAdvance))
-        if debugKerning:
-            print 'intrudingAdvance0', intrudingAdvance0, 'intrudingAdvance1', intrudingAdvance1, 'intrudingAdvance', intrudingAdvance
+            _, profileMin0 = self.dstCache.getCachedValue('getGlyphProfilesInflateMin %s' % ufoglyph0.name, getGlyphProfilesInflateMin, contours0)
+            self.timing.mark('processKerningPair.012')
 
+            _, profileMax0 = self.dstCache.getCachedValue('getGlyphProfilesInflateMax %s' % ufoglyph0.name, getGlyphProfilesInflateMax, contours0)
+            self.timing.mark('processKerningPair.013')
+
+            profile1, _ = self.dstCache.getCachedValue('getGlyphProfiles %s' % ufoglyph1.name, getGlyphProfiles, contours1)
+            self.timing.mark('processKerningPair.014')
+
+            profileMin1, _ = self.dstCache.getCachedValue('getGlyphProfilesInflateMin %s' % ufoglyph1.name, getGlyphProfilesInflateMin, contours1)
+            self.timing.mark('processKerningPair.015')
+
+            profileMax1, _ = self.dstCache.getCachedValue('getGlyphProfilesInflateMax %s' % ufoglyph1.name, getGlyphProfilesInflateMax, contours1)
+            self.timing.mark('processKerningPair.016')
+
+            if DEBUG_h_n_ISSUE:
+                print ufoglyph0.name, ufoglyph1.name, 'findMinProfileAdvance(profileMin0, profileMin1)'
+            minDistanceAdvance = self.findMinProfileAdvance(profileMin0, profileMin1)
+            minDistanceAdvance = int(round(minDistanceAdvance))
+            self.timing.mark('processKerningPair.020')
+            if debugKerning:
+                print 'minDistanceAdvance', minDistanceAdvance
+
+            if DEBUG_h_n_ISSUE:
+                print ufoglyph0.name, ufoglyph1.name, 'findMinProfileAdvance_withIntrusion(profileMax0, profileMax1)'
+            intrudingAdvance = self.findMinProfileAdvance_withIntrusion(profileMax0, profileMax1, referenceProfiles=(profile0, profile1))
+            self.timing.mark('processKerningPair.022')
+            intrudingAdvance = int(round(intrudingAdvance))
+            if debugKerning:
+                print 'intrudingAdvance', intrudingAdvance
+
+            if DEBUG_h_n_ISSUE:
+                print 'minDistanceAdvance', minDistanceAdvance
+                print 'intrudingAdvance', intrudingAdvance
+
+        else:
+            def getGlyphProfilesInflateMin(contours):
+                return self.makeInflatedProfile(contours=contours, radius=self.min_distance)
+            def getGlyphProfilesInflateMax(contours):
+                return self.makeInflatedProfile(contours=contours, radius=self.max_distance)
+
+            _, profile0 = self.dstCache.getCachedValue('getGlyphProfiles %s' % ufoglyph0.name, getGlyphProfiles, contours0)
+            self.timing.mark('processKerningPair.011')
+
+            _, profileMin0 = self.dstCache.getCachedValue('getGlyphProfilesInflateMin %s' % ufoglyph0.name, getGlyphProfilesInflateMin, contours0)
+            self.timing.mark('processKerningPair.012')
+
+            _, profileMax0 = self.dstCache.getCachedValue('getGlyphProfilesInflateMax %s' % ufoglyph0.name, getGlyphProfilesInflateMax, contours0)
+            self.timing.mark('processKerningPair.013')
+
+            profile1, _ = self.dstCache.getCachedValue('getGlyphProfiles %s' % ufoglyph1.name, getGlyphProfiles, contours1)
+            self.timing.mark('processKerningPair.014')
+
+            profileMin1, _ = self.dstCache.getCachedValue('getGlyphProfilesInflateMin %s' % ufoglyph1.name, getGlyphProfilesInflateMin, contours1)
+            self.timing.mark('processKerningPair.015')
+
+            profileMax1, _ = self.dstCache.getCachedValue('getGlyphProfilesInflateMax %s' % ufoglyph1.name, getGlyphProfilesInflateMax, contours1)
+            self.timing.mark('processKerningPair.016')
+
+            if DEBUG_h_n_ISSUE:
+                print ufoglyph0.name, ufoglyph1.name, 'findMinProfileAdvance(profile0, profileMin1)'
+            minDistanceAdvance0 = self.findMinProfileAdvance(profile0, profileMin1)
+            self.timing.mark('processKerningPair.020')
+            if DEBUG_h_n_ISSUE:
+                print ufoglyph0.name, ufoglyph1.name, 'findMinProfileAdvance(profileMin0, profile1)'
+            minDistanceAdvance1 = self.findMinProfileAdvance(profileMin0, profile1)
+            self.timing.mark('processKerningPair.021')
+
+            minDistanceAdvance = maxAdvance(minDistanceAdvance0, minDistanceAdvance1, minmax0.maxX + self.min_distance - minmax1.minX)
+            if debugKerning:
+                print 'minDistanceAdvance0', minDistanceAdvance0, 'minDistanceAdvance1', minDistanceAdvance1, 'minDistanceAdvance', minDistanceAdvance
+
+            if DEBUG_h_n_ISSUE:
+                print ufoglyph0.name, ufoglyph1.name, 'findMinProfileAdvance_withIntrusion(profile0, profileMax1)'
+            intrudingAdvance0 = self.findMinProfileAdvance_withIntrusion(profile0, profileMax1, referenceProfile=profile1)
+            self.timing.mark('processKerningPair.022')
+            if DEBUG_h_n_ISSUE:
+                print ufoglyph0.name, ufoglyph1.name, 'findMinProfileAdvance_withIntrusion(profileMax0, profile1)'
+            intrudingAdvance1 = self.findMinProfileAdvance_withIntrusion(profileMax0, profile1, referenceProfile=profile0)
+            self.timing.mark('processKerningPair.023')
+
+            intrudingAdvance = maxAdvance(intrudingAdvance0, intrudingAdvance1, minmax0.maxX + self.min_distance - minmax1.minX)
+            if debugKerning:
+                print 'intrudingAdvance0', intrudingAdvance0, 'intrudingAdvance1', intrudingAdvance1, 'intrudingAdvance', intrudingAdvance
+
+            if DEBUG_h_n_ISSUE:
+                print 'minDistanceAdvance0', minDistanceAdvance0, 'minDistanceAdvance1', minDistanceAdvance1, 'minDistanceAdvance', minDistanceAdvance
+                print 'intrudingAdvance0', intrudingAdvance0, 'intrudingAdvance1', intrudingAdvance1, 'intrudingAdvance', intrudingAdvance
 
         '''
         Now combine results into the final advance value.
@@ -1556,10 +2014,15 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
         '''
         2. Make sure advance is at least the "minimum advance."
         '''
-        advance = maxAdvance(advance, minDistanceAdvance)
+        advance = maxAdvance(advance, minDistanceAdvance, minmax0.maxX + self.min_distance - minmax1.minX)
 
         '''
-        3. Apply --x-extrema-overlap-scaling argument.
+        3. Add the "tracking" value.
+        '''
+        advance += self.tracking
+
+        '''
+        4. Apply --x-extrema-overlap-scaling argument.
         '''
         x_extrema_overlap = minmax0.maxX - (minmax1.minX + advance)
         if x_extrema_overlap > 0:
@@ -1570,7 +2033,7 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
             advance += x_extrema_overlap - scaled_x_extrema_overlap
 
         '''
-        4. Make sure the "x-extrema overlap" is not greater than the "max x-extrema overlap".
+        5. Make sure the "x-extrema overlap" is not greater than the "max x-extrema overlap".
         '''
         x_extrema_overlap = minmax0.maxX - (minmax1.minX + advance)
         pair_max_x_extrema_overlap = self.max_x_extrema_overlap
@@ -1603,6 +2066,9 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
                               glyphProfile0, glyphProfile1,
                               advanceValue,
                               extraVariableTuples):
+
+                fillPathTuples = ()
+
                 strokePathTuples = ()
                 if glyphProfile0 is not None:
                     strokePathTuples = (
@@ -1638,15 +2104,16 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
 
                 logSections.append({'title': title, # + ' Kerning',
                                     'svg': self.renderSvgScene(None,
-                                                 pathTuples = (
-                                                               ( 0x7f7faf7f, glyphContours0, ),
-                                                               ( 0x7f7f7faf, glyphContours1, ),
-                                                               ),
-                                                 strokePathTuples = strokePathTuples,
-                                                 hGuidelines = ( advanceValue, # RSB
-                                                                 glyphXAdvance0, # LSB
-                                                                 min(glyphMinmax0.maxX, glyphMinmax1_.minX),
-                                                                 max(glyphMinmax0.maxX, glyphMinmax1_.minX),
+                                                               pathTuples = (
+                                                                             ( 0x7f7faf7f, glyphContours0, ),
+                                                                             ( 0x7f7f7faf, glyphContours1, ),
+                                                                             ),
+                                                               fillPathTuples = fillPathTuples,
+                                                               strokePathTuples = strokePathTuples,
+                                                               hGuidelines = ( advanceValue, # RSB
+                                                                               glyphXAdvance0, # LSB
+                                                                               min(glyphMinmax0.maxX, glyphMinmax1_.minX),
+                                                                               max(glyphMinmax0.maxX, glyphMinmax1_.minX),
                                                                  ) ),
                                     'variables': variableTuples,
                                     })
@@ -1716,65 +2183,149 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
 
             # -----------
 
-            addLogSection('Minimum Distance',
-                          ufoglyph0.xAdvance, ufoglyph1.xAdvance,
-                          contours0, contours1,
-                          profilePaths0, profileMinPaths1,
-                          minDistanceAdvance,
-                          (
-                              ('--min-distance-ems', 'min_distance_ems',),
-                          ))
+            if HALF_STYLE:
+                addLogSection('Minimum Distance',
+                              ufoglyph0.xAdvance, ufoglyph1.xAdvance,
+                              contours0, contours1,
+                              profileMinPaths0, profileMinPaths1,
+                              minDistanceAdvance,
+                              (
+                                  ('--min-distance-ems', 'min_distance_ems',),
+                              ))
+            else:
+                addLogSection('Minimum Distance',
+                              ufoglyph0.xAdvance, ufoglyph1.xAdvance,
+                              contours0, contours1,
+                              profilePaths0, profileMinPaths1,
+                              minDistanceAdvance,
+                              (
+                                  ('--min-distance-ems', 'min_distance_ems',),
+                              ))
 
             # -----------
 
-            maxDistanceAdvance = self.findMinProfileAdvance(profile0, profileMax1)
-            if debugKerning:
-                print 'maxDistanceAdvance', maxDistanceAdvance
+            if HALF_STYLE:
+                maxDistanceAdvance = self.findMinProfileAdvance(profileMax0, profileMax1)
+                if debugKerning:
+                    print 'maxDistanceAdvance', maxDistanceAdvance
 
-            if maxDistanceAdvance is None:
-                '''
-                If no collisions between the glyph profiles, use x-extrema
-                plus the max_distance argument.
-                '''
-                maxDistanceAdvance = minmax0.maxX + self.max_distance - minmax1.minX
-            maxDistanceAdvance = int(round(maxDistanceAdvance))
+                if maxDistanceAdvance is None:
+                    '''
+                    If no collisions between the glyph profiles, use x-extrema
+                    plus the max_distance argument.
+                    '''
+                    maxDistanceAdvance = minmax0.maxX + self.max_distance - minmax1.minX
+                maxDistanceAdvance = int(round(maxDistanceAdvance))
 
-            self.timing.mark('processKerningPair.65')
+                self.timing.mark('processKerningPair.65')
 
-            addLogSection('Maximum Distance',
-                          ufoglyph0.xAdvance, ufoglyph1.xAdvance,
-                          contours0, contours1,
-                          profilePaths0, profileMaxPaths1,
-                          maxDistanceAdvance,
-                          (
-                              ('--max-distance-ems', 'max_distance_ems',),
-                          ))
-            self.timing.mark('processKerningPair.66')
+                addLogSection('Maximum Distance',
+                              ufoglyph0.xAdvance, ufoglyph1.xAdvance,
+                              contours0, contours1,
+                              profileMaxPaths0, profileMaxPaths1,
+                              maxDistanceAdvance,
+                              (
+                                  ('--max-distance-ems', 'max_distance_ems',),
+                              ))
+                self.timing.mark('processKerningPair.66')
+            else:
+                maxDistanceAdvance = self.findMinProfileAdvance(profile0, profileMax1)
+                if debugKerning:
+                    print 'maxDistanceAdvance', maxDistanceAdvance
+
+                if maxDistanceAdvance is None:
+                    '''
+                    If no collisions between the glyph profiles, use x-extrema
+                    plus the max_distance argument.
+                    '''
+                    maxDistanceAdvance = minmax0.maxX + self.max_distance - minmax1.minX
+                maxDistanceAdvance = int(round(maxDistanceAdvance))
+
+                self.timing.mark('processKerningPair.65')
+
+                addLogSection('Maximum Distance',
+                              ufoglyph0.xAdvance, ufoglyph1.xAdvance,
+                              contours0, contours1,
+                              profilePaths0, profileMaxPaths1,
+                              maxDistanceAdvance,
+                              (
+                                  ('--max-distance-ems', 'max_distance_ems',),
+                              ))
+                self.timing.mark('processKerningPair.66')
 
             # -----------
 
-            addLogSection('Intruding',
-                          ufoglyph0.xAdvance, ufoglyph1.xAdvance,
-                          contours0, contours1,
-                          profilePaths0, profileMaxPaths1,
-                          intrudingAdvance,
-                          (
-                              ('--intrusion-tolerance-ems', 'intrusion_tolerance_ems',),
-                          ))
-            self.timing.mark('processKerningPair.67')
+            if HALF_STYLE:
+
+                addLogSection('Intruding',
+                              ufoglyph0.xAdvance, ufoglyph1.xAdvance,
+                              contours0, contours1,
+                              profileMaxPaths0, profileMaxPaths1,
+                              intrudingAdvance,
+                              (
+    #                              ('intrudingAdvance', 'intrudingAdvance_in_ems',),
+    #                              ('intrudingAdvance (Right)', 'intrudingAdvance0_in_ems',),
+    #                              ('intrudingAdvance (Left)', 'intrudingAdvance1_in_ems',),
+                                  ('--intrusion-tolerance-ems', 'intrusion_tolerance_ems',),
+                              ))
+                self.timing.mark('processKerningPair.68')
+
+            else:
+
+                addLogSection('Intruding (Left)',
+                              ufoglyph0.xAdvance, ufoglyph1.xAdvance,
+                              contours0, contours1,
+                              profileMaxPaths0, profilePaths1,
+                              intrudingAdvance1,
+                              (
+    #                              ('intrudingAdvance', 'intrudingAdvance_in_ems',),
+    #                              ('intrudingAdvance (Right)', 'intrudingAdvance0_in_ems',),
+    #                              ('intrudingAdvance (Left)', 'intrudingAdvance1_in_ems',),
+                                  ('--intrusion-tolerance-ems', 'intrusion_tolerance_ems',),
+                              ))
+                self.timing.mark('processKerningPair.67')
+
+                # -----------
+
+
+                addLogSection('Intruding (Right)',
+                              ufoglyph0.xAdvance, ufoglyph1.xAdvance,
+                              contours0, contours1,
+                              profilePaths0, profileMaxPaths1,
+                              intrudingAdvance0,
+                              (
+    #                              ('intrudingAdvance', 'intrudingAdvance_in_ems',),
+    #                              ('intrudingAdvance (Right)', 'intrudingAdvance0_in_ems',),
+    #                              ('intrudingAdvance (Left)', 'intrudingAdvance1_in_ems',),
+                                  ('--intrusion-tolerance-ems', 'intrusion_tolerance_ems',),
+                              ))
+                self.timing.mark('processKerningPair.68')
 
             # -----------
 
-            addLogSection('Autokern Raw',
-                          ufoglyph0.xAdvance, ufoglyph1.xAdvance,
-                          contours0, contours1,
-                          profilePaths0, profileMaxPaths1,
-                          advance,
-                          (
-                              ('--max-x-extrema-overlap-ems', 'max_x_extrema_overlap_in_ems',),
-                              ('--x-extrema-overlap-scaling', 'x_extrema_overlap_scaling',),
-                          ))
-            self.timing.mark('processKerningPair.68')
+            if HALF_STYLE:
+                addLogSection('Autokern Raw',
+                              ufoglyph0.xAdvance, ufoglyph1.xAdvance,
+                              contours0, contours1,
+                              profileMaxPaths0, profileMaxPaths1,
+                              advance,
+                              (
+                                  ('--max-x-extrema-overlap-ems', 'max_x_extrema_overlap_in_ems',),
+                                  ('--x-extrema-overlap-scaling', 'x_extrema_overlap_scaling',),
+                              ))
+                self.timing.mark('processKerningPair.69')
+            else:
+                addLogSection('Autokern Raw',
+                              ufoglyph0.xAdvance, ufoglyph1.xAdvance,
+                              contours0, contours1,
+                              profilePaths0, profileMaxPaths1,
+                              advance,
+                              (
+                                  ('--max-x-extrema-overlap-ems', 'max_x_extrema_overlap_in_ems',),
+                                  ('--x-extrema-overlap-scaling', 'x_extrema_overlap_scaling',),
+                                  ('--tracking-ems', 'tracking_in_ems',),
+                              ))
+                self.timing.mark('processKerningPair.69')
 
             # -----------
 
@@ -1956,188 +2507,6 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
             return name
         except ValueError, e:
             raise Exception('Unknown value in %s: %s' % (argName, value,) )
-
-
-    def configure(self):
-
-        self.dstCache = AutokernCache()
-        self.srcCache = AutokernCache()
-
-
-        ufo_src = self.ufo_src
-        if ufo_src is None:
-            raise Exception('Missing ufo_src')
-        if not (os.path.exists(ufo_src) and os.path.isdir(ufo_src) and os.path.basename(ufo_src).lower().endswith('.ufo')):
-            raise Exception('Invalid ufo_src: %s' % ufo_src)
-
-        self.srcUfoFont = TFSFontFromFile(ufo_src)
-        self.dstUfoFont = TFSFontFromFile(ufo_src)
-        self.srcFilename = os.path.basename(ufo_src)
-        self.src_kerning_value_count = self.srcUfoFont.getKerningPairCount()
-        self.glyph_count = len(self.srcUfoFont.getGlyphs())
-
-
-        if self.ufo_dst is None:
-            raise Exception('Missing ufo_dst')
-        if os.path.exists(self.ufo_dst):
-            if os.path.isdir(self.ufo_dst):
-                shutil.rmtree(self.ufo_dst)
-            elif os.path.isfile(self.ufo_dst):
-                os.unlink(self.ufo_dst)
-            if os.path.exists(self.ufo_dst):
-                raise Exception('Could not overwrite: %s' % (self.ufo_dst,))
-
-
-        log_dst = self.log_dst
-        if log_dst is None:
-            self.log_dst = None
-    #        raise Exception('Missing log_dst')
-            pass
-        else:
-            OVERWRITE_LOGS = True
-#            OVERWRITE_LOGS = False
-
-            if OVERWRITE_LOGS:
-                if os.path.exists(log_dst):
-                    shutil.rmtree(log_dst)
-                if os.path.exists(log_dst):
-                    raise Exception('Could not clear log_dst: %s' % log_dst)
-
-            if not os.path.exists(log_dst):
-                os.mkdir(log_dst)
-            if not (os.path.exists(log_dst) and os.path.isdir(log_dst)):
-                raise Exception('Invalid log_dst: %s' % log_dst)
-            self.log_dst = log_dst
-
-            if OVERWRITE_LOGS:
-                def makeLogSubfolder(parent, name):
-                    subfolder = os.path.abspath(os.path.join(parent, name))
-                    os.mkdir(subfolder)
-                    if not (os.path.exists(subfolder) and os.path.isdir(subfolder)):
-                        raise Exception('Invalid log_dst: %s' % log_dst)
-                    return subfolder
-
-                self.html_folder = makeLogSubfolder(log_dst, 'html')
-                self.css_folder = makeLogSubfolder(self.html_folder, 'stylesheets')
-                self.svg_folder = makeLogSubfolder(self.html_folder, 'svg')
-
-                import tfs.common.TFSProject as TFSProject
-                srcCssFile = os.path.abspath(os.path.join(TFSProject.findProjectRootFolder(), 'data', 'styles.css'))
-                dstCssFile = os.path.abspath(os.path.join(self.css_folder, os.path.basename(srcCssFile)))
-                shutil.copy(srcCssFile, dstCssFile)
-            else:
-                self.html_folder = os.path.join(log_dst, 'html')
-                self.css_folder = os.path.join(self.html_folder, 'stylesheets')
-                self.svg_folder = os.path.join(self.html_folder, 'svg')
-
-            self.kerningPairLogFilenames = set()
-            self.logFileTuples = []
-
-        self.units_per_em = int(round(self.dstUfoFont.units_per_em))
-        for key, value in self.argumentsMap.items():
-            if key.endswith('_ems'):
-                setattr(self, key[:-len('_ems')], value * self.units_per_em)
-        self.precision = int(round(self.precision))
-
-        self.ascender = self.srcUfoFont.ascender
-        self.descender = self.srcUfoFont.descender
-        self.ascender_ems = self.srcUfoFont.ascender / float(self.units_per_em)
-        self.descender_ems = self.srcUfoFont.descender / float(self.units_per_em)
-
-        print 'units_per_em', self.units_per_em
-        print 'precision', self.precision
-        print 'min_distance', self.min_distance
-        print 'max_distance', self.max_distance
-        print 'intrusion_tolerance', self.intrusion_tolerance
-        print 'kerning_threshold', self.kerning_threshold
-        print 'max_x_extrema_overlap', self.max_x_extrema_overlap
-
-        self.timing = TFTiming()
-        self.advanceMap = {}
-        self.rasterCache = {}
-        self.pixelsCache = {}
-        self.pairsToKern = None
-        self.glyphsToKern = None
-        self.sampleTexts = list(DEFAULT_SAMPLE_TEXTS)
-
-        #
-
-        glyphs = self.srcUfoFont.getGlyphs()
-        glyphCodePoints = set()
-        glyphNames = set()
-        glyphCodePointToNameMap = {}
-        for glyph in glyphs:
-            if glyph.unicode is not None:
-                glyphCodePoints.add(glyph.unicode)
-            if glyph.name is not None:
-                glyphNames.add(glyph.name)
-            if glyph.name is not None and glyph.unicode is not None:
-                glyphCodePointToNameMap[glyph.unicode] = glyph.name
-
-        #
-
-        if self.extra_sample_texts is not None:
-            if len(self.extra_sample_texts) < 1:
-                raise Exception('Missing --extra-sample-texts value')
-            for sampleText in self.extra_sample_texts:
-                if len(sampleText) < 1:
-                    raise Exception('Invalid --extra-sample-texts value: %s' % sampleText)
-                for glyph in sampleText:
-                    if ord(glyph) not in glyphCodePoints:
-                        raise Exception('--extra-sample-texts value: %s has unknown glyph: %s' % (sampleText, glyph,))
-
-            # Prepend extra sample texts.
-            self.sampleTexts = self.extra_sample_texts + self.sampleTexts
-
-        #
-
-        if self.glyph_pairs_to_kern is not None:
-            if len(self.glyph_pairs_to_kern) < 1:
-                raise Exception('Missing --glyph-pairs-to-kern value')
-            if len(self.glyph_pairs_to_kern) % 2 != 0:
-                raise Exception('Uneven number of  --glyph-pairs-to-kern values')
-            self.pairsToKern = set()
-            for index in xrange(len(self.glyph_pairs_to_kern) / 2):
-                value0 = self.glyph_pairs_to_kern[index * 2 + 0]
-                value1 = self.glyph_pairs_to_kern[index * 2 + 1]
-                self.pairsToKern.add(( self.parseCodePoint('-glyph-pairs-to-kern', glyphNames, value0),
-                                       self.parseCodePoint('-glyph-pairs-to-kern', glyphNames, value1),
-                                       ))
-        elif self.glyphs_to_kern is not None:
-            if len(self.glyphs_to_kern) < 1:
-                raise Exception('Missing --glyphs-to-kern value')
-            self.glyphsToKern = set()
-#            print 'self.glyphs_to_kern', self.glyphs_to_kern
-            for value in self.glyphs_to_kern:
-                self.glyphsToKern.add(self.parseCodePoint('--glyphs-to-kern', glyphNames, value))
-        elif self.kern_samples_only is not None:
-            self.pairsToKern = set()
-            for sampleText in self.sampleTexts:
-                lastGlyphName = None
-                for glyph in sampleText:
-                    if ord(glyph) not in glyphCodePointToNameMap:
-                        '''
-                        We've already validated the "extra" sample texts.
-                        Ignore missing characters in the default sample texts.
-                        '''
-                        continue
-                    glyphName = glyphCodePointToNameMap.get(ord(glyph))
-                    if glyphName is not None and lastGlyphName is not None:
-                        self.pairsToKern.add( (lastGlyphName, glyphName,) )
-                    lastGlyphName = glyphName
-            print 'kerning %d pairs' % len(self.pairsToKern)
-        else:
-            pass
-
-        minmax = None
-        for ufoglyph in self.dstUfoFont.getGlyphs():
-            contours = self.dstCache.getGlyphContours(ufoglyph)
-            if len(contours) < 1:
-                continue
-            glyphMinmax = minmaxPaths(contours)
-            minmax = minmaxMerge(minmax, glyphMinmax)
-        self.allGlyphsMinY = minmax.minY
-        self.allGlyphsMaxY = minmax.maxY
 
 
     def updateKerning(self):
@@ -2687,7 +3056,7 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
 
     def writeSamples(self):
 
-        renderLog = self.log_dst is not None
+        renderLog = self.log_path is not None
         if not renderLog:
             return
         print 'Writing samples...'
@@ -2719,30 +3088,10 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
                           'Sample Texts',
                           mustacheMap)
 
-#        unknownGlyphs = []
-#        for sampleText in sampleTexts:
-#            lastName = None
-#            for textGlyph in sampleText:
-#                codePoint = ord(textGlyph)
-#                ufoglyph = self.srcUfoFont.getGlyphByCodePoint(codePoint)
-#                if ufoglyph is None:
-#                    name = None
-#                else:
-#                    name = ufoglyph.name
-#
-#                if name is None:
-#                    unknownGlyphs.append(textGlyph)
-#                elif lastName is None:
-#                    pass
-#                else:
-#                    print '"%s", "%s",' % ( lastName, name, )
-#                lastName = name
-#        print 'unknownGlyphs', unknownGlyphs
-
 
     def writeLogIndex(self):
 
-        renderLog = self.log_dst is not None
+        renderLog = self.log_path is not None
         if not renderLog:
             return
         print 'Writing log index...'
@@ -2875,7 +3224,7 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
         self.timing.mark('writeLogIndex.')
 
         self.dstUfoFont.update()
-        self.dstUfoFont.save(self.ufo_dst)
+        self.dstUfoFont.save(self.ufo_dst_path)
         self.dstUfoFont.close()
 
         self.timing.mark('finished.')

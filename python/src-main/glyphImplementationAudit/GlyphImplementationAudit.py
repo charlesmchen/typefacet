@@ -102,31 +102,31 @@ class GlyphImplementationAudit(object):
 
 
     #    testFont = os.path.abspath(os.path.join('..', '..', 'data', 'FITest Plain.ufo'))
-#        self.fifont = FIFontFromFile(ufo_src)
+#        self.fifont = FIFontFromFile(ufo_src_path)
 
     #    interpolation.srcCodePoints = interpolation.fifont.glyphCodePoints()
 
-        log_dst = self.log_dst
-        if log_dst is None:
-            self.log_dst = None
-    #        raise Exception('Missing log_dst')
+        log_path = self.log_dst
+        if log_path is None:
+            self.log_path = None
+    #        raise Exception('Missing log_path')
             pass
         else:
-            if os.path.exists(log_dst):
-                shutil.rmtree(log_dst)
-            os.mkdir(log_dst)
-            if not (os.path.exists(log_dst) and os.path.isdir(log_dst)):
-                raise Exception('Invalid log_dst: %s' % log_dst)
-            self.log_dst = log_dst
+            if os.path.exists(log_path):
+                shutil.rmtree(log_path)
+            os.mkdir(log_path)
+            if not (os.path.exists(log_path) and os.path.isdir(log_dst)):
+                raise Exception('Invalid log_path: %s' % log_dst)
+            self.log_path = log_dst
 
             def makeLogSubfolder(parent, name):
                 subfolder = os.path.abspath(os.path.join(parent, name))
                 os.mkdir(subfolder)
                 if not (os.path.exists(subfolder) and os.path.isdir(subfolder)):
-                    raise Exception('Invalid log_dst: %s' % log_dst)
+                    raise Exception('Invalid log_path: %s' % log_dst)
                 return subfolder
 
-            self.html_folder = makeLogSubfolder(log_dst, 'html')
+            self.html_folder = makeLogSubfolder(log_path, 'html')
             self.css_folder = makeLogSubfolder(self.html_folder, 'stylesheets')
             self.svg_folder = makeLogSubfolder(self.html_folder, 'svg')
 

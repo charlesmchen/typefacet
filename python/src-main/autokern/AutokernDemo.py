@@ -76,20 +76,20 @@ from tfs.common.TFSMap import TFSMap
 pseudo_argv = (
 #               '--assess-only',
 
-#               '--ufo-src',
+#               '--ufo-src-path',
 #               os.path.abspath(os.path.join(TFSProject.findProjectRootFolder(), 'data-ignore', 'theleagueof', 'theleagueof-linden-hill-a3f7ae6', 'source', 'Linden Hill.ufo')),
-#               '--ufo-dst',
+#               '--ufo-dst-path',
 #               os.path.abspath(os.path.join(TFSProject.findProjectRootFolder(), 'out', 'Linden Hill-kerned.ufo')),
 
-               '--ufo-src',
+               '--ufo-src-path',
 #               os.path.abspath(os.path.join(TFSProject.findProjectRootFolder(), 'data-ignore', 'League Gothic-kerned.old.ufo')),
                os.path.abspath(os.path.join(TFSProject.findProjectRootFolder(), 'data-ignore', 'theleagueof', 'theleagueof-league-gothic-4f9ff8d', 'source', 'League Gothic.ufo')),
-               '--ufo-dst',
+               '--ufo-dst-path',
                os.path.abspath(os.path.join(TFSProject.findProjectRootFolder(), 'out', 'League Gothic-kerned.ufo')),
 
-#                '--ufo-src',
+#                '--ufo-src-path',
 #                os.path.abspath(os.path.join(TFSProject.findProjectRootFolder(), 'data-ignore', 'HelveticaLTStd-Roman.ufo')),
-#                '--ufo-dst',
+#                '--ufo-dst-path',
 #                os.path.abspath(os.path.join(TFSProject.findProjectRootFolder(), 'out', 'HelveticaLTStd-Roman-kerned.ufo')),
                 '--min-distance-ems',
                 '0.018',
@@ -109,7 +109,7 @@ pseudo_argv = (
 #                '0.0',
                 '--precision-ems',
                 '0.005',
-                '--log-dst',
+                '--log-path',
                 os.path.abspath(os.path.join(TFSProject.findProjectRootFolder(), 'out')),
                 '--disparity-log-count',
 #                '0',
@@ -191,9 +191,9 @@ pseudo_argv = (
 #                'T',
 
 
-#               '--ufo-src',
+#               '--ufo-src-path',
 #               os.path.abspath(os.path.join(TFSProject.findProjectRootFolder(), 'data-ignore', 'theleagueof', 'theleagueof-league-gothic-4f9ff8d', 'source', 'League Gothic.ufo')),
-#               '--ufo-dst',
+#               '--ufo-dst-path',
 #               os.path.abspath(os.path.join(TFSProject.findProjectRootFolder(), 'out', 'League Gothic-kerned.ufo')),
 #
 #               '--min-distance-ems',
@@ -201,12 +201,12 @@ pseudo_argv = (
 #               '--max-distance-ems',
 #               '0.120',
 
-#               '--ufo-src',
+#               '--ufo-src-path',
 #               os.path.abspath(os.path.join(TFSProject.findProjectRootFolder(), 'test', 'data', 'PakTest Plain.ufo')),
-#               '--ufo-dst',
+#               '--ufo-dst-path',
 #               os.path.abspath(os.path.join(TFSProject.findProjectRootFolder(), 'out', 'PakTest Plain-kerned.ufo')),
 
-#               '--log-dst',
+#               '--log-path',
 #               os.path.abspath(os.path.join(TFSProject.findProjectRootFolder(), 'out')),
 #               '--precision',
 #               '25',

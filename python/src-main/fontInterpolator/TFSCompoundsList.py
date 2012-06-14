@@ -103,7 +103,7 @@ DIACRITICAL_ALIGN_MIDDLE = 'middle'
 DIACRITICAL_ALIGN_TOP_ROTATE_FLOAT = 'DIACRITICAL_ALIGN_TOP_ROTATE_FLOAT'
 DIACRITICAL_ALIGN_TAIL_H_FLIP = 'DIACRITICAL_ALIGN_TAIL_H_FLIP'
 
-def getCompounds(log_dst=None):
+def getCompounds(log_path=None):
     import tfs.common.TFSProject as TFSProject
     srcFile = os.path.abspath(os.path.join(TFSProject.findProjectRootFolder(), 'data', 'Adobe Glyph List', 'aglfn13.txt'))
     print 'srcFile', srcFile
@@ -207,9 +207,9 @@ def getCompounds(log_dst=None):
 
     yamlMaps = sorted(yamlMaps, lambda yamlMap0, yamlMap1: cmp(yamlMap0['glyph'], yamlMap1['glyph']))
 
-    if log_dst is not None:
+    if log_path is not None:
         import yaml
-        dstFile = os.path.abspath(os.path.join(log_dst, 'compounds.yaml'))
+        dstFile = os.path.abspath(os.path.join(log_path, 'compounds.yaml'))
         print 'dstFile', dstFile
         yamlData = yaml.safe_dump(yamlMaps)
         with open(dstFile, 'wt') as f:

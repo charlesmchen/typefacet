@@ -143,20 +143,22 @@ class AutokernSettings(TFBaseSettings):
             raise argparse.ArgumentTypeError('Invalid em value: ' + value)
         return value
 
+    def dumpCommandLineSettings(self):
+        return False
 
     def createParser(self):
 
         parser = argparse.ArgumentParser(description='...')
 
-        parser.add_argument('--ufo-src',
+        parser.add_argument('--ufo-src-path',
                             type=self.ufoSrcFolderType,
                             help='The UFO source file to kern.',
                             required=True)
-        parser.add_argument('--ufo-dst',
+        parser.add_argument('--ufo-dst-path',
                             type=self.ufoDstFolderType,
                             help='The UFO destination file.',
                             required=True)
-        parser.add_argument('--log-dst',
+        parser.add_argument('--log-path',
                             type=self.dstFolderType,
                             help='''
                             Optional folder in which to write HTML logs.
@@ -208,6 +210,11 @@ class AutokernSettings(TFBaseSettings):
                             nargs='+',
                             help='''A list of short texts to render in the "sample text" log.
                             ''')
+
+        parser.add_argument('--tracking-ems',
+                            type=self.boundedFloat(0.0, 1.0),
+                            default=0.0,
+                            help='A constant padding value for all kerning pairs in ems. 0.0 <= x <= 1.0. Default: 0.0 em')
         parser.add_argument('--min-distance-ems',
                             type=self.boundedFloat(0.0, 1.0),
                             default=0.025,
@@ -263,6 +270,14 @@ class AutokernSettings(TFBaseSettings):
                             0.0 <= x <= 1.0.
                             Default: 0.1.
                             ''')
+#        parser.add_argument('--intrusion-min-thickness-ems',
+#                            type=self.boundedFloat(0.0, 1.0),
+#                            default=0.0,
+#                            help='''
+#                            Minimum effective thickness of intrusion in ems.
+#                            0.0 <= x <= 1.0.
+#                            Default: 0.0.
+#                            ''')
         parser.add_argument('--max-x-extrema-overlap-ems',
                             type=self.boundedFloat(-1.0, 1.0),
                             default=0.1,

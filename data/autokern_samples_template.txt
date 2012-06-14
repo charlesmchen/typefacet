@@ -56,7 +56,7 @@ section div.back_link_bottom {
 
 {{#sidebarArgs}}
         	<li>
-    	    	<b>{{sidebarVarName}}{{#sidebarVarValue}}:{{/sidebarVarValue}} {{sidebarVarValue}}</b>
+    	    	<b>{{sidebarVarName}} {{sidebarVarValue}}</b>
         	</li>
 {{/sidebarArgs}}
         	

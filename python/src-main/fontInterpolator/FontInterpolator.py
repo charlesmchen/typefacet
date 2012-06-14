@@ -93,63 +93,63 @@ class FontInterpolator(object):
 
     def configure(self):
 
-        ufo_src = self.settings.ufo_src
-        if ufo_src is None:
-            raise Exception('Missing ufo_src')
-        if not (os.path.exists(ufo_src) and os.path.isdir(ufo_src) and os.path.basename(ufo_src).lower().endswith('.ufo')):
-            raise Exception('Invalid ufo_src: %s' % ufo_src)
-        self.ufo_src = ufo_src
+        ufo_src_path = self.settings.ufo_src
+        if ufo_src_path is None:
+            raise Exception('Missing ufo_src_path')
+        if not (os.path.exists(ufo_src_path) and os.path.isdir(ufo_src) and os.path.basename(ufo_src).lower().endswith('.ufo')):
+            raise Exception('Invalid ufo_src_path: %s' % ufo_src)
+        self.ufo_src_path = ufo_src
 
-        ufo_dst = self.settings.ufo_dst
-        if ufo_dst is None:
-            raise Exception('Missing ufo_dst')
-        if os.path.exists(ufo_dst):
-            shutil.rmtree(ufo_dst)
-    #    if not (os.path.exists(ufo_dst) and os.path.isdir(ufo_dst) and os.path.basename(ufo_dst).lower().endswith('.ufo')):
-    #        raise Exception('Invalid ufo_dst: %s' % ufo_dst)
-        self.ufo_dst = ufo_dst
+        ufo_dst_path = self.settings.ufo_dst
+        if ufo_dst_path is None:
+            raise Exception('Missing ufo_dst_path')
+        if os.path.exists(ufo_dst_path):
+            shutil.rmtree(ufo_dst_path)
+    #    if not (os.path.exists(ufo_dst_path) and os.path.isdir(ufo_dst) and os.path.basename(ufo_dst).lower().endswith('.ufo')):
+    #        raise Exception('Invalid ufo_dst_path: %s' % ufo_dst)
+        self.ufo_dst_path = ufo_dst
 
-        if os.path.abspath(ufo_src) == os.path.abspath(ufo_dst):
-            raise Exception('ufo_src and ufo_dst cannot be the same file.')
+        if os.path.abspath(ufo_src_path) == os.path.abspath(ufo_dst_path):
+            raise Exception('ufo_src_path and ufo_dst_path cannot be the same file.')
 
         otf_dst = self.settings.otf_dst
         if otf_dst is not None:
 #        if otf_dst is None:
-#            raise Exception('Missing ufo_dst')
+#            raise Exception('Missing ufo_dst_path')
             if os.path.exists(otf_dst):
                 os.unlink(otf_dst)
-    #    if not (os.path.exists(ufo_dst) and os.path.isdir(ufo_dst) and os.path.basename(ufo_dst).lower().endswith('.ufo')):
-    #        raise Exception('Invalid ufo_dst: %s' % ufo_dst)
+    #    if not (os.path.exists(ufo_dst_path) and os.path.isdir(ufo_dst) and os.path.basename(ufo_dst).lower().endswith('.ufo')):
+    #        raise Exception('Invalid ufo_dst_path: %s' % ufo_dst)
         self.otf_dst = otf_dst
 
 
 
     #    testFont = os.path.abspath(os.path.join('..', '..', 'data', 'FITest Plain.ufo'))
-        self.fifont = TFSFontFromFile(ufo_src)
+        self.fifont = TFSFontFromFile(ufo_src_path)
 
     #    interpolation.srcCodePoints = interpolation.fifont.glyphCodePoints()
 
-        log_dst = self.settings.log_dst
-        if log_dst is None:
-            self.log_dst = None
-    #        raise Exception('Missing log_dst')
+        log_path = self.settings.log_dst
+        if log_path is None:
+            self.log_path = None
+    #        raise Exception('Missing log_path')
             pass
         else:
-            if os.path.exists(log_dst):
-                shutil.rmtree(log_dst)
-            os.mkdir(log_dst)
-            if not (os.path.exists(log_dst) and os.path.isdir(log_dst)):
-                raise Exception('Invalid log_dst: %s' % log_dst)
-            self.log_dst = log_dst
+            if os.path.exists(log_path):
+                shutil.rmtree(log_path)
+            os.mkdir(log_path)
+            if not (os.path.exists(log_path) and os.path.isdir(log_dst)):
+                raise Exception('Invalid log_path: %s' % log_dst)
+            self.log_path = log_dst
 
             def makeLogSubfolder(parent, name):
                 subfolder = os.path.abspath(os.path.join(parent, name))
                 os.mkdir(subfolder)
                 if not (os.path.exists(subfolder) and os.path.isdir(subfolder)):
-                    raise Exception('Invalid log_dst: %s' % log_dst)
+                    raise Exception('Invalid log_path: %s' % log_dst)
                 return subfolder
 
-            self.html_folder = makeLogSubfolder(log_dst, 'html')
+            self.html_folder = makeLogSubfolder(log_path, 'html')
             self.css_folder = makeLogSubfolder(self.html_folder, 'stylesheets')
             self.svg_folder = makeLogSubfolder(self.html_folder, 'svg')
 
@@ -627,14 +627,14 @@ class FontInterpolator(object):
         self.logData = []
 
     def writeOutput(self):
-        self.fifont.writeToFile(self.ufo_dst)
+        self.fifont.writeToFile(self.ufo_dst_path)
 
         if self.otf_dst is not None:
             import tfs.common.TFSWriteOtf as TFSWriteOtf
             TFSWriteOtf.writeOtf(self.fifont.rffont, self.otf_dst)
 #
 
-        isLogActive = self.log_dst is not None
+        isLogActive = self.log_path is not None
         if isLogActive:
             for dstCodePoint, contours, baseCodePoint, diacriticalCodePoints in self.logData:
                 self.writeCompoundHtmlLog(dstCodePoint, contours, baseCodePoint, diacriticalCodePoints)
@@ -666,7 +666,7 @@ class FontInterpolator(object):
                             ), missing
 
     def process(self):
-        compoundsList = TFSCompoundsList.getCompounds(self.log_dst)
+        compoundsList = TFSCompoundsList.getCompounds(self.log_path)
 
 #        print
 #        print 'compoundsList', compoundsList

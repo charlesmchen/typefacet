@@ -50,7 +50,7 @@ section h3 {
 
 {{#sidebarArgs}}
         	<li>
-    	    	<b>{{sidebarVarName}}{{#sidebarVarValue}}:{{/sidebarVarValue}} {{sidebarVarValue}}</b>
+    	    	<b>{{sidebarVarName}} {{sidebarVarValue}}</b>
         	</li>
 {{/sidebarArgs}}
         	

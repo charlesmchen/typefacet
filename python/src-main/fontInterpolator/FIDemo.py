@@ -71,10 +71,10 @@ import shutil
 from FontInterpolator import FontInterpolator
 from FISettings import getCommandLineSettings
 
-#pseudo_argv = ('--ufo-src=' + os.path.abspath(os.path.join('..', '..', 'data-ignore', 'theleagueof-league-gothic-4f9ff8d', 'source', 'League Gothic.ufo')) + '',
-pseudo_argv = ('--ufo-src=' + os.path.abspath(os.path.join('..', '..', '..', 'data-ignore', 'League Gothic.modified.ufo')) + '',
-               '--ufo-dst=' + os.path.abspath(os.path.join('..', '..', '..', 'out', 'League Gothic.ufo')) + '',
-               '--log-dst=' + os.path.abspath(os.path.join('..', '..', '..', 'logs')) + '',
+#pseudo_argv = ('--ufo-src-path=' + os.path.abspath(os.path.join('..', '..', 'data-ignore', 'theleagueof-league-gothic-4f9ff8d', 'source', 'League Gothic.ufo')) + '',
+pseudo_argv = ('--ufo-src-path=' + os.path.abspath(os.path.join('..', '..', '..', 'data-ignore', 'League Gothic.modified.ufo')) + '',
+               '--ufo-dst-path=' + os.path.abspath(os.path.join('..', '..', '..', 'out', 'League Gothic.ufo')) + '',
+               '--log-path=' + os.path.abspath(os.path.join('..', '..', '..', 'logs')) + '',
                '--otf-dst=' + os.path.abspath(os.path.join('..', '..', '..', 'out', 'League Gothic.otf')) + '',
                '--top-join-centers',
                '0x60', '261', # Grave
@@ -112,9 +112,9 @@ print 'pseudo_argv', ' '.join(pseudo_argv)
 
 settings = getCommandLineSettings(*pseudo_argv)
 #settings = getCommandLineSettings()
-#settings.ufo_src = os.path.abspath(os.path.join('..', '..', 'data-ignore', 'theleagueof-league-gothic-4f9ff8d', 'source', 'League Gothic.ufo'))
-#settings.ufo_dst = os.path.abspath(os.path.join('..', '..', 'out', 'League Gothic.ufo'))
-#settings.log_dst = os.path.abspath(os.path.join('..', '..', 'logs'))
+#settings.ufo_src_path = os.path.abspath(os.path.join('..', '..', 'data-ignore', 'theleagueof-league-gothic-4f9ff8d', 'source', 'League Gothic.ufo'))
+#settings.ufo_dst_path = os.path.abspath(os.path.join('..', '..', 'out', 'League Gothic.ufo'))
+#settings.log_path = os.path.abspath(os.path.join('..', '..', 'logs'))
 #settings.otf_dst = os.path.abspath(os.path.join('..', '..', 'out', 'League Gothic.otf'))
 
 FontInterpolator(settings).process()
