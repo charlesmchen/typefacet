@@ -135,8 +135,8 @@ section pre {
 	</div>
 	<ul>
 	  <li><a href="http://robofab.org/">robofab</a> package. Tested with rev.560. Make sure to download the distribution that contains robofab's dependencies.</li>
-	  <li><a href="https://github.com/defunkt/pystache/">pystache</a> package. Only necessary if using --log-dst option to write html logs.</li>
-	  <li><a href="http://pypi.python.org/pypi/svgwrite/1.0.1">svgwrite</a> package. Only necessary if using --log-dst option to write html logs.</li> 
+	  <li><a href="https://github.com/defunkt/pystache/">pystache</a> package. Only necessary if using --log-path option to write html logs.</li>
+	  <li><a href="http://pypi.python.org/pypi/svgwrite/1.0.1">svgwrite</a> package. Only necessary if using --log-path option to write html logs.</li> 
 	</ul>
 	<div>
 		<u>I've pre-bundled the Python packages</u> with TypeFacet in the "dependencies" subfolder, so you don't need to download them.
@@ -181,9 +181,9 @@ python python/src-main/autokern/Autokern.py -h
 	</div>
 <pre>
 usage: Autokern.py [-h]
-                   --ufo-src UFO_SRC 
-                   --ufo-dst UFO_DST
-                   [--log-dst LOG_DST]
+                   --ufo-src-path UFO_SRC 
+                   --ufo-dst-path UFO_DST
+                   [--log-path LOG_DST]
                    [--glyph-pairs-to-kern GLYPH_PAIRS_TO_KERN [GLYPH_PAIRS_TO_KERN ...]]
                    [--glyphs-to-kern GLYPHS_TO_KERN [GLYPHS_TO_KERN ...]]
                    [--min-distance-ems MIN_DISTANCE_EMS]

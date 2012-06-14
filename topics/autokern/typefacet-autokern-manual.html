@@ -201,7 +201,7 @@ section pre {
 		</li>
 		<li>
 			Autokern's performance is very dependent on its arguments.  
-			Writing the html logs (using the <b>--log-dst</b> argument) is slow and should probably not used when kerning an entire font.
+			Writing the html logs (using the <b>--log-path</b> argument) is slow and should probably not used when kerning an entire font.
 			The <b>--precision-ems</b> argument also has a significant effect on performance. 
 			Values smaller than the default (0.005) are more accurate but slower.
 		</li>
@@ -273,14 +273,14 @@ python python/src-main/autokern/Autokern.py -h
 # See "Invoking TypeFacet Autokern" above for example of how to append dependencies to the Python path.
 # All arguments should be one line.
 Autokern.py \
-	--ufo-src "theleagueof-league-gothic-4f9ff8d/source/League Gothic.ufo" \
-	--ufo-dst "out/League Gothic-kerned.ufo" \
+	--ufo-src-path "theleagueof-league-gothic-4f9ff8d/source/League Gothic.ufo" \
+	--ufo-dst-path "out/League Gothic-kerned.ufo" \
 	--min-distance-ems 0.04 \ <-- Tune these arguments together using the same value
 	--max-distance-ems 0.04 \ <-- Tune these arguments together using the same value
 	--max-x-extrema-overlap-ems 0.0 \
 	--intrusion-tolerance-ems 0.0 \
 	--precision-ems 0.005 \
-	--log-dst out \
+	--log-path out \
 	--glyph-pairs-to-kern T T \
 	--write-kerning-pair-logs
 </pre>
@@ -292,13 +292,14 @@ Autokern.py \
 	There are two ways to review the results.  
 	You can open the output .ufo file in a font editor. 
 	A more convenient alternative is to look at Autokern's HTML logs.  
-	We've set the <b>--log-dst</b> and <b>--write-kerning-pair-logs</b> arguments, 
+	We've set the <b>--log-path</b> and <b>--write-kerning-pair-logs</b> arguments, 
 	so Autokern will write a HTML logs documenting its process
 	including a separate log for each kerning pair.
+	<a href="autokern-pair-example-0.html">Example</a>.
 </div>
 <div>
 	See the 
-	Here are <a href="league_gothic/index.html">example logs</a>.
+	<a href="league_gothic/index.html">example logs</a>.
 	The <a href="league_gothic/sample_texts.html">sample texts</a> are particularly useful
 	 for comparing the original kerning with Autokern's kerning.
 </div>
@@ -334,14 +335,14 @@ Autokern.py \
 # See "Invoking TypeFacet Autokern" above for example of how to append dependencies to the Python path.
 # All arguments should be one line.
 Autokern.py \
-	--ufo-src "theleagueof-league-gothic-4f9ff8d/source/League Gothic.ufo" \
-	--ufo-dst "out/League Gothic-kerned.ufo" \
+	--ufo-src-path "theleagueof-league-gothic-4f9ff8d/source/League Gothic.ufo" \
+	--ufo-dst-path "out/League Gothic-kerned.ufo" \
 	--min-distance-ems 0.04 \
 	--max-distance-ems 0.1 \ <-- Tune this value
 	--max-x-extrema-overlap-ems 0.0 \
 	--intrusion-tolerance-ems 0.0 \
 	--precision-ems 0.005 \
-	--log-dst out \
+	--log-path out \
 	--glyph-pairs-to-kern N N \
 	--write-kerning-pair-logs
 </pre>
@@ -381,14 +382,14 @@ Autokern.py \
 # See "Invoking TypeFacet Autokern" above for example of how to append dependencies to the Python path.
 # All arguments should be one line.
 Autokern.py \
-	--ufo-src theleagueof-linden-hill-a3f7ae6/source/Linden Hill.ufo \
-	--ufo-dst out/Linden Hill-kerned.ufo \
+	--ufo-src-path theleagueof-linden-hill-a3f7ae6/source/Linden Hill.ufo \
+	--ufo-dst-path out/Linden Hill-kerned.ufo \
 	--min-distance-ems 0.04 \
 	--max-distance-ems 0.1 \
 	--max-x-extrema-overlap-ems 0.0 \
 	--intrusion-tolerance-ems 0.1 \ <-- Tune this value
 	--precision-ems 0.005 \
-	--log-dst out \
+	--log-path out \
 	--glyph-pairs-to-kern N N \
 	--write-kerning-pair-logs
 </pre>
@@ -410,7 +411,7 @@ Autokern.py \
 	</div>
 	<div>
 		Tune the <b>--max-x-extrema-overlap-ems</b> value by
-		kerning a pair of glyphs such as V vs. A or T vs. a whose x-extrema do not collide.
+		kerning a pair of glyphs such as V vs. A, T vs. a, L vs. T, etc. whose x-extrema do not collide.
 	</div>
 
 	<div>
@@ -426,14 +427,14 @@ Autokern.py \
 # See "Invoking TypeFacet Autokern" above for example of how to append dependencies to the Python path.
 # All arguments should be one line.
 Autokern.py \
-	--ufo-src theleagueof-linden-hill-a3f7ae6/source/Linden Hill.ufo \
-	--ufo-dst out/Linden Hill-kerned.ufo \
+	--ufo-src-path theleagueof-linden-hill-a3f7ae6/source/Linden Hill.ufo \
+	--ufo-dst-path out/Linden Hill-kerned.ufo \
 	--min-distance-ems 0.04 \
 	--max-distance-ems 0.1 \
 	--max-x-extrema-overlap-ems 0.1 \ <-- Tune this value
 	--intrusion-tolerance-ems 0.1 \ 
 	--precision-ems 0.005 \
-	--log-dst out \
+	--log-path out \
 	--glyph-pairs-to-kern V A \
 	--write-kerning-pair-logs
 </pre>
@@ -476,6 +477,14 @@ Autokern.py \
 			Autokern will only output the N largest kerning values.
 		</li>
 		<li>
+			If the <b>--kern-samples-only</b> argument is present, 
+			Autokern will only process the kerning pairs necessary to render the "sample text" log.
+		</li>
+		<li>
+			The <b>--extra-sample-texts</b> argument can be used to specify
+			specific short words or phrases to render in the "sample text" log.
+		</li>
+		<li>
 			In addition to the <b>--max-x-extrema-overlap-ems</b> argument, 
 				you can use the <b>--x-extrema-overlap-scaling</b> argument to tune x-extrema overlap.
 			To scale down x-extrema overlaps to 1/3 of their normal size, 
@@ -483,8 +492,7 @@ Autokern.py \
 			<b>--x-extrema-overlap-scaling</b> does not effect kerning pairs that do not have x-extrema overlap.
 		</li>
 		<li>
-		</li>
-		<li>
+			The <b>--tracking</b> argument can be used to add a constant value to all kerning values.
 		</li>
 	</ul>
 	
