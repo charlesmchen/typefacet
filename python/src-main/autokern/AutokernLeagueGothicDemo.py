@@ -109,6 +109,7 @@ pseudo_argv = (
 #                '--kern-samples-only',
 #                '--write-kerning-pair-logs',
 #                '--glyph-pairs-to-kern',
+#                'T', 'T',
 #                'h', 'n',
 #                '--write-kerning-pair-logs',
 #                '--glyph-pairs-to-kern',

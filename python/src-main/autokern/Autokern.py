@@ -349,7 +349,7 @@ class Autokern(TFSMap):
 #            print 'self.glyphs_to_kern', self.glyphs_to_kern
             for value in self.glyphs_to_kern:
                 self.glyphsToKern.add(self.parseCodePoint('--glyphs-to-kern', glyphNames, value))
-        elif self.kern_samples_only is not None:
+        elif self.kern_samples_only:
             self.pairsToKern = set()
             for sampleText in self.sampleTexts:
                 lastGlyphName = None
@@ -849,6 +849,8 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
         if hRanges:
             for hRange in hRanges:
                 rangeName, rangeLeft, rangeRight = hRange
+                if rangeLeft == rangeLeft:
+                    continue
                 p0 = TFSPoint(rangeLeft, int(round(self.max_distance * -1.3)))
                 p1 = TFSPoint(rangeRight, int(round(self.max_distance * -1.3)))
                 H_RANGE_COLOR = 0xaf3f3faf
@@ -1258,205 +1260,6 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
 
         return minProfile, maxProfile
 
-
-    def isValidProfileIntrusion_old(self, profile0, profile1, referenceProfile, advance):
-
-#        print 'isValidProfileIntrusion', 'advance', advance
-
-        maxRowExtrusion = self.max_distance
-
-        '''
-        Step 1
-
-        Split the profiles into sections of continuous x-offset values.
-        '''
-        sections = []
-        sectionXOffsets = []
-        for edge0, edge1, reference in itertools.izip(profile0, profile1, referenceProfile):
-            x_offset = None
-            if (edge0 is not None) and (edge1 is not None):
-                x_offset = advance + edge1 - edge0
-
-            '''
-            A row is hollow if it only exists because one of the profiles was inflated,
-            ie. the top and bottom spacing around the glyph.
-            '''
-            hollow = reference is None
-            if hollow and x_offset >= 0:
-                '''
-                If a row is hollow and there is no intrusion, ignore it
-                so that it does not count towards extrusion.
-                '''
-                x_offset = None
-
-            if x_offset is None:
-                if len(sectionXOffsets) > 0:
-                    sections.append(sectionXOffsets)
-                    sectionXOffsets = []
-                continue
-
-#            print 'rowSpacing.0', rowSpacing, 'self.max_distance', self.max_distance, 'advance, edge1, edge0', advance, edge1, edge0
-
-            sectionXOffsets.append(x_offset)
-
-        if len(sectionXOffsets) > 0:
-            sections.append(sectionXOffsets)
-
-        if DEBUG_h_n_ISSUE:
-            print 'sections.0', len(sections), [len(section) for section in sections]
-            print 'sections.0', len(sections), sections
-
-
-        def splitSection(section):
-            '''
-            Step 2
-
-            We need to split sections that have large internal gaps.
-            Consider C vs. O.  If the mouth of the C is too large,
-            it cases the upper and lower arms of the C to be kerned too
-            closely to the next glyph.
-
-            To resolve this, we split sections with large continuous internal gaps.
-            The gaps must be entirely deeper and longer than self.max_distance.
-
-            We leave up to self.max_distance of the gap around the split which
-            will be trimmed by the next phase anyhow.
-            '''
-
-            maxGapLength = int(round(self.max_distance * 1.0 / self.precision))
-            lastValidIndex = None
-            for index, x_offset in enumerate(section):
-#                print 'index, x_offset', index, x_offset
-                if x_offset < maxRowExtrusion:
-                    if lastValidIndex is not None:
-                        gapLength = index - lastValidIndex
-                        if gapLength >= maxGapLength:
-                            left = section[:index]
-                            right = section[lastValidIndex + 1:]
-#                            print 'maxGapLength', maxGapLength, 'gapLength', gapLength, 'self.max_distance', self.max_distance
-#                            print 'left', left
-#                            print 'right', right
-                            return splitSection(left) + splitSection(right)
-
-                    lastValidIndex = index
-
-            return [section,]
-
-#        print 'splitSections.0', len(sections)
-        splitSections = []
-        for section in sections:
-            splitSections.extend(splitSection(section))
-        sections = splitSections
-#        print 'splitSections.1', len(sections)
-
-
-        def trimSection(section):
-            '''
-            Step 3
-
-            We need to trim the sections that have huge gaps at the top and/or bottom.
-            Consider h vs. h.  The huge space between the top stems distorts the
-            profile and causes their bottoms to be kerned too closely.
-
-            To resolve this, we trim large continuous gaps at the top or bottom
-            of a section.  The gaps must be entirely greater than self.max_distance.
-
-            We leave up to self.max_distance * 0.5 of the gap, so that beaks
-            and arms are kerned closer.  For example, t vs. L or r vs. a.
-
-            This isn't an ideal solution.  It might better to add a new argument that
-            discards sections below a certain length.
-            '''
-            headCount = 0
-            for index, x_offset in enumerate(section):
-#                print 'index, x_offset', index, x_offset
-                if x_offset < maxRowExtrusion:
-                    break
-                headCount = index
-            tailCount = 0
-            for index, x_offset in enumerate(reversed(section)):
-#                print 'reversed index, x_offset', index, x_offset
-                if x_offset < maxRowExtrusion:
-                    break
-                tailCount = index
-#            maxPadding = int(round(self.max_distance * 0.5 / self.precision))
-            maxPadding = int(round(self.max_distance * 1.0 / self.precision))
-            headTrimCount = max(0, headCount - maxPadding)
-            tailTrimCount = max(0, tailCount - maxPadding)
-            if headTrimCount + tailTrimCount >= len(section):
-                return []
-#            print 'section', len(section)
-#            print 'maxPadding', maxPadding, 'self.max_distance', self.max_distance, 'self.precision', self.precision
-#            print 'headCount', headCount, 'headTrimCount', headTrimCount
-#            print 'tailCount', tailCount, 'tailTrimCount', tailTrimCount
-            if tailTrimCount > 0:
-                return section[headTrimCount:-tailTrimCount]
-            else:
-                return section[headTrimCount:]
-
-        trimmedSections = []
-        for section in sections:
-            section = trimSection(section)
-            if len(section) > 0:
-                trimmedSections.append(section)
-        sections = trimmedSections
-
-
-        if DEBUG_h_n_ISSUE:
-            print 'sections.1', len(sections), [len(section) for section in sections]
-            print 'sections.1', len(sections), sections
-
-#        print 'sections', sections
-
-        if len(sections) < 1:
-            '''
-            No collision found.
-            '''
-            return True, sections
-
-        '''
-        Step 4
-        Now consider each section separately.
-        '''
-        for sectionRowSpacings in sections:
-            intrusionTotal = 0
-            extrusionTotal = 0
-            for rowSpacing in sectionRowSpacings:
-                rowIntrusion = max(0, -rowSpacing)
-                '''
-                Ignore extrusion greater than --max-distance argument.
-                '''
-                rowExtrusion = min(maxRowExtrusion, max(0, +rowSpacing))
-#                print 'edge0, edge1', edge0, edge1, 'diff', diff, 'advance', advance, 'rowIntrusion', rowIntrusion, 'rowExtrusion', rowExtrusion
-                intrusionTotal += rowIntrusion
-                extrusionTotal += rowExtrusion
-
-            '''
-            Enforce
-            '''
-
-#            print 'advance', advance
-#            print 'intrusionTotal', intrusionTotal, 'extrusionTotal', extrusionTotal
-#            INTRUSION_EXTRUSION_MIN_RATIO = 1.5
-            INTRUSION_EXTRUSION_MIN_RATIO = 1.0
-            if intrusionTotal > extrusionTotal * INTRUSION_EXTRUSION_MIN_RATIO:
-                return False, sections
-
-            intrusionToleranceArea = self.intrusion_tolerance * len(sectionRowSpacings)
-#            print 'intrusionToleranceArea', intrusionToleranceArea
-            if intrusionTotal > intrusionToleranceArea:
-                return False, sections
-
-#        print 'totalSectionRowCount', totalSectionRowCount, 'advance', advance
-#        print 'intrusionTotal', intrusionTotal, 'extrusionTotal', extrusionTotal, 'intrusionToleranceArea', intrusionToleranceArea
-
-#        if intrusionTotal > extrusionTotal:
-#            return False
-#        if intrusionTotal > intrusionToleranceArea:
-#            return False
-        return True, sections
-
-
     def isValidProfileIntrusion(self, profile0, profile1, referenceProfiles, advance):
 
 #        DEBUG_h_n_ISSUE = True
@@ -1466,7 +1269,6 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
         maxSectionGapLength = int(round(self.max_distance * 1.0 / self.precision))
         maxSectionPadding = int(round(self.max_distance * 0.5 / self.precision))
         defaultMaxXOffset = maxRowExtrusion
-#        intrusionMinThicknessRows = int(round(self.intrusion_min_thickness / float(self.precision)))
 
 
         def isValidRow(x_offset):
@@ -1501,12 +1303,6 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
                 so that it does not count towards extrusion.
                 '''
                 x_offset = None
-
-#            if x_offset is None:
-#                '''
-#                Fill in missing rows with
-#                '''
-#                x_offset = 2 * maxRowExtrusion
 
             allXOffsets.append(x_offset)
 
@@ -1632,15 +1428,6 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
             intrusionTotal = 0
             extrusionTotal = 0
 
-#            x_offsets = []
-#            for x_offset in section:
-#                if x_offset is None:
-#                    x_offset = defaultMaxXOffset
-#                x_offsets.append(x_offset)
-#            x_offsets.sort()
-#            intrusionMinThicknessRows
-
-#            intrusionRowCount = 0
             for x_offset in section:
                 if x_offset is None:
                     '''
@@ -1655,11 +1442,6 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
 #                print 'edge0, edge1', edge0, edge1, 'diff', diff, 'advance', advance, 'rowIntrusion', rowIntrusion, 'rowExtrusion', rowExtrusion
                 intrusionTotal += rowIntrusion
                 extrusionTotal += rowExtrusion
-#                if rowIntrusion > 0:
-#                    intrusionRowCount += 1
-#
-#            if intrusionRowCount < intrusionMinThicknessRows:
-#                continue
 
             '''
             Enforce
@@ -1739,26 +1521,11 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
         if vDistance is None:
             vDistance = hDistance
 
-#        if segment.startVector().length() == 0:
-#            startTangent = segment.naiveEndpointTangent()
-#        else:
-#            startTangent = segment.startTangent()
         startTangent = segment.startTangent()
-
-#        if segment.endVector().length() == 0:
-#            endTangent = segment.naiveEndpointTangent()
-#        else:
-#            endTangent = segment.endTangent()
         endTangent = segment.endTangent()
-
-#        if (segment.startVector().length() == 0 or
-#            segment.endVector().length() == 0):
-#            raise Exception('Cannot flate a segment without valid tangents: ' + segment.description())
-
 
         p0 = segment.startPoint()
         p1 = segment.endPoint()
-#        startTangent = segment.startTangent()
 
         if len(segment) == 2:
             offset = scaleVectorHV(startTangent.rotate(math.pi * 0.5), hDistance, vDistance)
@@ -1766,7 +1533,6 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
             p1 = p1.plus(offset)
             newPoints = (p0, p1)
         elif len(segment) == 3:
-#            endTangent = segment.endTangent()
             startOffset = scaleVectorHV(startTangent.rotate(math.pi * 0.5), hDistance, vDistance)
             endOffset = scaleVectorHV(endTangent.rotate(math.pi * 0.5), hDistance, vDistance)
             p0 = p0.plus(startOffset)
@@ -1774,7 +1540,6 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
             cp0 = TFSIntersection.intersectionWithTangents(p0, startTangent, p1, endTangent.invert())
             newPoints = (p0, cp0, p1)
         elif len(segment) == 4:
-#            endTangent = segment.endTangent()
             startOffset = scaleVectorHV(startTangent.rotate(math.pi * 0.5), hDistance, vDistance)
             endOffset = scaleVectorHV(endTangent.rotate(math.pi * 0.5), hDistance, vDistance)
             oldScale = p0.distanceTo(p1)
@@ -1813,19 +1578,6 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
 
 
     def makeInflatedProfile(self, contours, radius):
-
-#        segments = []
-#        circle = TFSOval(TFSPoint0(), hRadius=radius, vRadius=radius)
-#        segments.extend(circle.createPath().segments)
-#        profileLeft, profileRight = self.makeProfile(segments=segments)
-#        print 'profileLeft', len(profileLeft)
-#        print 'profileLeft', profileLeft
-#        print 'profileLeft.min', reduce(min, [value for value in profileLeft if value is not None])
-#        print 'profileLeft.max', reduce(max, [value for value in profileLeft if value is not None])
-#        print 'profileRight', len(profileRight)
-#        print 'profileRight', profileRight
-#        print 'profileRight.min', reduce(min, [value for value in profileRight if value is not None])
-#        print 'profileRight.max', reduce(max, [value for value in profileRight if value is not None])
 
         segments = []
 
@@ -1903,105 +1655,52 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
             result = int(round(result))
             return result
 
-        HALF_STYLE = True
+        def getGlyphProfilesInflateMin(contours):
+            return self.makeInflatedProfile(contours=contours, radius=self.min_distance * 0.5)
+        def getGlyphProfilesInflateMax(contours):
+            return self.makeInflatedProfile(contours=contours, radius=self.max_distance * 0.5)
 
-        if HALF_STYLE:
-            def getGlyphProfilesInflateMin(contours):
-                return self.makeInflatedProfile(contours=contours, radius=self.min_distance * 0.5)
-            def getGlyphProfilesInflateMax(contours):
-                return self.makeInflatedProfile(contours=contours, radius=self.max_distance * 0.5)
+        _, profile0 = self.dstCache.getCachedValue('getGlyphProfiles %s' % ufoglyph0.name, getGlyphProfiles, contours0)
+        self.timing.mark('processKerningPair.011')
 
-            _, profile0 = self.dstCache.getCachedValue('getGlyphProfiles %s' % ufoglyph0.name, getGlyphProfiles, contours0)
-            self.timing.mark('processKerningPair.011')
+        _, profileMin0 = self.dstCache.getCachedValue('getGlyphProfilesInflateMin %s' % ufoglyph0.name, getGlyphProfilesInflateMin, contours0)
+        self.timing.mark('processKerningPair.012')
 
-            _, profileMin0 = self.dstCache.getCachedValue('getGlyphProfilesInflateMin %s' % ufoglyph0.name, getGlyphProfilesInflateMin, contours0)
-            self.timing.mark('processKerningPair.012')
+        _, profileMax0 = self.dstCache.getCachedValue('getGlyphProfilesInflateMax %s' % ufoglyph0.name, getGlyphProfilesInflateMax, contours0)
+        self.timing.mark('processKerningPair.013')
 
-            _, profileMax0 = self.dstCache.getCachedValue('getGlyphProfilesInflateMax %s' % ufoglyph0.name, getGlyphProfilesInflateMax, contours0)
-            self.timing.mark('processKerningPair.013')
+        profile1, _ = self.dstCache.getCachedValue('getGlyphProfiles %s' % ufoglyph1.name, getGlyphProfiles, contours1)
+        self.timing.mark('processKerningPair.014')
 
-            profile1, _ = self.dstCache.getCachedValue('getGlyphProfiles %s' % ufoglyph1.name, getGlyphProfiles, contours1)
-            self.timing.mark('processKerningPair.014')
+        profileMin1, _ = self.dstCache.getCachedValue('getGlyphProfilesInflateMin %s' % ufoglyph1.name, getGlyphProfilesInflateMin, contours1)
+        self.timing.mark('processKerningPair.015')
 
-            profileMin1, _ = self.dstCache.getCachedValue('getGlyphProfilesInflateMin %s' % ufoglyph1.name, getGlyphProfilesInflateMin, contours1)
-            self.timing.mark('processKerningPair.015')
+        profileMax1, _ = self.dstCache.getCachedValue('getGlyphProfilesInflateMax %s' % ufoglyph1.name, getGlyphProfilesInflateMax, contours1)
+        self.timing.mark('processKerningPair.016')
 
-            profileMax1, _ = self.dstCache.getCachedValue('getGlyphProfilesInflateMax %s' % ufoglyph1.name, getGlyphProfilesInflateMax, contours1)
-            self.timing.mark('processKerningPair.016')
+        if DEBUG_h_n_ISSUE:
+            print ufoglyph0.name, ufoglyph1.name, 'findMinProfileAdvance(profileMin0, profileMin1)'
+        minDistanceAdvance = self.findMinProfileAdvance(profileMin0, profileMin1)
+        if minDistanceAdvance is None:
+            minDistanceAdvance = minmax0.maxX + self.min_distance - minmax1.minX
+        minDistanceAdvance = int(round(minDistanceAdvance))
+        self.timing.mark('processKerningPair.020')
+        if debugKerning:
+            print 'minDistanceAdvance', minDistanceAdvance
 
-            if DEBUG_h_n_ISSUE:
-                print ufoglyph0.name, ufoglyph1.name, 'findMinProfileAdvance(profileMin0, profileMin1)'
-            minDistanceAdvance = self.findMinProfileAdvance(profileMin0, profileMin1)
-            minDistanceAdvance = int(round(minDistanceAdvance))
-            self.timing.mark('processKerningPair.020')
-            if debugKerning:
-                print 'minDistanceAdvance', minDistanceAdvance
+        if DEBUG_h_n_ISSUE:
+            print ufoglyph0.name, ufoglyph1.name, 'findMinProfileAdvance_withIntrusion(profileMax0, profileMax1)'
+        intrudingAdvance = self.findMinProfileAdvance_withIntrusion(profileMax0, profileMax1, referenceProfiles=(profile0, profile1))
+        self.timing.mark('processKerningPair.022')
+        if intrudingAdvance is None:
+            intrudingAdvance = minmax0.maxX + self.min_distance - minmax1.minX
+        intrudingAdvance = int(round(intrudingAdvance))
+        if debugKerning:
+            print 'intrudingAdvance', intrudingAdvance
 
-            if DEBUG_h_n_ISSUE:
-                print ufoglyph0.name, ufoglyph1.name, 'findMinProfileAdvance_withIntrusion(profileMax0, profileMax1)'
-            intrudingAdvance = self.findMinProfileAdvance_withIntrusion(profileMax0, profileMax1, referenceProfiles=(profile0, profile1))
-            self.timing.mark('processKerningPair.022')
-            intrudingAdvance = int(round(intrudingAdvance))
-            if debugKerning:
-                print 'intrudingAdvance', intrudingAdvance
-
-            if DEBUG_h_n_ISSUE:
-                print 'minDistanceAdvance', minDistanceAdvance
-                print 'intrudingAdvance', intrudingAdvance
-
-        else:
-            def getGlyphProfilesInflateMin(contours):
-                return self.makeInflatedProfile(contours=contours, radius=self.min_distance)
-            def getGlyphProfilesInflateMax(contours):
-                return self.makeInflatedProfile(contours=contours, radius=self.max_distance)
-
-            _, profile0 = self.dstCache.getCachedValue('getGlyphProfiles %s' % ufoglyph0.name, getGlyphProfiles, contours0)
-            self.timing.mark('processKerningPair.011')
-
-            _, profileMin0 = self.dstCache.getCachedValue('getGlyphProfilesInflateMin %s' % ufoglyph0.name, getGlyphProfilesInflateMin, contours0)
-            self.timing.mark('processKerningPair.012')
-
-            _, profileMax0 = self.dstCache.getCachedValue('getGlyphProfilesInflateMax %s' % ufoglyph0.name, getGlyphProfilesInflateMax, contours0)
-            self.timing.mark('processKerningPair.013')
-
-            profile1, _ = self.dstCache.getCachedValue('getGlyphProfiles %s' % ufoglyph1.name, getGlyphProfiles, contours1)
-            self.timing.mark('processKerningPair.014')
-
-            profileMin1, _ = self.dstCache.getCachedValue('getGlyphProfilesInflateMin %s' % ufoglyph1.name, getGlyphProfilesInflateMin, contours1)
-            self.timing.mark('processKerningPair.015')
-
-            profileMax1, _ = self.dstCache.getCachedValue('getGlyphProfilesInflateMax %s' % ufoglyph1.name, getGlyphProfilesInflateMax, contours1)
-            self.timing.mark('processKerningPair.016')
-
-            if DEBUG_h_n_ISSUE:
-                print ufoglyph0.name, ufoglyph1.name, 'findMinProfileAdvance(profile0, profileMin1)'
-            minDistanceAdvance0 = self.findMinProfileAdvance(profile0, profileMin1)
-            self.timing.mark('processKerningPair.020')
-            if DEBUG_h_n_ISSUE:
-                print ufoglyph0.name, ufoglyph1.name, 'findMinProfileAdvance(profileMin0, profile1)'
-            minDistanceAdvance1 = self.findMinProfileAdvance(profileMin0, profile1)
-            self.timing.mark('processKerningPair.021')
-
-            minDistanceAdvance = maxAdvance(minDistanceAdvance0, minDistanceAdvance1, minmax0.maxX + self.min_distance - minmax1.minX)
-            if debugKerning:
-                print 'minDistanceAdvance0', minDistanceAdvance0, 'minDistanceAdvance1', minDistanceAdvance1, 'minDistanceAdvance', minDistanceAdvance
-
-            if DEBUG_h_n_ISSUE:
-                print ufoglyph0.name, ufoglyph1.name, 'findMinProfileAdvance_withIntrusion(profile0, profileMax1)'
-            intrudingAdvance0 = self.findMinProfileAdvance_withIntrusion(profile0, profileMax1, referenceProfile=profile1)
-            self.timing.mark('processKerningPair.022')
-            if DEBUG_h_n_ISSUE:
-                print ufoglyph0.name, ufoglyph1.name, 'findMinProfileAdvance_withIntrusion(profileMax0, profile1)'
-            intrudingAdvance1 = self.findMinProfileAdvance_withIntrusion(profileMax0, profile1, referenceProfile=profile0)
-            self.timing.mark('processKerningPair.023')
-
-            intrudingAdvance = maxAdvance(intrudingAdvance0, intrudingAdvance1, minmax0.maxX + self.min_distance - minmax1.minX)
-            if debugKerning:
-                print 'intrudingAdvance0', intrudingAdvance0, 'intrudingAdvance1', intrudingAdvance1, 'intrudingAdvance', intrudingAdvance
-
-            if DEBUG_h_n_ISSUE:
-                print 'minDistanceAdvance0', minDistanceAdvance0, 'minDistanceAdvance1', minDistanceAdvance1, 'minDistanceAdvance', minDistanceAdvance
-                print 'intrudingAdvance0', intrudingAdvance0, 'intrudingAdvance1', intrudingAdvance1, 'intrudingAdvance', intrudingAdvance
+        if DEBUG_h_n_ISSUE:
+            print 'minDistanceAdvance', minDistanceAdvance
+            print 'intrudingAdvance', intrudingAdvance
 
         '''
         Now combine results into the final advance value.
@@ -2065,7 +1764,8 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
                               glyphContours0, glyphContours1,
                               glyphProfile0, glyphProfile1,
                               advanceValue,
-                              extraVariableTuples):
+                              extraVariableTuples=None,
+                              comments=None):
 
                 fillPathTuples = ()
 
@@ -2080,6 +1780,14 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
                 glyphMinmax1 = minmaxPaths(glyphContours1)
                 glyphContours1 = xTranslateContours(glyphContours1, advanceValue)
                 glyphMinmax1_ = minmaxPaths(glyphContours1)
+
+                avgGlyphWidth = ((glyphMinmax0.maxX - glyphMinmax0.minX) +
+                                 (glyphMinmax1.maxX - glyphMinmax1.minX)) * 0.5
+                fillAdvance = glyphMinmax1_.maxX + avgGlyphWidth / 3.0
+                fillPathTuples += (
+                                   ( 0x7f7faf7f, xTranslateContours(glyphContours0, fillAdvance,), ),
+                                   ( 0x7f7f7faf, xTranslateContours(glyphContours1, fillAdvance,), ),
+                                   )
 
                 variableTuples = (
                                   ('%s (%s) lsb' % (ufoglyph0.name, formatUnicode(ufoglyph0.unicode),), (glyphMinmax0.minX), True,),
@@ -2100,7 +1808,12 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
                 else:
                     variableTuples += ( (title + ' x-extrema overlap', self.formatUnitsInEms(-section_x_extrema_offset), True, ), )
 
-                variableTuples += extraVariableTuples
+                if extraVariableTuples:
+                    variableTuples += extraVariableTuples
+
+                hRanges = ( ( 'x-extrema overlap',
+                              min(glyphMinmax0.maxX, glyphMinmax1_.minX),
+                              max(glyphMinmax0.maxX, glyphMinmax1_.minX), ), )
 
                 logSections.append({'title': title, # + ' Kerning',
                                     'svg': self.renderSvgScene(None,
@@ -2110,12 +1823,14 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
                                                                              ),
                                                                fillPathTuples = fillPathTuples,
                                                                strokePathTuples = strokePathTuples,
+                                                               hRanges = hRanges,
                                                                hGuidelines = ( advanceValue, # RSB
                                                                                glyphXAdvance0, # LSB
                                                                                min(glyphMinmax0.maxX, glyphMinmax1_.minX),
                                                                                max(glyphMinmax0.maxX, glyphMinmax1_.minX),
                                                                  ) ),
                                     'variables': variableTuples,
+                                    'comments': comments,
                                     })
 
 
@@ -2146,8 +1861,7 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
                           srcContours0, srcContours1,
                           None, None,
                           srcKernedAdvance,
-                          (
-                          ))
+                          comments=('The original kerning from the input.',))
 
             self.timing.mark('processKerningPair.61')
 
@@ -2176,156 +1890,88 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
                           contours0, contours1,
                           profilePaths0, profilePaths1,
                           contactAdvance,
-                          (
-                          ))
+                          comments=('The raw contours brought into contact if possible.',
+                                    'From each glyph, a facade profile is constructed from its contours.',))
 
             self.timing.mark('processKerningPair.64')
 
             # -----------
 
-            if HALF_STYLE:
-                addLogSection('Minimum Distance',
-                              ufoglyph0.xAdvance, ufoglyph1.xAdvance,
-                              contours0, contours1,
-                              profileMinPaths0, profileMinPaths1,
-                              minDistanceAdvance,
-                              (
-                                  ('--min-distance-ems', 'min_distance_ems',),
-                              ))
-            else:
-                addLogSection('Minimum Distance',
-                              ufoglyph0.xAdvance, ufoglyph1.xAdvance,
-                              contours0, contours1,
-                              profilePaths0, profileMinPaths1,
-                              minDistanceAdvance,
-                              (
-                                  ('--min-distance-ems', 'min_distance_ems',),
-                              ))
+            addLogSection('Minimum Distance',
+                          ufoglyph0.xAdvance, ufoglyph1.xAdvance,
+                          contours0, contours1,
+                          profileMinPaths0, profileMinPaths1,
+                          minDistanceAdvance,
+                          (
+                              ('--min-distance-ems', 'min_distance_ems',),
+                          ),
+                          comments=('The minimum distance kerning.',
+                                    'From each glyph, a facade profile is constructed from its contours (inflated by half of --min-distance-ems).',))
+
+            self.timing.mark('processKerningPair.65')
 
             # -----------
 
-            if HALF_STYLE:
-                maxDistanceAdvance = self.findMinProfileAdvance(profileMax0, profileMax1)
-                if debugKerning:
-                    print 'maxDistanceAdvance', maxDistanceAdvance
+            maxDistanceAdvance = self.findMinProfileAdvance(profileMax0, profileMax1)
+            if debugKerning:
+                print 'maxDistanceAdvance', maxDistanceAdvance
 
-                if maxDistanceAdvance is None:
-                    '''
-                    If no collisions between the glyph profiles, use x-extrema
-                    plus the max_distance argument.
-                    '''
-                    maxDistanceAdvance = minmax0.maxX + self.max_distance - minmax1.minX
-                maxDistanceAdvance = int(round(maxDistanceAdvance))
+            if maxDistanceAdvance is None:
+                '''
+                If no collisions between the glyph profiles, use x-extrema
+                plus the max_distance argument.
+                '''
+                maxDistanceAdvance = minmax0.maxX + self.max_distance - minmax1.minX
+            maxDistanceAdvance = int(round(maxDistanceAdvance))
 
-                self.timing.mark('processKerningPair.65')
+            self.timing.mark('processKerningPair.66')
 
-                addLogSection('Maximum Distance',
-                              ufoglyph0.xAdvance, ufoglyph1.xAdvance,
-                              contours0, contours1,
-                              profileMaxPaths0, profileMaxPaths1,
-                              maxDistanceAdvance,
-                              (
-                                  ('--max-distance-ems', 'max_distance_ems',),
-                              ))
-                self.timing.mark('processKerningPair.66')
-            else:
-                maxDistanceAdvance = self.findMinProfileAdvance(profile0, profileMax1)
-                if debugKerning:
-                    print 'maxDistanceAdvance', maxDistanceAdvance
-
-                if maxDistanceAdvance is None:
-                    '''
-                    If no collisions between the glyph profiles, use x-extrema
-                    plus the max_distance argument.
-                    '''
-                    maxDistanceAdvance = minmax0.maxX + self.max_distance - minmax1.minX
-                maxDistanceAdvance = int(round(maxDistanceAdvance))
-
-                self.timing.mark('processKerningPair.65')
-
-                addLogSection('Maximum Distance',
-                              ufoglyph0.xAdvance, ufoglyph1.xAdvance,
-                              contours0, contours1,
-                              profilePaths0, profileMaxPaths1,
-                              maxDistanceAdvance,
-                              (
-                                  ('--max-distance-ems', 'max_distance_ems',),
-                              ))
-                self.timing.mark('processKerningPair.66')
+            addLogSection('Maximum Distance',
+                          ufoglyph0.xAdvance, ufoglyph1.xAdvance,
+                          contours0, contours1,
+                          profileMaxPaths0, profileMaxPaths1,
+                          maxDistanceAdvance,
+                          (
+                              ('--max-distance-ems', 'max_distance_ems',),
+                          ),
+                          comments=('The maximum distance kerning.',
+                                    'From each glyph, a facade profile is constructed from its contours (inflated by half of --max-distance-ems).',))
+            self.timing.mark('processKerningPair.67')
 
             # -----------
 
-            if HALF_STYLE:
-
-                addLogSection('Intruding',
-                              ufoglyph0.xAdvance, ufoglyph1.xAdvance,
-                              contours0, contours1,
-                              profileMaxPaths0, profileMaxPaths1,
-                              intrudingAdvance,
-                              (
-    #                              ('intrudingAdvance', 'intrudingAdvance_in_ems',),
-    #                              ('intrudingAdvance (Right)', 'intrudingAdvance0_in_ems',),
-    #                              ('intrudingAdvance (Left)', 'intrudingAdvance1_in_ems',),
-                                  ('--intrusion-tolerance-ems', 'intrusion_tolerance_ems',),
-                              ))
-                self.timing.mark('processKerningPair.68')
-
-            else:
-
-                addLogSection('Intruding (Left)',
-                              ufoglyph0.xAdvance, ufoglyph1.xAdvance,
-                              contours0, contours1,
-                              profileMaxPaths0, profilePaths1,
-                              intrudingAdvance1,
-                              (
-    #                              ('intrudingAdvance', 'intrudingAdvance_in_ems',),
-    #                              ('intrudingAdvance (Right)', 'intrudingAdvance0_in_ems',),
-    #                              ('intrudingAdvance (Left)', 'intrudingAdvance1_in_ems',),
-                                  ('--intrusion-tolerance-ems', 'intrusion_tolerance_ems',),
-                              ))
-                self.timing.mark('processKerningPair.67')
-
-                # -----------
-
-
-                addLogSection('Intruding (Right)',
-                              ufoglyph0.xAdvance, ufoglyph1.xAdvance,
-                              contours0, contours1,
-                              profilePaths0, profileMaxPaths1,
-                              intrudingAdvance0,
-                              (
-    #                              ('intrudingAdvance', 'intrudingAdvance_in_ems',),
-    #                              ('intrudingAdvance (Right)', 'intrudingAdvance0_in_ems',),
-    #                              ('intrudingAdvance (Left)', 'intrudingAdvance1_in_ems',),
-                                  ('--intrusion-tolerance-ems', 'intrusion_tolerance_ems',),
-                              ))
-                self.timing.mark('processKerningPair.68')
+            addLogSection('Intruding',
+                          ufoglyph0.xAdvance, ufoglyph1.xAdvance,
+                          contours0, contours1,
+                          profileMaxPaths0, profileMaxPaths1,
+                          intrudingAdvance,
+                          (
+#                              ('intrudingAdvance', 'intrudingAdvance_in_ems',),
+#                              ('intrudingAdvance (Right)', 'intrudingAdvance0_in_ems',),
+#                              ('intrudingAdvance (Left)', 'intrudingAdvance1_in_ems',),
+                              ('--intrusion-tolerance-ems', 'intrusion_tolerance_ems',),
+                          ),
+                          comments=('The intrusion kerning.',
+                                    'From each glyph, a facade profile is constructed from its contours (inflated by half of --max-distance-ems).',
+                                    'The profiles are then drawn towards each other using the intrusion algorithm.'))
+            self.timing.mark('processKerningPair.68')
 
             # -----------
 
-            if HALF_STYLE:
-                addLogSection('Autokern Raw',
-                              ufoglyph0.xAdvance, ufoglyph1.xAdvance,
-                              contours0, contours1,
-                              profileMaxPaths0, profileMaxPaths1,
-                              advance,
-                              (
-                                  ('--max-x-extrema-overlap-ems', 'max_x_extrema_overlap_in_ems',),
-                                  ('--x-extrema-overlap-scaling', 'x_extrema_overlap_scaling',),
-                              ))
-                self.timing.mark('processKerningPair.69')
-            else:
-                addLogSection('Autokern Raw',
-                              ufoglyph0.xAdvance, ufoglyph1.xAdvance,
-                              contours0, contours1,
-                              profilePaths0, profileMaxPaths1,
-                              advance,
-                              (
-                                  ('--max-x-extrema-overlap-ems', 'max_x_extrema_overlap_in_ems',),
-                                  ('--x-extrema-overlap-scaling', 'x_extrema_overlap_scaling',),
-                                  ('--tracking-ems', 'tracking_in_ems',),
-                              ))
-                self.timing.mark('processKerningPair.69')
+            addLogSection('Autokern Raw',
+                          ufoglyph0.xAdvance, ufoglyph1.xAdvance,
+                          contours0, contours1,
+                          profileMaxPaths0, profileMaxPaths1,
+                          advance,
+                          (
+                              ('--max-x-extrema-overlap-ems', 'max_x_extrema_overlap_in_ems',),
+                              ('--x-extrema-overlap-scaling', 'x_extrema_overlap_scaling',),
+                          ),
+                          comments=('The raw kerning.',
+                                    'The results of the previous steps are combined, and the effects of various arguments are applied.',
+                                    'Does not represent the final output which is effected by changes to the side bearings.',))
+
+            self.timing.mark('processKerningPair.69')
 
             # -----------
 
@@ -2358,6 +2004,8 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
                 logSectionMap = {}
                 logSectionMap['sectionTitle'] = logSection['title']
                 logSectionMap['sectionSvg'] = logSection['svg']
+                if logSection['comments']:
+                    logSectionMap['sectionComments'] = [{'comment': comment,} for comment in logSection['comments']]
                 def formatSectionVariable(variableTuple):
                     if len(variableTuple) == 2:
                         name, var = variableTuple

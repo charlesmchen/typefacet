@@ -23,6 +23,10 @@ section ul {
 	padding-top: 10px;
 }
 
+section pre {
+	margin-top: 10px;
+}
+
 section h3 {
 	padding-top: 25px;
 }
@@ -81,6 +85,13 @@ section div.back_link_bottom {
 <p>
 	{{{sectionSvg}}}
 </p>
+
+{{#sectionComments}}
+<div>
+	{{comment}}
+</div>
+{{/sectionComments}}
+
 <pre>
 {{#sectionVariables}}
 {{varName}}: {{varValue}}
