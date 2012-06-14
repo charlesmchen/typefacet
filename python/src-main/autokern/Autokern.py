@@ -305,13 +305,19 @@ class Autokern(TFSMap):
         glyphCodePoints = set()
         glyphNames = set()
         glyphCodePointToNameMap = {}
+        self.ignoredGlyphNames = set()
         for glyph in glyphs:
             if glyph.unicode is not None:
                 glyphCodePoints.add(glyph.unicode)
-            if glyph.name is not None:
-                glyphNames.add(glyph.name)
-            if glyph.name is not None and glyph.unicode is not None:
+            if glyph.name is None:
+                raise Exception('Glyph missing name')
+            if glyph.name in glyphNames:
+                raise Exception('Duplicate glyph name: ' + glyph.name)
+            glyphNames.add(glyph.name)
+            if glyph.unicode is not None:
                 glyphCodePointToNameMap[glyph.unicode] = glyph.name
+            if self.isIgnoredGlyph(glyph):
+                self.ignoredGlyphNames.add(glyph.name)
 
         #
 
@@ -2061,7 +2067,14 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
         firstKernedName = None
         glyphs.sort(lambda glyph0, glyph1:cmp(glyph0.unicode, glyph1.unicode))
         for ufoglyph0 in glyphs:
+            if ufoglyph0.name in self.ignoredGlyphNames:
+                count += len(glyphs)
+                continue
+
             for ufoglyph1 in glyphs:
+                if ufoglyph1.name in self.ignoredGlyphNames:
+                    count += 1
+                    continue
 
                 pairKerned = self.processKerningPair(ufoglyph0, ufoglyph1)
 
