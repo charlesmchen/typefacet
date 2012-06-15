@@ -191,7 +191,7 @@ class AutokernCache(TFSMap):
     def getContoursMinmax(self, ufoglyph):
         def getCachedMinmax():
             contours = self.getGlyphContours(ufoglyph)
-            return minmaxPaths(contours)
+            return minmaxPathsEvaluated(contours, AUTOKERN_SEGMENT_PRECISION)
         return self.getCachedValue('getCachedMinmax %s' % ufoglyph.name, getCachedMinmax)
 
 
@@ -316,8 +316,8 @@ class Autokern(TFSMap):
             glyphNames.add(glyph.name)
             if glyph.unicode is not None:
                 glyphCodePointToNameMap[glyph.unicode] = glyph.name
-            if self.isIgnoredGlyph(glyph):
-                self.ignoredGlyphNames.add(glyph.name)
+#            if self.isIgnoredGlyph(glyph):
+#                self.ignoredGlyphNames.add(glyph.name)
 
         #
 
@@ -336,7 +336,46 @@ class Autokern(TFSMap):
 
         #
 
+        self.ignoredGlyphNames.add('.notdef')
+        if self.glyphs_to_ignore is not None:
+#            ignoreArguments.append('--glyphs-to-ignore')
+            if len(self.glyphs_to_ignore) < 1:
+                raise Exception('Missing --glyphs-to-ignore value')
+            for value in self.glyphs_to_ignore:
+                self.ignoredGlyphNames.add(self.parseCodePoint('--glyphs-to-ignore', glyphNames, value))
+        if self.glyph_categories_to_ignore is not None:
+#            ignoreArguments.append('--glyph-categories-to-ignore')
+            if len(self.glyph_categories_to_ignore) < 1:
+                raise Exception('Missing --glyph-categories-to-ignore value')
+
+            import AutokernGlyphClasses
+            allCategories = AutokernGlyphClasses.unicodedataCategoryMap.keys()
+
+            for glyph in glyphs:
+                if glyph.name == '.notdef':
+                    continue
+                category = self.getUnicodeCategory(glyph)
+                if category is None:
+                    print 'Missing glyph category:', glyph.name
+                else:
+                    categoryMajor = category[:-1] + '*'
+                    if ((category in self.glyph_categories_to_ignore) or
+                        (categoryMajor in self.glyph_categories_to_ignore)):
+                        self.ignoredGlyphNames.add(glyph.name)
+                    elif ((category not in allCategories) and
+                        (categoryMajor not in allCategories)):
+                        print 'Unknown glyph category:', glyph.name, category
+#                    else:
+#                        if self.isIgnoredGlyph(glyph):
+#                            print '\t', 'ignored Glyph?', glyph.name, 'category', category
+
+        print 'ignoring %d glyphs' % len(self.ignoredGlyphNames)
+
+        #
+
+        scopeArguments = []
         if self.glyph_pairs_to_kern is not None:
+            scopeArguments.append('--glyph-pairs-to-kern')
             if len(self.glyph_pairs_to_kern) < 1:
                 raise Exception('Missing --glyph-pairs-to-kern value')
             if len(self.glyph_pairs_to_kern) % 2 != 0:
@@ -345,17 +384,26 @@ class Autokern(TFSMap):
             for index in xrange(len(self.glyph_pairs_to_kern) / 2):
                 value0 = self.glyph_pairs_to_kern[index * 2 + 0]
                 value1 = self.glyph_pairs_to_kern[index * 2 + 1]
-                self.pairsToKern.add(( self.parseCodePoint('-glyph-pairs-to-kern', glyphNames, value0),
-                                       self.parseCodePoint('-glyph-pairs-to-kern', glyphNames, value1),
-                                       ))
-        elif self.glyphs_to_kern is not None:
+                name0 = self.parseCodePoint('-glyph-pairs-to-kern', glyphNames, value0)
+                name1 = self.parseCodePoint('-glyph-pairs-to-kern', glyphNames, value1)
+                if name0 in self.ignoredGlyphNames or name1 in self.ignoredGlyphNames:
+                    print 'ignoring --pairs-to-kern value:', value
+                else:
+                    self.pairsToKern.add(( name0, name1, ))
+        if self.glyphs_to_kern is not None:
+            scopeArguments.append('--glyphs-to-kern')
             if len(self.glyphs_to_kern) < 1:
                 raise Exception('Missing --glyphs-to-kern value')
             self.glyphsToKern = set()
 #            print 'self.glyphs_to_kern', self.glyphs_to_kern
             for value in self.glyphs_to_kern:
-                self.glyphsToKern.add(self.parseCodePoint('--glyphs-to-kern', glyphNames, value))
-        elif self.kern_samples_only:
+                name = self.parseCodePoint('--glyphs-to-kern', glyphNames, value)
+                if name in self.ignoredGlyphNames:
+                    print 'ignoring --glyphs-to-kern value:', value
+                else:
+                    self.glyphsToKern.add(name)
+        if self.kern_samples_only:
+            scopeArguments.append('--kern-samples-only')
             self.pairsToKern = set()
             for sampleText in self.sampleTexts:
                 lastGlyphName = None
@@ -371,15 +419,17 @@ class Autokern(TFSMap):
                         self.pairsToKern.add( (lastGlyphName, glyphName,) )
                     lastGlyphName = glyphName
             print 'kerning %d pairs' % len(self.pairsToKern)
-        else:
-            pass
+
+
+        if len(scopeArguments) > 1:
+            raise Exception('Do not use more than one of the %s arguments.' % (' '.join(scopeArguments),))
 
         minmax = None
         for ufoglyph in self.dstUfoFont.getGlyphs():
             contours = self.dstCache.getGlyphContours(ufoglyph)
             if len(contours) < 1:
                 continue
-            glyphMinmax = minmaxPaths(contours)
+            glyphMinmax = self.dstCache.getContoursMinmax(ufoglyph)
             minmax = minmaxMerge(minmax, glyphMinmax)
         self.allGlyphsMinY = minmax.minY
         self.allGlyphsMaxY = minmax.maxY
@@ -522,76 +572,18 @@ class Autokern(TFSMap):
 
         return mustacheMap
 
-    '''
 
-http://bugs.python.org/file19991/unicodedata-doc.diff
+    def getUnicodeCategory(self, glyph):
+        def getUnicodeCategory_():
+            if glyph.unicode is None:
+                return None
+            uc = unichr(glyph.unicode)
+            if uc is not None:
+                unicode_category = unicodedata.category(uc)
+                return unicode_category
+            return None
+        return self.srcCache.getCachedValue('getUnicodeCategory: %s' % glyph.name, getUnicodeCategory_)
 
-+   +--------------------------------------------------------------------------+
-+   | **General Categories**                                                   |
-+   +----+-------------+------------------+------------------------------------+
-+   |Name|Major        |Minor             |Examples                            |
-+   +====+=============+==================+====================================+
-+   |Lu  | Letter      | uppercase        |                                    |
-+   +----+-------------+------------------+------------------------------------+
-+   |Ll  | Letter      | lowercase        |                                    |
-+   +----+-------------+------------------+------------------------------------+
-+   |Lt  | Letter      | titlecase        |                                    |
-+   +----+-------------+------------------+------------------------------------+
-+   |Lm  | Letter      | modifier         |                                    |
-+   +----+-------------+------------------+------------------------------------+
-+   |Lo  | Letter      | other            |                                    |
-+   +----+-------------+------------------+------------------------------------+
-+   |Mn  | Mark        | nonspacing       |                                    |
-+   +----+-------------+------------------+------------------------------------+
-+   |Mc  | Mark        | spacing combining|                                    |
-+   +----+-------------+------------------+------------------------------------+
-+   |Me  | Mark        | enclosing        |                                    |
-+   +----+-------------+------------------+------------------------------------+
-+   |Nd  | Number      | decimal digit    |                                    |
-+   +----+-------------+------------------+------------------------------------+
-+   |Nl  | Number      | letter           |                                    |
-+   +----+-------------+------------------+------------------------------------+
-+   |No  | Number      | other            |                                    |
-+   +----+-------------+------------------+------------------------------------+
-+   |Pc  | Punctuation | connector        |                                    |
-+   +----+-------------+------------------+------------------------------------+
-+   |Pd  | Punctuation | dash             |                                    |
-+   +----+-------------+------------------+------------------------------------+
-+   |Ps  | Punctuation | open             |                                    |
-+   +----+-------------+------------------+------------------------------------+
-+   |Pe  | Punctuation | close            |                                    |
-+   +----+-------------+------------------+------------------------------------+
-+   |Pi  | Punctuation | initial quote    |                                    |
-+   +----+-------------+------------------+------------------------------------+
-+   |Pf  | Punctuation | final quote      |                                    |
-+   +----+-------------+------------------+------------------------------------+
-+   |Po  | Punctuation | other            |                                    |
-+   +----+-------------+------------------+------------------------------------+
-+   |Sm  | Symbol      | math             |                                    |
-+   +----+-------------+------------------+------------------------------------+
-+   |Sc  | Symbol      | currency         |                                    |
-+   +----+-------------+------------------+------------------------------------+
-+   |Sk  | Symbol      | modifier         |                                    |
-+   +----+-------------+------------------+------------------------------------+
-+   |So  | Symbol      | other            |                                    |
-+   +----+-------------+------------------+------------------------------------+
-+   |Zs  | Separator   | space            |                                    |
-+   +----+-------------+------------------+------------------------------------+
-+   |Zl  | Separator   | line             |                                    |
-+   +----+-------------+------------------+------------------------------------+
-+   |Zp  | Separator   | paragraph        |                                    |
-+   +----+-------------+------------------+------------------------------------+
-+   |Cc  | Other       | control          |                                    |
-+   +----+-------------+------------------+------------------------------------+
-+   |Cf  | Other       | format           |                                    |
-+   +----+-------------+------------------+------------------------------------+
-+   |Cs  | Other       | surrogate        |                                    |
-+   +----+-------------+------------------+------------------------------------+
-+   |Co  | Other       | private use      |                                    |
-+   +----+-------------+------------------+------------------------------------+
-+   |Cn  | Other       | not assigned     |                                    |
-+   +----+-------------+------------------+------------------------------------+
-    '''
 
     def hasUnicodeCategoryPrefix(self, glyph, prefixes, exceptions=None):
         '''
@@ -618,183 +610,9 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
         return False
 
 
-    def isLetterGlyph(self, glyph):
-        return self.hasUnicodeCategoryPrefix(glyph, prefixes=('L',))
-
     def isPunctuationGlyph(self, glyph):
         return self.hasUnicodeCategoryPrefix(glyph, prefixes=('P',))
 
-    def isSymbolGlyph(self, glyph):
-        return self.hasUnicodeCategoryPrefix(glyph, prefixes=('S',))
-
-
-    def isPunctuationOrSymbolGlyph(self, glyph):
-        if glyph.unicode is None:
-            return False
-
-        uc = unichr(glyph.unicode)
-        if uc is not None:
-            unicode_category = unicodedata.category(uc)
-            if unicode_category is not None:
-                if (unicode_category.startswith('P') or
-                    unicode_category.startswith('N')):
-                    return True
-
-        # Latin
-        if 0x21 <= glyph.unicode <= 0x2f:
-            return True
-        if 0x3a <= glyph.unicode <= 0x40:
-            return True
-        if 0x5b <= glyph.unicode <= 0x60:
-            return True
-        if 0x7b <= glyph.unicode <= 0x7e:
-            return True
-        # Latin 1 supplement
-        if 0xa1 <= glyph.unicode <= 0xbf:
-            return True
-        if glyph.unicode in ( 0xf7, ):
-            return True
-        # 0xf7
-        if 0x1c0 <= glyph.unicode <= 0x1c3:
-            return True
-        # Halfwidth and Fullwidth Forms
-        if 0xff01 <= glyph.unicode <= 0xff0f:
-            return True
-        if 0xff1a <= glyph.unicode <= 0xff20:
-            return True
-        if 0xff3b <= glyph.unicode <= 0xff40:
-            return True
-        if 0xff5b <= glyph.unicode <= 0xff65:
-            return True
-        # Vertical Forms
-        if 0xfe10 <= glyph.unicode <= 0xfe1f:
-            return True
-        # General Punctuation
-        if 0x2000 <= glyph.unicode <= 0x206f:
-            return True
-        # Small Form Variants
-        if 0xfe50 <= glyph.unicode <= 0xfe6f:
-            return True
-        # Supplemental Punctuation
-        if 0x2e00 <= glyph.unicode <= 0x2e7f:
-            return True
-        # CJK Symbols and Punctuation
-        if 0x3000 <= glyph.unicode <= 0x303f:
-            return True
-        # CJK Compatibility Forms
-        if 0xfe30 <= glyph.unicode <= 0xfe4f:
-            return True
-        # Letterlike Symbols
-        if 0x2100 <= glyph.unicode <= 0x214f:
-            return True
-        # Ancient Symbols
-        if 0x10190 <= glyph.unicode <= 0x101cf:
-            return True
-
-        # TODO: there are more unicode blocks for symbols and punctuation...
-
-        return False
-
-    def isIgnoredGlyph(self, glyph):
-        '''
-        L Letter
-        M Mark
-        N Number
-        P Punctuation
-        Z Separator
-        S Symbol
-        C Other
-        '''
-        if self.hasUnicodeCategoryPrefix(glyph, prefixes=('S', 'C', 'Z', 'M')):
-            return True
-
-        if glyph.unicode is not None:
-            if 0xfe20 <= glyph.unicode <= 0xfe2f:
-                return True
-            if 0x1dc0 <= glyph.unicode <= 0x1dff:
-                return True
-            if 0x300 <= glyph.unicode <= 0x36f:
-                return True
-
-        if not hasattr(self, 'ignore_names_set'):
-            self.ignore_names_set = set( (
-                      'underscore',
-                 'dieresis_acutecomb',
-                 'dieresis_gravecomb',
-                 'hungarumlaut',
-                'ring',
-                'dotaccent',
-                'dieresis',
-                 'dieresistonos',
-
-                'asciitilde',
-                'acutecomb',
-                'dotbelowcomb',
-                'gravecomb',
-                'hookabovecomb',
-                'tildecomb',
-
-                'acute',
-                'base',
-                'breve',
-                'caron',
-                'cedilla',
-                'circumflex',
-                'comma below',
-                'corner leftwards',
-                'diaeresis',
-                'dialytika',
-                'dialytika and tonos',
-                'dot above',
-                'double acute',
-                'grave',
-                'hamza above',
-                'hamza below',
-                'hook',
-                'hook symbol',
-                'horn',
-                'macron',
-                'madda above',
-                'middle dot',
-                'ogonek',
-                'rays',
-                'ring above',
-                'ring above and acute',
-                'stroke',
-                'stroke and acute',
-                'tilde',
-                'tonos',
-                'upturn',
-                 ) )
-
-        if glyph.name in self.ignore_names_set:
-            return True
-        '''
-        Look for variations like 'breve.cap' or 'breve.cyr'.
-        '''
-        if '.' in glyph.name[1:]:
-            shortName = glyph.name[:glyph.name.index('.')]
-            if shortName in self.ignore_names_set:
-                return True
-
-        '''
-        We can't count on glyphs having their "standard" names,
-        so we'll compare by unicode as well.
-        '''
-        if not hasattr(self, 'ignore_unicodes_set'):
-            self.ignore_unicodes_set = set()
-            for name in self.ignore_names_set:
-                codePoint = UnicodeCharacterNames.getUnicodeForShortName(name)
-                if codePoint is not None:
-                    self.ignore_unicodes_set.add(codePoint)
-                else:
-                    print 'Unknown glyph short name', name
-
-        if glyph.unicode is not None:
-            if glyph.unicode in self.ignore_unicodes_set:
-                return True
-
-        return False
 
     def subrenderGlyphContours(self, tfsSvg, contours, strokeColor, addPoints=True):
         from tfs.common.TFSSvg import TFSSvgPath
@@ -1286,11 +1104,10 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
         Evaluate the x-offset between the profiles for each row.
         '''
         allXOffsets = []
-        for values in itertools.izip(profile0, profile1, *referenceProfiles):
-            edge0 = values[0]
-            edge1 = values[1]
-            references = values[2:]
-#        for edge0, edge1, *references in itertools.izip(profile0, profile1, *referenceProfiles):
+        for index in xrange(len(profile0)):
+            edge0 = profile0[index]
+            edge1 = profile1[index]
+
             x_offset = None
             if (edge0 is not None) and (edge1 is not None):
                 x_offset = advance + edge1 - edge0
@@ -1300,8 +1117,8 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
             ie. the top and bottom spacing around the glyph.
             '''
             hollow = False
-            for reference in references:
-                if reference is None:
+            for referenceProfile in referenceProfiles:
+                if referenceProfile[index] is None:
                     hollow = True
             if hollow and x_offset >= 0:
                 '''
@@ -2256,14 +2073,14 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
                 continue
             minmax = minmaxPaths(contours)
 
-            if self.isIgnoredGlyph(ufoglyph):
+            if ufoglyph.name in self.ignoredGlyphNames:
                 '''
                 TODO: Should we normalize the side bearings of these glyphs to perhaps half of max_distance?
                 '''
-                defaultSideBearing = self.max_distance * 0.5
-                contours = [contour.applyPlus(TFSPoint(defaultSideBearing + -minmax.minX, 0)) for contour in contours]
-                ufoglyph.setContours(contours, correctDirection=False)
-                ufoglyph.setXAdvance(2 * defaultSideBearing + minmax.maxX - minmax.minX)
+#                defaultSideBearing = self.max_distance * 0.5
+#                contours = [contour.applyPlus(TFSPoint(defaultSideBearing + -minmax.minX, 0)) for contour in contours]
+#                ufoglyph.setContours(contours, correctDirection=False)
+#                ufoglyph.setXAdvance(2 * defaultSideBearing + minmax.maxX - minmax.minX)
                 continue
 
             contours = [contour.applyPlus(TFSPoint(-minmax.minX, 0)) for contour in contours]
@@ -2339,7 +2156,7 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
             if self.glyphsToKern is not None:
                 if ufoglyph.name not in self.glyphsToKern:
                     continue
-            elif self.isIgnoredGlyph(ufoglyph):
+            elif ufoglyph.name in self.ignoredGlyphNames:
                 continue
 
             contours = self.dstCache.getGlyphContours(ufoglyph)
@@ -2663,7 +2480,12 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
 
                 label = TFSMap()
                 label.text = text
-                label.origin = TFSPoint(xOffset, -abs(self.descender * 1.1))
+#                # Subtract half of the kerning value to center on the ker
+#                labelX = xOffset - kerningValue * 0.5
+#                labelX = xOffset
+                # Center label between the x-extrema of the two glyphs.
+                labelX = (minmax.minX + lastMinmax.maxX) * 0.5
+                label.origin = TFSPoint(labelX, -abs(self.descender * 1.1))
                 label.fillColor = KERNING_LABEL_COLOR
                 label.params = {
                                        'text-anchor': 'middle',
@@ -2896,7 +2718,10 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
 if __name__ == "__main__":
     autokern = Autokern()
     AutokernSettings(autokern).getCommandLineSettings()
-    autokern.process()
+    try:
+        autokern.process()
+        print
+        print 'complete.'
+    except Exception, e:
+        print 'Error:', e.message
 
-    print
-    print 'complete.'

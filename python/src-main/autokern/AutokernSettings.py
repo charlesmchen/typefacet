@@ -74,6 +74,22 @@ from tfs.common.TFBaseSettings import TFBaseSettings
 
 class AutokernSettings(TFBaseSettings):
 
+    def glyphCategoriesType(self, value):
+        if type(value) not in ( types.StringType,
+                                types.UnicodeType, ):
+            raise argparse.ArgumentTypeError('Invalid value: ' + value)
+        import AutokernGlyphClasses
+        categories = AutokernGlyphClasses.unicodedataCategoryMap.keys()
+        if value in categories:
+            return value
+        if value[-1] == '*':
+            valueMajor = value[:-1]
+            categoriesMajor = set([category[0] for category in categories])
+            if valueMajor in categoriesMajor:
+                return value
+        raise argparse.ArgumentTypeError('Invalid unicodedata category value: ' + value)
+
+
     def boundedFloat(self, minValue, maxValue):
         def typeFunction(value):
             try:
@@ -302,5 +318,31 @@ class AutokernSettings(TFBaseSettings):
         parser.add_argument('--max-kerning-pairs',
                             type=self.boundedInt(minValue=1),
                             help='Limits the number of kerning values.')
+
+        parser.add_argument('--glyphs-to-ignore',
+#                            type=self.codePointType,
+                            nargs='+',
+                            help='''A list of glyphs to ignore.
+                            These glyphs will be not kerned and their side bearings will not be updated.
+                            Values may be glyph names (ie. A = A), decimal (ie. 65 = A), or hexidecimal (ie. 0x41 = A).
+
+                            See the Adobe Glyph List for a list of glyph names:
+                            partners.adobe.com/public/developer/en/opentype/aglfn13.txt
+                            ''')
+        parser.add_argument('--glyph-categories-to-ignore',
+                            type=self.glyphCategoriesType,
+                            nargs='+',
+                            default=('Lm', 'Sk', 'C*', 'Z*',),
+                            help='''A list of glyph categories to ignore.
+                            Glyphs in these categories will be not kerned and their side bearings will not be updated.
+                            Categories (ie. Lu = Letter, Uppercase) have a major (ie. Letter) and minor (ie. Uppercase) components.
+                            You may use an asterisk in the minor component as a wildcard.
+
+                            For example, to ignore Letter modifiers (Lm) and spacing (Zs, Zl, Zp) use: --glyph-categories-to-ignore Lm Z*.
+
+                            See the Unicodedata documentation for a list of glyph categories:
+                            ftp://ftp.unicode.org/Public/3.0-Update/UnicodeData-3.0.0.html
+                            Default: Lm Sk C* Z*.
+                            ''')
 
         return parser

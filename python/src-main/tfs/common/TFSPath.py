@@ -643,6 +643,13 @@ def minmaxPaths(paths):
     return result
 
 
+def minmaxPathsEvaluated(paths, precision):
+    result = None
+    for path in paths:
+        result = minmaxMerge(result, path.minmaxEvaluated(precision))
+    return result
+
+
 def polygonWithPoints(*points):
     lastPoint = points[-1]
     segments = []

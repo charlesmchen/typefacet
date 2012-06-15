@@ -1,6 +1,6 @@
 '''
 robofont-extensions-and-scripts
-AutokernLeagueGothicDemo.py
+AutokernGlyphClasses.py
 
 https://github.com/charlesmchen/robofont-extensions-and-scripts
 
@@ -65,63 +65,129 @@ END OF TERMS AND CONDITIONS
 '''
 
 
-import os
+import unicodedata
 
-from Autokern import Autokern
-from AutokernSettings import AutokernSettings
-import tfs.common.TFSProject as TFSProject
 from tfs.common.TFSMap import TFSMap
 
 
-pseudo_argv = (
-#               '--assess-only',
+def _makeUnicodedataCategoryMap():
+    '''
 
-               '--ufo-src-path',
-#               os.path.abspath(os.path.join(TFSProject.findProjectRootFolder(), 'data-ignore', 'League Gothic-kerned.old.ufo')),
-               os.path.abspath(os.path.join(TFSProject.findProjectRootFolder(), 'data-ignore', 'theleagueof', 'theleagueof-league-gothic-4f9ff8d', 'source', 'League Gothic.ufo')),
-               '--ufo-dst-path',
-               os.path.abspath(os.path.join(TFSProject.findProjectRootFolder(), 'out', 'League Gothic-kerned.ufo')),
+http://bugs.python.org/file19991/unicodedata-doc.diff
 
-                '--min-distance-ems',
-                '0.020',
-#                '0.036',
-                '--max-distance-ems',
-#                '0.1',
-                '0.080',
-                '--max-x-extrema-overlap-ems',
-                '0.05',
-                '--x-extrema-overlap-scaling',
-                '0.65',
-                '--intrusion-tolerance-ems',
-                '0.05',
-#                '--intrusion-limit-glyph-width-fraction',
-#                '0.05',
-#                '--intrusion-tolerance',
-#                '0.0',
-                '--precision-ems',
-                '0.005',
-                '--log-path',
-                os.path.abspath(os.path.join(TFSProject.findProjectRootFolder(), 'out')),
-                '--disparity-log-count',
-                '0',
-#                '100',
-#                '5',
-                '--kern-samples-only',
-#                '--write-kerning-pair-logs',
-#                '--glyph-pairs-to-kern',
-#                'T', 'T',
-#                'h', 'n',
-#                '--write-kerning-pair-logs',
-#                '--glyph-pairs-to-kern',
-#                'C', 'O',
++   +--------------------------------------------------------------------------+
++   | **General Categories**                                                   |
++   +----+-------------+------------------+------------------------------------+
++   |Name|Major        |Minor             |Examples                            |
++   +====+=============+==================+====================================+
++   |Lu  | Letter      | uppercase        |                                    |
++   +----+-------------+------------------+------------------------------------+
++   |Ll  | Letter      | lowercase        |                                    |
++   +----+-------------+------------------+------------------------------------+
++   |Lt  | Letter      | titlecase        |                                    |
++   +----+-------------+------------------+------------------------------------+
++   |Lm  | Letter      | modifier         |                                    |
++   +----+-------------+------------------+------------------------------------+
++   |Lo  | Letter      | other            |                                    |
++   +----+-------------+------------------+------------------------------------+
++   |Mn  | Mark        | nonspacing       |                                    |
++   +----+-------------+------------------+------------------------------------+
++   |Mc  | Mark        | spacing combining|                                    |
++   +----+-------------+------------------+------------------------------------+
++   |Me  | Mark        | enclosing        |                                    |
++   +----+-------------+------------------+------------------------------------+
++   |Nd  | Number      | decimal digit    |                                    |
++   +----+-------------+------------------+------------------------------------+
++   |Nl  | Number      | letter           |                                    |
++   +----+-------------+------------------+------------------------------------+
++   |No  | Number      | other            |                                    |
++   +----+-------------+------------------+------------------------------------+
++   |Pc  | Punctuation | connector        |                                    |
++   +----+-------------+------------------+------------------------------------+
++   |Pd  | Punctuation | dash             |                                    |
++   +----+-------------+------------------+------------------------------------+
++   |Ps  | Punctuation | open             |                                    |
++   +----+-------------+------------------+------------------------------------+
++   |Pe  | Punctuation | close            |                                    |
++   +----+-------------+------------------+------------------------------------+
++   |Pi  | Punctuation | initial quote    |                                    |
++   +----+-------------+------------------+------------------------------------+
++   |Pf  | Punctuation | final quote      |                                    |
++   +----+-------------+------------------+------------------------------------+
++   |Po  | Punctuation | other            |                                    |
++   +----+-------------+------------------+------------------------------------+
++   |Sm  | Symbol      | math             |                                    |
++   +----+-------------+------------------+------------------------------------+
++   |Sc  | Symbol      | currency         |                                    |
++   +----+-------------+------------------+------------------------------------+
++   |Sk  | Symbol      | modifier         |                                    |
++   +----+-------------+------------------+------------------------------------+
++   |So  | Symbol      | other            |                                    |
++   +----+-------------+------------------+------------------------------------+
++   |Zs  | Separator   | space            |                                    |
++   +----+-------------+------------------+------------------------------------+
++   |Zl  | Separator   | line             |                                    |
++   +----+-------------+------------------+------------------------------------+
++   |Zp  | Separator   | paragraph        |                                    |
++   +----+-------------+------------------+------------------------------------+
++   |Cc  | Other       | control          |                                    |
++   +----+-------------+------------------+------------------------------------+
++   |Cf  | Other       | format           |                                    |
++   +----+-------------+------------------+------------------------------------+
++   |Cs  | Other       | surrogate        |                                    |
++   +----+-------------+------------------+------------------------------------+
++   |Co  | Other       | private use      |                                    |
++   +----+-------------+------------------+------------------------------------+
++   |Cn  | Other       | not assigned     |                                    |
++   +----+-------------+------------------+------------------------------------+
+'''
+    result = {}
+    for name, major, minor in (
+                                ( 'Lu', 'Letter', 'uppercase',),
+                                ( 'Ll', 'Letter', 'lowercase',),
+                                ( 'Lt', 'Letter', 'titlecase',),
+                                ( 'Lm', 'Letter', 'modifier',),
+                                ( 'Lo', 'Letter', 'other',),
+                                ( 'Mn', 'Mark', 'nonspacing',),
+                                ( 'Mc', 'Mark', 'spacing combining',),
+                                ( 'Me', 'Mark', 'enclosing',),
+                                ( 'Nd', 'Number', 'decimal digit',),
+                                ( 'Nl', 'Number', 'letter',),
+                                ( 'No', 'Number', 'other',),
+                                ( 'Pc', 'Punctuation', 'connector',),
+                                ( 'Pd', 'Punctuation', 'dash',),
+                                ( 'Ps', 'Punctuation', 'open',),
+                                ( 'Pe', 'Punctuation', 'close',),
+                                ( 'Pi', 'Punctuation', 'initial quote',),
+                                ( 'Pf', 'Punctuation', 'final quote',),
+                                ( 'Po', 'Punctuation', 'other',),
+                                ( 'Sm', 'Symbol', 'math',),
+                                ( 'Sc', 'Symbol', 'currency',),
+                                ( 'Sk', 'Symbol', 'modifier',),
+                                ( 'So', 'Symbol', 'other',),
+                                ( 'Zs', 'Separator', 'space',),
+                                ( 'Zl', 'Separator', 'line',),
+                                ( 'Zp', 'Separator', 'paragraph',),
+                                ( 'Cc', 'Other', 'control',),
+                                ( 'Cf', 'Other', 'format',),
+                                ( 'Cs', 'Other', 'surrogate',),
+                                ( 'Co', 'Other', 'private use',),
+                                ( 'Cn', 'Other', 'not assigned',),
+                                ):
+        category = TFSMap()
+        category.name = name
+        category.major = major
+        category.minor = minor
+        result[category.name] = category
+    return result
 
-               )
-print 'pseudo_argv', ' '.join([str(arg) for arg in pseudo_argv])
+unicodedataCategoryMap = _makeUnicodedataCategoryMap()
 
-autokernArgs = TFSMap()
-AutokernSettings(autokernArgs).getCommandLineSettings(*pseudo_argv)
-autokern = Autokern(autokernArgs)
-autokern.process()
-
-print
-print 'complete.'
+def getUnicodedataCategory(glyph):
+    if glyph.unicode is None:
+        return None
+    uc = unichr(glyph.unicode)
+    if uc is not None:
+        unicode_category = unicodedata.category(uc)
+        return unicode_category
+    return None
