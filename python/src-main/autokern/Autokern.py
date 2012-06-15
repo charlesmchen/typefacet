@@ -1083,7 +1083,21 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
 
         disparities = self.findDisparities()
 
-        self.logDisparitiesGroup(disparities, 'All')
+        def isRomanLetter(ufoglyph):
+            if len(ufoglyph.name) != 1:
+                return False
+            return ord('A') <= ord(ufoglyph.name.upper()) <= ord('Z')
+        def romanLettersFilter(ufoglyph0, ufoglyph1):
+            return isRomanLetter(ufoglyph0) and isRomanLetter(ufoglyph1)
+        self.logDisparitiesGroup(disparities, 'Roman Letters', filterFunc=romanLettersFilter)
+
+        def isArabNumeral(ufoglyph):
+            if ufoglyph.unicode is None:
+                return False
+            return ord('0') <= ufoglyph.unicode <= ord('9')
+        def arabNumeralsFilter(ufoglyph0, ufoglyph1):
+            return isArabNumeral(ufoglyph0) and isArabNumeral(ufoglyph1)
+        self.logDisparitiesGroup(disparities, 'Arab Numerals', filterFunc=arabNumeralsFilter)
 
         '''
         The unicodedata glyph categories are:
@@ -1102,21 +1116,7 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
                     self.hasUnicodeCategoryPrefix(ufoglyph1, prefixes=unicodeCategoryPrefixes, exceptions=unicodeCategoryExceptions))
         self.logDisparitiesGroup(disparities, 'Letters And Numbers', filterFunc=lettersAndNumbersFilter)
 
-        def isRomanLetter(ufoglyph):
-            if len(ufoglyph.name) != 1:
-                return False
-            return ord('A') <= ord(ufoglyph.name.upper()) <= ord('Z')
-        def romanLettersFilter(ufoglyph0, ufoglyph1):
-            return isRomanLetter(ufoglyph0) and isRomanLetter(ufoglyph1)
-        self.logDisparitiesGroup(disparities, 'Roman Letters', filterFunc=romanLettersFilter)
-
-        def isArabNumeral(ufoglyph):
-            if ufoglyph.unicode is None:
-                return False
-            return ord('0') <= ufoglyph.unicode <= ord('9')
-        def arabNumeralsFilter(ufoglyph0, ufoglyph1):
-            return isArabNumeral(ufoglyph0) and isArabNumeral(ufoglyph1)
-        self.logDisparitiesGroup(disparities, 'Arab Numerals', filterFunc=arabNumeralsFilter)
+        self.logDisparitiesGroup(disparities, 'All')
 
 
     def getFilenamePrefixPair(self, prefix, ufoglyph0, ufoglyph1):
@@ -1624,8 +1624,8 @@ http://bugs.python.org/file19991/unicodedata-doc.diff
             if ufoglyph1.name not in self.glyphsToKern:
                 return False
 
-        if self.isIgnoredGlyph(ufoglyph0) or self.isIgnoredGlyph(ufoglyph1):
-            return False
+#        if self.isIgnoredGlyph(ufoglyph0) or self.isIgnoredGlyph(ufoglyph1):
+#            return False
 
 #        print 'processKerningPair'
 

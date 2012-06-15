@@ -92,7 +92,7 @@ pseudo_argv = (
 #                '0.1',
                 '0.080',
                 '--max-x-extrema-overlap-ems',
-                '0.05',
+                '0.075',
 #                '--x-extrema-overlap-scaling',
 #                '0.65',
                 '--intrusion-tolerance-ems',
