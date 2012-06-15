@@ -123,6 +123,10 @@ DEFAULT_SAMPLE_TEXTS = (
                'VAWML4TO',
                'hhnnhn',
                'JFrf',
+               'O!O?O.O;O;O,',
+               'o!o?o.o;o;o,',
+               'r!r?r.r;r;r,',
+               'N!N?N.N;N;N,',
                )
 
 
@@ -301,6 +305,9 @@ class Autokern(TFSMap):
 
         #
 
+        import AutokernGlyphClasses
+        allGlyphCategories = AutokernGlyphClasses.unicodedataCategoryMap.keys()
+
         glyphs = self.srcUfoFont.getGlyphs()
         glyphCodePoints = set()
         glyphNames = set()
@@ -348,8 +355,6 @@ class Autokern(TFSMap):
             if len(self.glyph_categories_to_ignore) < 1:
                 raise Exception('Missing --glyph-categories-to-ignore value')
 
-            import AutokernGlyphClasses
-            allCategories = AutokernGlyphClasses.unicodedataCategoryMap.keys()
 
             for glyph in glyphs:
                 if glyph.name == '.notdef':
@@ -362,8 +367,8 @@ class Autokern(TFSMap):
                     if ((category in self.glyph_categories_to_ignore) or
                         (categoryMajor in self.glyph_categories_to_ignore)):
                         self.ignoredGlyphNames.add(glyph.name)
-                    elif ((category not in allCategories) and
-                        (categoryMajor not in allCategories)):
+                    elif ((category not in allGlyphCategories) and
+                        (categoryMajor not in allGlyphCategories)):
                         print 'Unknown glyph category:', glyph.name, category
 #                    else:
 #                        if self.isIgnoredGlyph(glyph):
@@ -420,9 +425,43 @@ class Autokern(TFSMap):
                     lastGlyphName = glyphName
             print 'kerning %d pairs' % len(self.pairsToKern)
 
-
         if len(scopeArguments) > 1:
             raise Exception('Do not use more than one of the %s arguments.' % (' '.join(scopeArguments),))
+
+        #
+
+        def isValidGlyphCategories(key, value):
+            if type(value) not in ( types.StringType,
+                                    types.UnicodeType, ):
+                raise Exception('Invalid %s value: %s' % (key, value,))
+            if value in allGlyphCategories:
+                return value
+            if value[-1] == '*':
+                valueMajor = value[:-1]
+                categoriesMajor = set([category[0] for category in allGlyphCategories])
+                if valueMajor in categoriesMajor:
+                    return value
+            raise Exception('Invalid unicodedata category value: ' + value)
+
+
+        self.max_x_extrema_overlap_categoryMap = {}
+        if self.max_x_extrema_overlap_ems_per_category is not None:
+            if len(self.max_x_extrema_overlap_ems_per_category) < 1:
+                raise Exception('Missing --max-x-extrema-overlap-ems-per-category value')
+            if len(self.max_x_extrema_overlap_ems_per_category) % 2 != 0:
+                raise Exception('Uneven number of  --max-x-extrema-overlap-ems-per-category values')
+            for index in xrange(len(self.max_x_extrema_overlap_ems_per_category) / 2):
+                value0 = self.max_x_extrema_overlap_ems_per_category[index * 2 + 0]
+                value1 = self.max_x_extrema_overlap_ems_per_category[index * 2 + 1]
+                isValidGlyphCategories('--max-x-extrema-overlap-ems-per-category', value0)
+                try:
+                    value1 = float(value1) * self.units_per_em
+                except ValueError, e:
+                    raise Exception('Invalid --max-x-extrema-overlap-ems-per-category value: %s' % str(value1))
+
+                self.max_x_extrema_overlap_categoryMap[value0] = value1
+
+        #
 
         minmax = None
         for ufoglyph in self.dstUfoFont.getGlyphs():
@@ -434,6 +473,33 @@ class Autokern(TFSMap):
         self.allGlyphsMinY = minmax.minY
         self.allGlyphsMaxY = minmax.maxY
 
+    def getGlyphCategoryValue(self, categoryMap, glyph):
+        category = self.getUnicodeCategory(glyph)
+        if category is None:
+            return None
+        if category in categoryMap:
+            return categoryMap[category]
+        categoryMajor = category[:-1] + '*'
+        if categoryMajor in categoryMap:
+            return categoryMap[categoryMajor]
+        return None
+
+    def getGlyphPairCategoryValue(self, categoryMap, func, defaultValue, glyph0, glyph1):
+        value0 = self.getGlyphCategoryValue(categoryMap, glyph0)
+        value1 = self.getGlyphCategoryValue(categoryMap, glyph1)
+        if value0 is None and value1 is None:
+            return defaultValue
+        if value0 is None:
+            return value1
+        if value1 is None:
+            return value0
+        return func(value0, value1)
+
+    def getGlyphPairMaxXExtremaOverlap(self, glyph0, glyph1):
+        return self.getGlyphPairCategoryValue(self.max_x_extrema_overlap_categoryMap,
+                                              max,
+                                              -self.max_x_extrema_overlap,
+                                              glyph0, glyph1)
 
     def formatUnitsInEms(self, value):
         return formatEms(value / float(self.units_per_em))
@@ -447,13 +513,13 @@ class Autokern(TFSMap):
                 ( 'Ascender', 'ascender_ems',),
                 ( 'Descender', 'descender_ems',),
                 ( 'Precision', 'precision_ems',),
-                ( 'Minimum Distance', 'min_distance_ems',),
-                ( 'Maximum Distance', 'max_distance_ems',),
-                ( 'Tracking', 'tracking_ems',),
-                ( 'Intrusion Tolerance', 'intrusion_tolerance_ems',),
-#                ( 'Intrusion Min. Thickness', 'intrusion_min_thickness_ems',),
-                ( 'Max. x-extrema Overlap', 'max_x_extrema_overlap_ems',),
-                ( 'x-extrema Overlap Scaling', 'x_extrema_overlap_scaling',),
+#                ( 'Minimum Distance', 'min_distance_ems',),
+#                ( 'Maximum Distance', 'max_distance_ems',),
+#                ( 'Tracking', 'tracking_ems',),
+#                ( 'Intrusion Tolerance', 'intrusion_tolerance_ems',),
+##                ( 'Intrusion Min. Thickness', 'intrusion_min_thickness_ems',),
+#                ( 'Max. x-extrema Overlap', 'max_x_extrema_overlap_ems',),
+#                ( 'x-extrema Overlap Scaling', 'x_extrema_overlap_scaling',),
                 ( 'Glyph Count', 'glyph_count',),
                 )
 
@@ -596,22 +662,14 @@ class Autokern(TFSMap):
         S Symbol
         C Other
         '''
-        if glyph.unicode is None:
-            return False
-        uc = unichr(glyph.unicode)
-        if uc is not None:
-            unicode_category = unicodedata.category(uc)
-            if unicode_category is not None:
-                if exceptions:
-                    if unicode_category in exceptions:
-                        return False
-                if unicode_category[0] in prefixes:
-                    return True
+        unicode_category = self.getUnicodeCategory(glyph)
+        if unicode_category is not None:
+            if exceptions:
+                if unicode_category in exceptions:
+                    return False
+            if unicode_category[0] in prefixes:
+                return True
         return False
-
-
-    def isPunctuationGlyph(self, glyph):
-        return self.hasUnicodeCategoryPrefix(glyph, prefixes=('P',))
 
 
     def subrenderGlyphContours(self, tfsSvg, contours, strokeColor, addPoints=True):
@@ -1558,13 +1616,8 @@ class Autokern(TFSMap):
         5. Make sure the "x-extrema overlap" is not greater than the "max x-extrema overlap".
         '''
         x_extrema_overlap = minmax0.maxX - (minmax1.minX + advance)
-        pair_max_x_extrema_overlap = self.max_x_extrema_overlap
-        if (self.isPunctuationGlyph(ufoglyph0) or
-            self.isPunctuationGlyph(ufoglyph1)):
-            '''
-            Punctuation should keep x-extrema at least --min-distance apart.
-            '''
-            pair_max_x_extrema_overlap = -self.min_distance
+        pair_max_x_extrema_overlap = self.getGlyphPairMaxXExtremaOverlap(ufoglyph0, ufoglyph1)
+
         if x_extrema_overlap > pair_max_x_extrema_overlap:
             advance += x_extrema_overlap - pair_max_x_extrema_overlap
 
@@ -2724,4 +2777,3 @@ if __name__ == "__main__":
         print 'complete.'
     except Exception, e:
         print 'Error:', e.message
-

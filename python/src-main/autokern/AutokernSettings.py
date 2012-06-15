@@ -314,15 +314,39 @@ class AutokernSettings(TFBaseSettings):
         parser.add_argument('--kerning-threshold-ems',
                             type=self.boundedFloat(0.0, 1.0),
                             default=0.01,
-                            help='Kerning values smaller than this threshold will be ignored.  0.0 <= x <= 1.0. Default: 0.01 em')
+                            help='''
+                            Kerning values smaller than this threshold will be ignored.
+                            0.0 <= x <= 1.0.
+                            Default: 0.01 em
+                            ''')
         parser.add_argument('--max-kerning-pairs',
                             type=self.boundedInt(minValue=1),
                             help='Limits the number of kerning values.')
 
+        parser.add_argument('--max-x-extrema-overlap-ems-per-category',
+#                            type=self.glyphCategoryFloatPairsType,
+                            default=('P*', '-0.025', 'M*', '-0.025', 'S*', '-0.025', ),
+                            nargs='+',
+                            help='''
+                            A list of per-category --max-x-extrema-overlap-ems values.
+                            Categories (ie. Lu = Letter, Uppercase) have a major (ie. Letter) and minor (ie. Uppercase) components.
+                            You may use an asterisk in the minor component as a wildcard.
+
+                            For example, to use -0.025 em for all punctuation, marks and symbols, use: --max-x-extrema-overlap-ems-per-category P* -0.025 M* -0.025 S* -0.025.
+
+                            See the Unicodedata documentation for a list of glyph categories:
+                            ftp://ftp.unicode.org/Public/3.0-Update/UnicodeData-3.0.0.html
+
+                            See --max-x-extrema-overlap-ems for more details.
+
+                            Default: P* -0.025 M* -0.025 S* -0.025
+                            ''')
+
         parser.add_argument('--glyphs-to-ignore',
 #                            type=self.codePointType,
                             nargs='+',
-                            help='''A list of glyphs to ignore.
+                            help='''
+                            A list of glyphs to ignore.
                             These glyphs will be not kerned and their side bearings will not be updated.
                             Values may be glyph names (ie. A = A), decimal (ie. 65 = A), or hexidecimal (ie. 0x41 = A).
 
@@ -333,7 +357,8 @@ class AutokernSettings(TFBaseSettings):
                             type=self.glyphCategoriesType,
                             nargs='+',
                             default=('Lm', 'Sk', 'C*', 'Z*',),
-                            help='''A list of glyph categories to ignore.
+                            help='''
+                            A list of glyph categories to ignore.
                             Glyphs in these categories will be not kerned and their side bearings will not be updated.
                             Categories (ie. Lu = Letter, Uppercase) have a major (ie. Letter) and minor (ie. Uppercase) components.
                             You may use an asterisk in the minor component as a wildcard.

@@ -46,6 +46,10 @@ section div.back_link_bottom {
     <div class="wrapper">
       <header>
         <h1>TypeFacet Autokern</h1>
+        <p>
+          <a href="http://charlesmchen.github.com/typefacet/topics/autokern/index.html/">Autokern Documentation</a>
+        </p>
+        <h3>Results</h3>
         <ul>
 
 {{#sidebarVars}}
@@ -65,12 +69,6 @@ section div.back_link_bottom {
 {{/sidebarArgs}}
 
         </ul>
-        <p>
-          <a href="http://charlesmchen.github.com/typefacet/topics/autokern/index.html/">TypeFacet Autokern</a>
-        </p>
-        <p>
-          <a href="http://charlesmchen.github.com/typefacet/">TypeFacet project</a>
-        </p>
         
       </header>
       <section>

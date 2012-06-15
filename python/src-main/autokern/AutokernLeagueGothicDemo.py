@@ -92,6 +92,11 @@ pseudo_argv = (
                 '0.05',
                 '--x-extrema-overlap-scaling',
                 '0.65',
+                '--max-x-extrema-overlap-ems-per-category',
+                'P*', '-0.02',
+                'M*', '-0.02',
+                'S*', '-0.02',
+
                 '--intrusion-tolerance-ems',
                 '0.05',
 #                '--intrusion-limit-glyph-width-fraction',
