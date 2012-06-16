@@ -355,6 +355,23 @@ class AutokernSettings(TFBaseSettings):
         addPerCategoryArgument('--intrusion-tolerance-ems')
         addPerCategoryArgument('--tracking-ems')
 
+
+        parser.add_argument('--glyph-categories',
+                            nargs='*',
+                            help='''
+                            A list of unicode categories for glyphs.
+                            Autokern cannot process a glyph if it can not identify its unicode category.
+                            It is only necessary to specify a category with this argument for glyphs
+                            whose category can't be identified by normal means.
+                            You may use an asterisk as a wildcard.
+
+                            For example, to have cedillacomb treated as a Letter modifier (Lm) and other unknown glyphs to be treated as Other/Unassigned,
+                            use: --glyph-categories cedillacomb Lm * Cn
+
+                            See the Unicodedata documentation for a list of glyph categories:
+                            http://www.unicode.org/reports/tr44/tr44-4.html#General_Category_Values
+                            ''')
+#                            Default: Lm Sk C* Z*.
         parser.add_argument('--glyphs-to-ignore',
 #                            type=self.codePointType,
                             nargs='+',
@@ -368,7 +385,7 @@ class AutokernSettings(TFBaseSettings):
                             ''')
         parser.add_argument('--glyph-categories-to-ignore',
                             type=self.glyphCategoriesType,
-                            nargs='+',
+                            nargs='*',
                             default=('Lm', 'Sk', 'C*', 'Z*',),
                             help='''
                             A list of glyph categories to ignore.

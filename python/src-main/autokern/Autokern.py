@@ -305,9 +305,6 @@ class Autokern(TFSMap):
 
         #
 
-        import AutokernGlyphClasses
-        allGlyphCategories = AutokernGlyphClasses.unicodedataCategoryMap.keys()
-
         glyphs = self.srcUfoFont.getGlyphs()
         glyphCodePoints = set()
         glyphNames = set()
@@ -325,6 +322,75 @@ class Autokern(TFSMap):
                 glyphCodePointToNameMap[glyph.unicode] = glyph.name
 #            if self.isIgnoredGlyph(glyph):
 #                self.ignoredGlyphNames.add(glyph.name)
+
+        '''
+        Parse glyph categories, Step 1: parse the --glyph-categories argument.
+        '''
+
+        import AutokernGlyphClasses
+        allGlyphCategories = AutokernGlyphClasses.unicodedataCategoryMap.keys()
+        allGlyphWildcardCategories = set()
+        for category in allGlyphCategories:
+            categoryMajorWildcard = category[:-1] + '*'
+            allGlyphWildcardCategories.add(categoryMajorWildcard)
+
+        self.glyphNameToCategoryMap = {}
+        self.missingCategoryGlyphNames = []
+        self.defaultGlyphCategory = None
+
+        if self.glyph_categories is not None:
+#            if len(self.glyph_categories) < 1:
+#                raise Exception('Missing --glyph-categories value')
+            if len(self.glyph_categories) % 2 != 0:
+                raise Exception('Uneven number of  --glyph-categories values')
+            for index in xrange(len(self.glyph_categories) / 2):
+                value0 = self.glyph_categories[index * 2 + 0]
+                value1 = self.glyph_categories[index * 2 + 1]
+
+                category = value1
+                if category not in allGlyphCategories:
+#                if ((category not in allGlyphCategories) and
+#                    (category not in allGlyphWildcardCategories)):
+                    raise Exception('Unknown glyph category: ' + category)
+
+                glyphName = value0
+                if glyphName == '*':
+                    self.defaultGlyphCategory = category
+                else:
+                    glyphName = self.parseCodePoint('-glyph-categories', glyphNames, glyphName)
+                    if glyphName in self.ignoredGlyphNames:
+                        continue
+                    self.glyphNameToCategoryMap[glyphName] = category
+
+
+        '''
+        Parse glyph categories, Step 2: Verify that all glyphs are associated with a valid category.
+        '''
+        for glyph in glyphs:
+            category = self.getUnicodeCategory(glyph)
+            if glyph.name in self.glyphNameToCategoryMap:
+                '''
+                Category already set by --glyph-categories argument.
+                '''
+                continue
+            if glyph.name == '.notdef':
+                '''
+                An exception: it is okay if .notdef has no category.
+                '''
+                continue
+            elif category is None:
+                if self.defaultGlyphCategory is not None:
+                    category = self.defaultGlyphCategory
+                else:
+                    #                print 'Missing glyph category:', glyph.name
+                    self.missingCategoryGlyphNames.append(glyph.name)
+            self.glyphNameToCategoryMap[glyph.name] = category
+
+        if len(self.missingCategoryGlyphNames) > 0:
+            print 'Glyphs with unknown unicode category:', ', '.join(sorted(self.missingCategoryGlyphNames))
+            raise Exception('%d Glyph%s with unknown unicode category. Use the --glyph-categories argument to specify a category for each glyph.' %
+                            ( len(self.missingCategoryGlyphNames),
+                              's' if len(self.missingCategoryGlyphNames) > 1 else '', ))
 
         #
 
@@ -352,24 +418,25 @@ class Autokern(TFSMap):
                 self.ignoredGlyphNames.add(self.parseCodePoint('--glyphs-to-ignore', glyphNames, value))
         if self.glyph_categories_to_ignore is not None:
 #            ignoreArguments.append('--glyph-categories-to-ignore')
-            if len(self.glyph_categories_to_ignore) < 1:
-                raise Exception('Missing --glyph-categories-to-ignore value')
-
+#            if len(self.glyph_categories_to_ignore) < 1:
+#                raise Exception('Missing --glyph-categories-to-ignore value')
+            for category in self.glyph_categories_to_ignore:
+                categoryWildcard = category[:-1] + '*'
+                if ((category not in allGlyphCategories) and
+                    (categoryWildcard not in allGlyphWildcardCategories)):
+                    print 'Unknown glyph category:', category
 
             for glyph in glyphs:
                 if glyph.name == '.notdef':
                     continue
-                category = self.getUnicodeCategory(glyph)
+                category = self.glyphNameToCategoryMap[glyph.name]
                 if category is None:
                     print 'Missing glyph category:', glyph.name
                 else:
-                    categoryMajor = category[:-1] + '*'
+                    categoryWildcard = category[:-1] + '*'
                     if ((category in self.glyph_categories_to_ignore) or
-                        (categoryMajor in self.glyph_categories_to_ignore)):
+                        (categoryWildcard in self.glyph_categories_to_ignore)):
                         self.ignoredGlyphNames.add(glyph.name)
-                    elif ((category not in allGlyphCategories) and
-                        (categoryMajor not in allGlyphCategories)):
-                        print 'Unknown glyph category:', glyph.name, category
 #                    else:
 #                        if self.isIgnoredGlyph(glyph):
 #                            print '\t', 'ignored Glyph?', glyph.name, 'category', category
@@ -480,7 +547,7 @@ class Autokern(TFSMap):
 
         def getGlyphCategoryValue(categoryMap, categoryKeys, glyph):
             result = []
-            category = self.getUnicodeCategory(glyph)
+            category = self.glyphNameToCategoryMap[glyph.name]
             if category is None:
                 return result
             if category in categoryMap:
@@ -733,7 +800,7 @@ class Autokern(TFSMap):
         S Symbol
         C Other
         '''
-        unicode_category = self.getUnicodeCategory(glyph)
+        unicode_category = self.glyphNameToCategoryMap[glyph.name]
         if unicode_category is not None:
             if exceptions:
                 if unicode_category in exceptions:

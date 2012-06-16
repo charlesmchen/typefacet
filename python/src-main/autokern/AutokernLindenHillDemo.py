@@ -82,6 +82,10 @@ pseudo_argv = (
                '--ufo-dst-path',
                os.path.abspath(os.path.join(TFSProject.findProjectRootFolder(), 'out', 'Linden Hill-kerned.ufo')),
 
+                '--glyph-categories',
+#                'cedillacomb', 'Lm',
+                '*', 'Cn',
+
                 '--tracking-ems',
                 '0.020',
                 '--min-distance-ems',
@@ -113,6 +117,7 @@ pseudo_argv = (
                 '0',
 #                '100',
                 '--kern-samples-only',
+
 #                '--write-kerning-pair-logs',
 #                '--glyph-pairs-to-kern',
 #                'C', 'O',

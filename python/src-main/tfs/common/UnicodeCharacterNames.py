@@ -126,7 +126,7 @@ hexToShortNameMap = {}
 hexToLongNameMap = {}
 shortNameToHexMap = {}
 
-def readGlyphNames():
+def readGlyphNames_AdobeGlyphListForNewFonts():
     import tfs.common.TFSProject as TFSProject
     srcFile = os.path.abspath(os.path.join(TFSProject.findProjectRootFolder(), 'data', 'Adobe Glyph List', 'aglfn13.txt'))
 #    print 'srcFile', srcFile
@@ -147,7 +147,41 @@ def readGlyphNames():
         hexCode = toNameKey(int(hexCode, 16))
         hexToShortNameMap[hexCode] = shortName
         hexToLongNameMap[hexCode] = longName
+
+        hexCode = int(hexCode, 16)
         shortNameToHexMap[shortName] = hexCode
+
+
+def readGlyphNames_short(srcFile):
+#    print 'srcFile', srcFile
+    if not os.path.exists(srcFile) and os.path.isfile(srcFile):
+        raise Exception ('Missing srcFile: ' + srcFile)
+
+    with open(srcFile, 'rt') as f:
+        csvData = f.read()
+
+    for line in csvData.split('\n'):
+        line = line.strip()
+        if line.startswith('#'):
+            continue
+        if not line:
+            continue
+        shortName, hexCode = line.split(';')
+        # Trim whitespace from 4-byte hexCode literals.
+        hexCode = int(hexCode.replace(' ', ''), 16)
+        if shortName not in shortNameToHexMap:
+            shortNameToHexMap[shortName] = hexCode
+
+
+def readGlyphNames_AdobeGlyphListFull():
+    import tfs.common.TFSProject as TFSProject
+    srcFile = os.path.abspath(os.path.join(TFSProject.findProjectRootFolder(), 'data', 'Adobe Glyph List', 'glyphlist.txt'))
+    readGlyphNames_short(srcFile)
+
+def readGlyphNames_typefaceExtra():
+    import tfs.common.TFSProject as TFSProject
+    srcFile = os.path.abspath(os.path.join(TFSProject.findProjectRootFolder(), 'data', 'typefacet_extra_glyphlist.txt'))
+    readGlyphNames_short(srcFile)
 
 
 unicodeCodeBlocks = []
@@ -178,7 +212,9 @@ def _loadDataIfNecessary():
     readControlCharacterNames()
     readTrueTypeGlyphNames()
     readGlyphNames2()
-    readGlyphNames()
+    readGlyphNames_AdobeGlyphListForNewFonts()
+    readGlyphNames_AdobeGlyphListFull()
+    readGlyphNames_typefaceExtra()
     readCodeBlocks()
     _data_loaded = True
 
@@ -296,7 +332,7 @@ def getUnicodeCharacterName(characterCode,
 def getUnicodeForShortName(name):
     _loadDataIfNecessary()
     if name in shortNameToHexMap:
-        return int(shortNameToHexMap[name], 16)
+        return shortNameToHexMap[name]
     return None
 
 #print getUnicodeLongName(0x01AB)
