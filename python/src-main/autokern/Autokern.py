@@ -143,6 +143,12 @@ def formatUnicode(value):
     else:
         return '0x%X' % ( value, )
 
+def formatGlyphNameShort(glyph):
+    if glyph.unicode is None:
+        return glyph.name
+    else:
+        return u'&#%d;' % ( glyph.unicode, )
+
 def formatGlyphName(glyph):
     if glyph.unicode is None:
         name = glyph.name
@@ -173,6 +179,11 @@ def formatTimeDuration(value):
     return '%d days, %s' % ( daysValue,
                              time.strftime('%H:%M:%S', time.gmtime(hmsValue)), )
 
+def xTranslateContours(contours, value):
+    if value == 0:
+        return contours
+    return [contour.applyPlus(TFSPoint(value, 0)) for contour in contours]
+
 
 class AutokernCache(TFSMap):
 
@@ -181,9 +192,11 @@ class AutokernCache(TFSMap):
 
     def getCachedValue(self, key, func, *argv):
         if key in self:
+#            print 'cache hit'
             return self[key]
         result = func(*argv)
         self[key] = result
+#        print 'cache miss'
         return result
 
     def getGlyphContours(self, ufoglyph):
@@ -248,7 +261,7 @@ class Autokern(TFSMap):
             self.css_folder = os.path.join(self.html_folder, 'stylesheets')
 #            self.svg_folder = os.path.join(self.html_folder, 'svg')
 
-        self.kerningPairLogFilenames = set()
+#        self.kerningPairLogFilenames = set()
         self.logFileTuples = []
 
 
@@ -1011,82 +1024,30 @@ class Autokern(TFSMap):
 
         disparityLinkMaps = []
         for index, disparity in enumerate(disparities):
-            disparityLinkMaps.append({ 'filename': getDisparityFilename(index),
-                                      'name': str(index + 1),
+            disparityLinkMaps.append({ 'linkFile': getDisparityFilename(index),
+                                      'linkName': str(index + 1),
                                       })
 
         for index, disparity in enumerate(disparities):
-            filenamePrefix = 'disparity-%d' % index
-            srcAdvanceSvg = self.renderSvgScene(None,
-                                             pathTuples = (
-                                                           ( 0x7f7faf7f, disparity.srcKerning.contours0, ),
-                                                           ( 0x7f7f7faf, [contour.applyPlus(TFSPoint(disparity.srcKerning.kernedAdvance, 0)) for contour in disparity.srcKerning.contours1], ),
-                                                           ),
-                                             hGuidelines = ( disparity.srcKerning.kernedAdvance, ) )
+            ufoglyph0 = disparity.dstKerning.ufoglyph0
+            ufoglyph1 = disparity.dstKerning.ufoglyph1
 
-            dstAdvanceSvg = self.renderSvgScene(None,
-                                             pathTuples = (
-                                                           ( 0x7f7faf7f, disparity.dstKerning.contours0, ),
-                                                           ( 0x7f7f7faf, [contour.applyPlus(TFSPoint(disparity.dstKerning.kernedAdvance, 0)) for contour in disparity.dstKerning.contours1], ),
-                                                           ),
-                                             hGuidelines = ( disparity.dstKerning.kernedAdvance, ) )
+#            print 'index', index, 'ufoglyph0', ufoglyph0.name, ufoglyph1.name
 
-            pageTitle0 = u'Autokern Disparity (%s):' % ( groupName, )
-            pageTitle1 = u'%s vs. %s' % ( formatGlyphName(disparity.srcKerning.ufoglyph0),
-                                          formatGlyphName(disparity.srcKerning.ufoglyph1), )
+            comment = 'The top %d disparities between the original kerning and Autokern\'s kerning, in descending order.' % len(disparities)
+            logFilename = getDisparityFilename(index)
 
-            def formatEmScalar(value):
-                return formatEms(value / float(self.units_per_em))
-
-            def formatGlyphMap(glyph, srcMinmax, dstMinmax):
-                return {
-                           'glyphName': formatGlyphName(glyph),
-                           'srcMinX': formatEmScalar(srcMinmax.minX),
-                           'srcMaxX': formatEmScalar(srcMinmax.maxX),
-                           'dstMinX': formatEmScalar(dstMinmax.minX),
-                           'dstMaxX': formatEmScalar(dstMinmax.maxX),
-                        }
-
-            localsMap = {}
-            localsMap.update(locals())
-            localsMap.update(disparity)
-
-            mergeMustacheMaps(disparity.srcKerning, localsMap, 'src_')
-            mergeMustacheMaps(disparity.srcKerning.minmax0, localsMap, 'src0_')
-            mergeMustacheMaps(disparity.srcKerning.minmax1, localsMap, 'src1_')
-            mergeMustacheMaps(disparity.dstKerning, localsMap, 'dst_')
-            mergeMustacheMaps(disparity.dstKerning.minmax0, localsMap, 'dst0_')
-            mergeMustacheMaps(disparity.dstKerning.minmax1, localsMap, 'dst1_')
-
-            mustacheMap = self.makeDefaultMustacheMap(localsMap=localsMap)
-            self.addSidebarMustacheMap(mustacheMap, kerned=True)
-
-            mustacheMap.update({
-                           'pageTitle0': pageTitle0,
-                           'pageTitle1': pageTitle1,
-
-                           'disparityLinkMaps': disparityLinkMaps,
-                           'firstDisparityLink': getDisparityFilename(0),
-                           'lastDisparityLink': getDisparityFilename(len(disparities) - 1),
-                           })
-            if index > 0:
-                mustacheMap['prevDisparityLink'] = {'filename': getDisparityFilename(index - 1), }
-            if index + 1 < len(disparities):
-                mustacheMap['nextDisparityLink'] = {'filename': getDisparityFilename(index + 1), }
-
-            kerningLogFilename = self.getKerningPairHtmlFilename(disparity.srcKerning.ufoglyph0,
-                                                                 disparity.srcKerning.ufoglyph1),
-            if kerningLogFilename in self.kerningPairLogFilenames:
-                mustacheMap['kerningLogFilename'] = kerningLogFilename
-
-            self.writeLogFile('autokern_disparity_template.txt',
-                              getDisparityFilename(index),
-                              'Disparities: ' + groupName,
-                              '''
-    The top disparities between the original kerning and Autokern's kerning.
-                              ''',
-                              '%d' % (index + 1),
-                              mustacheMap)
+            self.writeGenericPairLog(ufoglyph0,
+                                     ufoglyph1,
+                                     pageTitles=(groupName + ' disparity:',
+                                                 '%s vs. %s' % ( formatGlyphName(ufoglyph0),
+                                                                 formatGlyphName(ufoglyph1), ), ),
+                                     pageComments=(comment,),
+                                     logFilename=logFilename,
+                                     logGroupName='Disparities: ' + groupName,
+                                     logGroupDescription=comment,
+                                     logIndexName='%d' % (index + 1),
+                                     linkMaps=disparityLinkMaps)
 
 
     def logDisparities(self):
@@ -1137,16 +1098,231 @@ class Autokern(TFSMap):
         self.logDisparitiesGroup(disparities, 'All')
 
 
+    def writeGenericPairLog(self,
+                            ufoglyph0, ufoglyph1,
+                            pageTitles, pageComments,
+                            logFilename, logGroupName, logGroupDescription, logIndexName,
+                            linkMaps=None,
+                            timing=None):
+
+        if timing is not None:
+             timing.mark('writeGenericPairLog.0')
+
+        logSections = []
+
+        logSections.append(self.writeSourceLogSectionMap(ufoglyph0, ufoglyph1))
+
+        if timing is not None:
+             timing.mark('writeGenericPairLog.1')
+
+        contours0 = self.dstCache.getGlyphContours(ufoglyph0)
+        contours1 = self.dstCache.getGlyphContours(ufoglyph1)
+        if (not contours0) or (not contours1):
+            return False
+
+        kerningValue = self.dstUfoFont.getKerningPair(ufoglyph0.name, ufoglyph1.name)
+        if kerningValue is None:
+            kerningValue = 0
+        rawAdvance = ufoglyph0.xAdvance
+        kernedAdvance = rawAdvance + kerningValue
+
+        logSections.append(self.writeLogSectionMap('Autokern',
+                                                   self.dstCache,
+                                                   ufoglyph0, ufoglyph1,
+                                                   kernedAdvance))
+
+        if timing is not None:
+             timing.mark('writeGenericPairLog.2')
+
+        self.writeGenericSectionsLog(logSections,
+#                            ufoglyph0, ufoglyph1,
+                                    pageTitles, pageComments,
+                                    logFilename, logGroupName, logGroupDescription, logIndexName,
+                                    localVars=locals(),
+                                    linkMaps=linkMaps,
+                                    timing=timing)
+
+
+    def writeGenericSectionsLog(self,
+                                logSections,
+#                            ufoglyph0, ufoglyph1,
+                                pageTitles, pageComments,
+                                logFilename, logGroupName, logGroupDescription, logIndexName,
+                                localVars,
+                                linkMaps=None,
+                                timing=None):
+
+        localsMap = {}
+        localsMap.update(localVars)
+
+        mustacheMap = self.makeDefaultMustacheMap(localsMap=localsMap)
+        self.addSidebarMustacheMap(mustacheMap, kerned=False)
+
+        logSectionMaps = []
+        for logSection in logSections:
+            logSectionMap = {}
+            logSectionMap['sectionTitle'] = logSection['title']
+            logSectionMap['sectionSvg'] = logSection['svg']
+            if logSection['comments']:
+                logSectionMap['sectionComments'] = [{'comment': comment,} for comment in logSection['comments']]
+            def formatSectionVariable(variableTuple):
+                if len(variableTuple) == 2:
+                    name, var = variableTuple
+                    return {'varName': name, 'varValue':mustacheMap[var],}
+                else:
+                    return {'varName': variableTuple[0], 'varValue':variableTuple[1],}
+
+            logSectionMap['sectionVariables'] = [formatSectionVariable(variableTuple) for variableTuple in logSection['variables']]
+            logSectionMaps.append(logSectionMap)
+
+        def makeStringMaps(key, values):
+            result = []
+            for value in values:
+                result.append({key: value,})
+            return result
+
+        mustacheMap.update({
+                            'pageTitles': makeStringMaps('pageTitle', pageTitles),
+                            'pageComments': makeStringMaps('pageComment', pageComments),
+                            'logSectionMaps': logSectionMaps,
+                            'linkMaps': linkMaps,
+                            })
+        if linkMaps is not None:
+            if len(linkMaps) > 0:
+                mustacheMap['hasLinkMaps'] = True
+                mustacheMap['firstLinkMap'] = linkMaps[0]
+                mustacheMap['lastLinkMap'] = linkMaps[-1]
+
+                for index, linkMap in enumerate(linkMaps):
+                    if linkMap['linkFile'] == logFilename:
+                        mustacheMap['hasNextPrevLinkMaps'] = True
+                        mustacheMap['prevLinkMap'] = linkMaps[(index + len(linkMaps) - 1) % len(linkMaps)]
+                        mustacheMap['nextLinkMap'] = linkMaps[(index + 1) % len(linkMaps)]
+                        break
+
+
+#        self.kerningPairLogFilenames.add(logFilename)
+
+        if timing is not None:
+             timing.mark('writeGenericPairLog.4')
+
+        self.writeLogFile('autokern_generic_template.txt',
+                          logFilename,
+                          logGroupName,
+                          logGroupDescription,
+                          logIndexName,
+                          mustacheMap)
+
+        if timing is not None:
+             timing.mark('writeGenericPairLog.5')
+
+
+    def writeBasicPairsLog(self):
+
+        renderLog = self.log_path is not None
+        if not renderLog:
+            return
+        if not self.log_basic_pairs:
+            return
+
+        print 'Logging basic pairs...'
+
+
+        import tfs.common.TFSProject as TFSProject
+#        dataFolder = os.path.abspath(os.path.join(TFSProject.findProjectRootFolder(), 'data'))
+        mustache_template_file = os.path.abspath(os.path.join(TFSProject.findProjectRootFolder(), 'data', 'ilovetypography kerning pairs.txt'))
+        with open(mustache_template_file, 'rt') as f:
+            text = f.read().decode('utf8')
+
+        pairs = []
+        for line in text.split('\n'):
+            line = line.strip()
+            if line.startswith('#'):
+                continue
+            for value in line.split(' '):
+                if value:
+                    pairs.append(value)
+
+        glyphs = self.dstUfoFont.getGlyphs()
+
+        unicodeToGlyphMap = {}
+        for glyph in glyphs:
+            if glyph.unicode is None:
+                continue
+            unicodeToGlyphMap[glyph.unicode] = glyph
+
+        #
+
+        pairTuples = []
+        linkMaps = []
+        for pair in pairs:
+            if len(pair) != 2:
+                raise Exception('Invalid pair: ' + pair)
+            left, right = pair
+            unicode0 = ord(left)
+            unicode1 = ord(right)
+            if ((unicode0 not in unicodeToGlyphMap) or
+                (unicode1 not in unicodeToGlyphMap)):
+                continue
+
+            ufoglyph0 = unicodeToGlyphMap[unicode0]
+            ufoglyph1 = unicodeToGlyphMap[unicode1]
+
+            logFilename = self.getKerningPairFilename('basic_pair', ufoglyph0, ufoglyph1, '.html')
+            pairTuples.append( ( pair, ufoglyph0, ufoglyph1, logFilename, ) )
+            linkMaps.append( { 'linkFile': logFilename,
+                               'linkName': '%s%s' % ( formatGlyphNameShort(ufoglyph0),
+                                                      formatGlyphNameShort(ufoglyph1), ),
+                              } )
+            if len(pairTuples) > 25:
+                break
+
+        #
+
+        timing = None
+#        timing = TFTiming()
+
+        startTime = time.time()
+        lastLogTime = time.time()
+        for index, (pair, ufoglyph0, ufoglyph1, logFilename,) in enumerate(pairTuples):
+            now = time.time()
+            if lastLogTime is None or now - lastLogTime > 3.0:
+                remainingTime = (now - startTime) / float(index) * (len(pairTuples) - index)
+                print '\t', ufoglyph0.name, ufoglyph1.name, index, '/', len(pairTuples), '%d%%' % ( 100 * index / len(pairTuples), ), formatTimeDuration(remainingTime), 'remaining'
+                lastLogTime = now
+
+            self.writeGenericPairLog(ufoglyph0, ufoglyph1,
+                                     pageTitles=('Basic Pair:',
+                                                 '%s vs. %s' % ( formatGlyphName(ufoglyph0),
+                                                                 formatGlyphName(ufoglyph1), ), ),
+                                     pageComments=('''
+    Before-and-after comparisons of common kerning pairs.
+                              ''',),
+                                     logFilename=logFilename,
+                                     logGroupName='Basic Pairs',
+                                     logGroupDescription='''
+    Before-and-after comparisons of common kerning pairs.
+                              ''',
+                                     logIndexName='%s%s' % ( formatGlyphNameShort(ufoglyph0),
+                                                             formatGlyphNameShort(ufoglyph1), ),
+                                     linkMaps=linkMaps,
+                                     timing=timing)
+        if timing is not None:
+            timing.dump()
+
+        print
+
+
     def getFilenamePrefixPair(self, prefix, ufoglyph0, ufoglyph1):
         return '%s-%s-%s' % ( prefix,
                               formatUnicode(ufoglyph0.unicode),
                               formatUnicode(ufoglyph1.unicode), )
 
-    def getKerningPairFilenamePrefix(self, ufoglyph0, ufoglyph1):
-        return self.getFilenamePrefixPair('autokern', ufoglyph0, ufoglyph1)
+    def getKerningPairFilename(self, prefix, ufoglyph0, ufoglyph1, extension):
+        return self.getFilenamePrefixPair(prefix, ufoglyph0, ufoglyph1) + extension
 
     def getKerningPairHtmlFilename(self, ufoglyph0, ufoglyph1):
-        return self.getKerningPairFilenamePrefix(ufoglyph0, ufoglyph1) + '.html'
+        return self.getKerningPairFilename('autokern', ufoglyph0, ufoglyph1, '.html')
 
 
     def convertProfileToLogPaths(self, profile, isLeft, offset=None):
@@ -1796,14 +1972,12 @@ class Autokern(TFSMap):
             logSections = []
 
             def addLogSection(title,
-                              glyphXAdvance0, glyphXAdvance1,
-                              glyphContours0, glyphContours1,
+                              logCache,
+                              logufoglyph0, logufoglyph1,
                               glyphProfile0, glyphProfile1,
                               advanceValue,
                               extraVariableTuples=None,
                               comments=None):
-
-                fillPathTuples = ()
 
                 strokePathTuples = ()
                 if glyphProfile0 is not None:
@@ -1812,92 +1986,16 @@ class Autokern(TFSMap):
                     ( 0xafaf7fff, xTranslateContours(glyphProfile1, advanceValue), ),
                     )
 
-                glyphMinmax0 = minmaxPaths(glyphContours0)
-                glyphMinmax1 = minmaxPaths(glyphContours1)
-                glyphContours1 = xTranslateContours(glyphContours1, advanceValue)
-                glyphMinmax1_ = minmaxPaths(glyphContours1)
-
-                avgGlyphWidth = ((glyphMinmax0.maxX - glyphMinmax0.minX) +
-                                 (glyphMinmax1.maxX - glyphMinmax1.minX)) * 0.5
-                fillAdvance = glyphMinmax1_.maxX + avgGlyphWidth / 3.0
-                fillPathTuples += (
-                                   ( 0x7f7faf7f, xTranslateContours(glyphContours0, fillAdvance,), ),
-                                   ( 0x7f7f7faf, xTranslateContours(glyphContours1, fillAdvance,), ),
-                                   )
-
-                variableTuples = (
-                                  ('%s (%s) lsb' % (ufoglyph0.name, formatUnicode(ufoglyph0.unicode),), (glyphMinmax0.minX), True,),
-                                  ('%s (%s) rsb' % (ufoglyph0.name, formatUnicode(ufoglyph0.unicode),), (glyphXAdvance0 - glyphMinmax0.maxX), True,),
-                                  ('%s (%s) right x-extrema' % (ufoglyph0.name, formatUnicode(ufoglyph0.unicode),), (glyphMinmax0.maxX), True,),
-                                  ('%s (%s) x-advance' % (ufoglyph0.name, formatUnicode(ufoglyph0.unicode),), (glyphXAdvance0), True,),
-                                  ('%s (%s) lsb' % (ufoglyph1.name, formatUnicode(ufoglyph1.unicode),), (glyphMinmax1.minX), True,),
-                                  ('%s (%s) rsb' % (ufoglyph1.name, formatUnicode(ufoglyph1.unicode),), (glyphXAdvance1 - glyphMinmax1.maxX), True,),
-                                  ('%s (%s) right x-extrema' % (ufoglyph0.name, formatUnicode(ufoglyph1.unicode),), (glyphMinmax1.maxX), True,),
-#                                  ('%s x-advance' % (title,), self.formatUnitsInEms(glyphXAdvance0), True,),
-                                  ('%s kerning value' % (title,), self.formatUnitsInEms(advanceValue - glyphXAdvance0), True,),
-                                  ('%s kerned x-advance' % (title,), self.formatUnitsInEms(advanceValue), True,),
-                                  )
-
-                section_x_extrema_offset = glyphMinmax1_.minX - glyphMinmax0.maxX
-                if section_x_extrema_offset >= 0:
-                    variableTuples += ( (title + ' x-extrema offset', self.formatUnitsInEms(section_x_extrema_offset), True, ), )
-                else:
-                    variableTuples += ( (title + ' x-extrema overlap', self.formatUnitsInEms(-section_x_extrema_offset), True, ), )
-
-                if extraVariableTuples:
-                    variableTuples += extraVariableTuples
-
-                hRanges = ( ( 'x-extrema overlap',
-                              min(glyphMinmax0.maxX, glyphMinmax1_.minX),
-                              max(glyphMinmax0.maxX, glyphMinmax1_.minX), ), )
-
-                logSections.append({'title': title, # + ' Kerning',
-                                    'svg': self.renderSvgScene(None,
-                                                               pathTuples = (
-                                                                             ( 0x7f7faf7f, glyphContours0, ),
-                                                                             ( 0x7f7f7faf, glyphContours1, ),
-                                                                             ),
-                                                               fillPathTuples = fillPathTuples,
-                                                               strokePathTuples = strokePathTuples,
-                                                               hRanges = hRanges,
-                                                               hGuidelines = ( advanceValue, # RSB
-                                                                               glyphXAdvance0, # LSB
-                                                                               min(glyphMinmax0.maxX, glyphMinmax1_.minX),
-                                                                               max(glyphMinmax0.maxX, glyphMinmax1_.minX),
-                                                                 ) ),
-                                    'variables': variableTuples,
-                                    'comments': comments,
-                                    })
+                logSections.append(self.writeLogSectionMap(title,
+                                                           logCache,
+                                                           logufoglyph0, logufoglyph1,
+                                                           advanceValue,
+                                                           strokePathTuples=strokePathTuples,
+                                                           extraVariableTuples=extraVariableTuples,
+                                                           comments=comments))
 
 
-            srcufoglyph0 = self.srcUfoFont.getGlyphByName(ufoglyph0.name)
-            if srcufoglyph0 is None:
-                raise Exception('Could not find glyph by name: %s %s' % (str(ufoglyph0.name),
-                                                                         str(ufoglyph0.unicode)))
-            srcufoglyph1 = self.srcUfoFont.getGlyphByName(ufoglyph1.name)
-            if srcufoglyph1 is None:
-                raise Exception('Could not find glyph by name: %s %s' % (str(ufoglyph1.name),
-                                                                         str(ufoglyph1.unicode)))
-
-            srcContours0 = self.srcCache.getGlyphContours(srcufoglyph0)
-            srcContours1 = self.srcCache.getGlyphContours(srcufoglyph1)
-            srcKerning = self.dstUfoFont.getKerningPair(ufoglyph0.name, ufoglyph1.name)
-            if srcKerning is None:
-                srcKerning = 0
-            srcAdvance = srcufoglyph0.xAdvance
-            srcKernedAdvance = srcufoglyph0.xAdvance + srcKerning
-
-            self.timing.mark('processKerningPair.60')
-
-            def xTranslateContours(contours, value):
-                return [contour.applyPlus(TFSPoint(value, 0)) for contour in contours]
-
-            addLogSection('Original',
-                          srcufoglyph0.xAdvance, srcufoglyph1.xAdvance,
-                          srcContours0, srcContours1,
-                          None, None,
-                          srcKernedAdvance,
-                          comments=('The original kerning from the input.',))
+            logSections.append(self.writeSourceLogSectionMap(ufoglyph0, ufoglyph1))
 
             self.timing.mark('processKerningPair.61')
 
@@ -1922,8 +2020,8 @@ class Autokern(TFSMap):
             self.timing.mark('processKerningPair.63')
 
             addLogSection('Contact',
-                          ufoglyph0.xAdvance, ufoglyph1.xAdvance,
-                          contours0, contours1,
+                          self.dstCache,
+                          ufoglyph0, ufoglyph1,
                           profilePaths0, profilePaths1,
                           contactAdvance,
                           comments=('The raw contours brought into contact if possible.',
@@ -1934,8 +2032,8 @@ class Autokern(TFSMap):
             # -----------
 
             addLogSection('Minimum Distance',
-                          ufoglyph0.xAdvance, ufoglyph1.xAdvance,
-                          contours0, contours1,
+                          self.dstCache,
+                          ufoglyph0, ufoglyph1,
                           profileMinPaths0, profileMinPaths1,
                           minDistanceAdvance,
                           (
@@ -1963,8 +2061,8 @@ class Autokern(TFSMap):
             self.timing.mark('processKerningPair.66')
 
             addLogSection('Maximum Distance',
-                          ufoglyph0.xAdvance, ufoglyph1.xAdvance,
-                          contours0, contours1,
+                          self.dstCache,
+                          ufoglyph0, ufoglyph1,
                           profileMaxPaths0, profileMaxPaths1,
                           maxDistanceAdvance,
                           (
@@ -1977,8 +2075,8 @@ class Autokern(TFSMap):
             # -----------
 
             addLogSection('Intruding',
-                          ufoglyph0.xAdvance, ufoglyph1.xAdvance,
-                          contours0, contours1,
+                          self.dstCache,
+                          ufoglyph0, ufoglyph1,
                           profileMaxPaths0, profileMaxPaths1,
                           intrudingAdvance,
                           (
@@ -1995,8 +2093,8 @@ class Autokern(TFSMap):
             # -----------
 
             addLogSection('Autokern Raw',
-                          ufoglyph0.xAdvance, ufoglyph1.xAdvance,
-                          contours0, contours1,
+                          self.dstCache,
+                          ufoglyph0, ufoglyph1,
                           profileMaxPaths0, profileMaxPaths1,
                           advance,
                           (
@@ -2011,66 +2109,20 @@ class Autokern(TFSMap):
 
             # -----------
 
-            pageTitle0 = u'Autokern Log:'
-            pageTitle1 = u'%s vs. %s' % ( formatGlyphName(ufoglyph0),
-                                                         formatGlyphName(ufoglyph1), )
-
-            def formatEmScalar(value):
-                return formatEms(value / float(self.units_per_em))
-
-            def formatGlyphMap(glyph, glyphMinmax):
-                return {
-                           'glyphName': formatGlyphName(glyph),
-                           'minX': formatEmScalar(glyphMinmax.minX),
-                           'maxX': formatEmScalar(glyphMinmax.maxX),
-                           'minY': formatEmScalar(glyphMinmax.minY),
-                           'maxY': formatEmScalar(glyphMinmax.maxY),
-                        }
-
-            x_extrema_overlap = minmax0.maxX - (minmax1.minX + advance)
-
-            localsMap = {}
-            localsMap.update(locals())
-
-            mustacheMap = self.makeDefaultMustacheMap(localsMap=localsMap)
-            self.addSidebarMustacheMap(mustacheMap, kerned=False)
-
-            logSectionMaps = []
-            for logSection in logSections:
-                logSectionMap = {}
-                logSectionMap['sectionTitle'] = logSection['title']
-                logSectionMap['sectionSvg'] = logSection['svg']
-                if logSection['comments']:
-                    logSectionMap['sectionComments'] = [{'comment': comment,} for comment in logSection['comments']]
-                def formatSectionVariable(variableTuple):
-                    if len(variableTuple) == 2:
-                        name, var = variableTuple
-                        return {'varName': name, 'varValue':mustacheMap[var],}
-                    else:
-                        return {'varName': variableTuple[0], 'varValue':variableTuple[1],}
-
-                logSectionMap['sectionVariables'] = [formatSectionVariable(variableTuple) for variableTuple in logSection['variables']]
-                logSectionMaps.append(logSectionMap)
-
-            mustacheMap.update({
-                           'pageTitle0': pageTitle0,
-                           'pageTitle1': pageTitle1,
-                           'logSectionMaps': logSectionMaps,
-                           })
-
+            comment = 'Logs that document the kerning process for each glyph pair.'
             logFilename = self.getKerningPairHtmlFilename(ufoglyph0, ufoglyph1)
-            self.kerningPairLogFilenames.add(logFilename)
-            self.writeLogFile('autokern_pair_template.txt',
-                              logFilename,
-                              'Kerning Pairs',
-                              '''
-    Logs that document the kerning process for each glyph pair kerned by Autokern.
-                              ''',
-                              ('%s vs. %s' % (ufoglyph0.name, ufoglyph1.name,)),
-                              mustacheMap)
-
-        self.timing.mark('processKerningPair.9')
-
+            self.writeGenericSectionsLog(logSections,
+                                         pageTitles=('Kerning Pair:'
+                                                     '%s vs. %s' % ( formatGlyphName(ufoglyph0),
+                                                                     formatGlyphName(ufoglyph1), ), ),
+                                         pageComments=(comment,),
+                                         logFilename=logFilename,
+                                         logGroupName='Kerning Pairs',
+                                         logGroupDescription=comment,
+                                         logIndexName=('%s vs. %s' % (ufoglyph0.name, ufoglyph1.name,)),
+                                         localVars=locals(),
+#                                     linkMaps=disparityLinkMaps
+                                      )
         return True
 
 
@@ -2105,6 +2157,8 @@ class Autokern(TFSMap):
                 if ufoglyph1.name in self.ignoredGlyphNames:
                     count += 1
                     continue
+
+#                print count, ufoglyph0.name, ufoglyph1.name
 
                 pairKerned = self.processKerningPair(ufoglyph0, ufoglyph1)
 
@@ -2169,6 +2223,110 @@ class Autokern(TFSMap):
             advanceMapYamlFile = os.path.abspath(os.path.join(tmpFolder, 'advanceMap.yaml'))
             with open(advanceMapYamlFile, 'wt') as f:
                 f.write(yamldata)
+
+
+    def writeSourceLogSectionMap(self, ufoglyph0, ufoglyph1):
+
+        srcufoglyph0 = self.srcUfoFont.getGlyphByName(ufoglyph0.name)
+        if srcufoglyph0 is None:
+            raise Exception('Could not find glyph by name: %s %s' % (str(ufoglyph0.name),
+                                                                     str(ufoglyph0.unicode)))
+        srcufoglyph1 = self.srcUfoFont.getGlyphByName(ufoglyph1.name)
+        if srcufoglyph1 is None:
+            raise Exception('Could not find glyph by name: %s %s' % (str(ufoglyph1.name),
+                                                                     str(ufoglyph1.unicode)))
+
+        srcKerning = self.srcUfoFont.getKerningPair(ufoglyph0.name, ufoglyph1.name)
+        if srcKerning is None:
+            srcKerning = 0
+        srcAdvance = srcufoglyph0.xAdvance
+        srcKernedAdvance = srcAdvance + srcKerning
+
+        return self.writeLogSectionMap('Original',
+                                       self.srcCache,
+                                        srcufoglyph0, srcufoglyph1,
+                                        srcKernedAdvance,
+                                        comments=('The original kerning from the input.',) )
+
+
+    def writeLogSectionMap(self,
+                           title,
+                           cache,
+                           ufoglyph0, ufoglyph1,
+#                           glyphProfile0, glyphProfile1,
+                           advanceValue,
+                           strokePathTuples = None,
+                           extraVariableTuples=None,
+                           comments=None):
+
+        glyphXAdvance0 = ufoglyph0.xAdvance
+        glyphXAdvance1 = ufoglyph1.xAdvance
+
+        fillPathTuples = ()
+
+        if strokePathTuples is None:
+            strokePathTuples = ()
+
+        glyphMinmax0 = cache.getContoursMinmax(ufoglyph0)
+        glyphMinmax1 = cache.getContoursMinmax(ufoglyph1)
+        glyphContours0 = cache.getGlyphContours(ufoglyph0)
+        glyphContours1 = cache.getGlyphContours(ufoglyph1)
+#        glyphMinmax0 = minmaxPaths(glyphContours0)
+#        glyphMinmax1 = minmaxPaths(glyphContours1)
+        glyphContours1 = xTranslateContours(glyphContours1, advanceValue)
+        glyphMinmax1_ = minmaxPaths(glyphContours1)
+
+        avgGlyphWidth = ((glyphMinmax0.maxX - glyphMinmax0.minX) +
+                         (glyphMinmax1.maxX - glyphMinmax1.minX)) * 0.5
+        fillAdvance = glyphMinmax1_.maxX + avgGlyphWidth / 3.0
+        fillPathTuples += (
+                           ( 0x7f7faf7f, xTranslateContours(glyphContours0, fillAdvance,), ),
+                           ( 0x7f7f7faf, xTranslateContours(glyphContours1, fillAdvance,), ),
+                           )
+
+        variableTuples = (
+                          ('%s (%s) lsb' % (ufoglyph0.name, formatUnicode(ufoglyph0.unicode),), (glyphMinmax0.minX), True,),
+                          ('%s (%s) rsb' % (ufoglyph0.name, formatUnicode(ufoglyph0.unicode),), (glyphXAdvance0 - glyphMinmax0.maxX), True,),
+                          ('%s (%s) right x-extrema' % (ufoglyph0.name, formatUnicode(ufoglyph0.unicode),), (glyphMinmax0.maxX), True,),
+                          ('%s (%s) x-advance' % (ufoglyph0.name, formatUnicode(ufoglyph0.unicode),), (glyphXAdvance0), True,),
+                          ('%s (%s) lsb' % (ufoglyph1.name, formatUnicode(ufoglyph1.unicode),), (glyphMinmax1.minX), True,),
+                          ('%s (%s) rsb' % (ufoglyph1.name, formatUnicode(ufoglyph1.unicode),), (glyphXAdvance1 - glyphMinmax1.maxX), True,),
+                          ('%s (%s) right x-extrema' % (ufoglyph0.name, formatUnicode(ufoglyph1.unicode),), (glyphMinmax1.maxX), True,),
+#                                  ('%s x-advance' % (title,), self.formatUnitsInEms(glyphXAdvance0), True,),
+                          ('%s kerning value' % (title,), self.formatUnitsInEms(advanceValue - glyphXAdvance0), True,),
+                          ('%s kerned x-advance' % (title,), self.formatUnitsInEms(advanceValue), True,),
+                          )
+
+        section_x_extrema_offset = glyphMinmax1_.minX - glyphMinmax0.maxX
+        if section_x_extrema_offset >= 0:
+            variableTuples += ( (title + ' x-extrema offset', self.formatUnitsInEms(section_x_extrema_offset), True, ), )
+        else:
+            variableTuples += ( (title + ' x-extrema overlap', self.formatUnitsInEms(-section_x_extrema_offset), True, ), )
+
+        if extraVariableTuples:
+            variableTuples += extraVariableTuples
+
+        hRanges = ( ( 'x-extrema overlap',
+                      min(glyphMinmax0.maxX, glyphMinmax1_.minX),
+                      max(glyphMinmax0.maxX, glyphMinmax1_.minX), ), )
+
+        return {'title': title,
+                'svg': self.renderSvgScene(None,
+                                           pathTuples = (
+                                                         ( 0x7f7faf7f, glyphContours0, ),
+                                                         ( 0x7f7f7faf, glyphContours1, ),
+                                                         ),
+                                           fillPathTuples = fillPathTuples,
+                                           strokePathTuples = strokePathTuples,
+                                           hRanges = hRanges,
+                                           hGuidelines = ( advanceValue, # RSB
+                                                           glyphXAdvance0, # LSB
+                                                           min(glyphMinmax0.maxX, glyphMinmax1_.minX),
+                                                           max(glyphMinmax0.maxX, glyphMinmax1_.minX),
+                                             ) ),
+                'variables': variableTuples,
+                'comments': comments,
+                }
 
 
     def parseCodePoint(self, argName, glyphNames, value):
@@ -2795,19 +2953,19 @@ class Autokern(TFSMap):
         groupDescriptionMap = {}
         groupNames = []
         groupItemsMap = {}
-        for groupName, groupDescription, filename, logShortname in self.logFileTuples:
+        for groupName, groupDescription, filename, logIndexName in self.logFileTuples:
             groupDescriptionMap[groupName] = groupDescription
-            groupItemsMap[groupName] = groupItemsMap.get(groupName, []) + [(filename, logShortname,)]
+            groupItemsMap[groupName] = groupItemsMap.get(groupName, []) + [(filename, logIndexName,)]
             if groupName not in groupNames:
                 groupNames.append(groupName)
 
         logGroupMaps = []
         for groupName in groupNames:
             logGroupItems = []
-            for filename, logShortname in groupItemsMap[groupName]:
+            for filename, logIndexName in groupItemsMap[groupName]:
                 logGroupItems.append({'groupName': groupName,
-                                      'filename': filename,
-                                      'logShortname': logShortname,
+                                      'logItemFilename': filename,
+                                      'logItemIndexName': logIndexName,
                                       })
             groupSuffix = ''
             if len(logGroupItems) > 100:
@@ -2840,7 +2998,7 @@ class Autokern(TFSMap):
     def writeLogFile(self,
                      templateFilename, logFilename,
                      groupName, groupDescription,
-                     logShortname, mustacheMap):
+                     logIndexName, mustacheMap):
 
         import tfs.common.TFSProject as TFSProject
 #        dataFolder = os.path.abspath(os.path.join(TFSProject.findProjectRootFolder(), 'data'))
@@ -2874,7 +3032,7 @@ class Autokern(TFSMap):
             f.write(logHtml)
 
         if groupName is not None:
-            self.logFileTuples.append( (groupName, groupDescription, logFilename, logShortname,) )
+            self.logFileTuples.append( (groupName, groupDescription, logFilename, logIndexName,) )
 
 
     def process(self):
@@ -2915,6 +3073,9 @@ class Autokern(TFSMap):
 
         self.elapsedDatetime = formatTimeDuration(time.time() - startTime)
         self.finishDatetime = time.strftime('%h. %d, %Y %H:%M:%S', time.localtime())
+
+        self.writeBasicPairsLog()
+        self.timing.mark('writeBasicPairsLog.')
 
         self.writeLogIndex()
         self.timing.mark('writeLogIndex.')

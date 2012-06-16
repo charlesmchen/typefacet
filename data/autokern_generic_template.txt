@@ -4,7 +4,11 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="chrome=1">
     
-    <title>{{pageTitle}}</title>
+    <title>
+{{#pageTitles}}
+	{{pageTitle}}
+{{/pageTitles}}
+    </title>
 
     <link rel="stylesheet" href="stylesheets/styles.css">
     <link rel="stylesheet" href="stylesheets/pygment_trac.css">
@@ -12,8 +16,7 @@
     <!--[if lt IE 9]>
     <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
     <![endif]-->
-
-
+    
 
 <style type="text/css">
 <!--
@@ -27,13 +30,19 @@ section h3 {
 	padding-top: 25px;
 }
 
+section div.back_link_top {
+	padding-bottom: 25px;
+}
+section div.back_link_bottom {
+	padding-top: 25px;
+}
+
 -->
 </style>
 
   </head>
   <body>
     <div class="wrapper">
-    
       <header>
         <h1>TypeFacet Autokern</h1>
         <p>
@@ -41,7 +50,7 @@ section h3 {
         </p>
         <h3>Results</h3>
         <ul>
-
+        
 {{#sidebarVars}}
         	<li>
     	    	<b>{{sidebarVarName}}: {{sidebarVarValue}}</b>
@@ -57,48 +66,81 @@ section h3 {
     	    	<b>{{sidebarVarName}} {{sidebarVarValue}}</b>
         	</li>
 {{/sidebarArgs}}
-        	
+        
         </ul>
         
       </header>
       <section>
+
+<div class="back_link_top">
+	Back to <a href="index.html">Log Index</a>
+</div>
       
-        <h2>{{{pageTitle}}}:</h2>
-        <h3>{{familyName}} {{styleName}}</h3>
+{{#pageTitles}}
+	<h2>{{pageTitle}}</h2>
+{{/pageTitles}}
+      
+{{#pageComments}}
+	<div>
+		{{pageComment}}
+	</div>
+{{/pageComments}}
 
+
+{{#hasNextPrevLinkMaps}}
+	<div>
+{{#prevLinkMap}}
+	<a href="{{{linkFile}}}">Previous</a>
+{{/prevLinkMap}}
+
+{{#nextLinkMap}}
+	<a href="{{{linkFile}}}">Next</a>
+{{/nextLinkMap}}
+	</div>
+{{/hasNextPrevLinkMaps}}
+
+
+{{#hasLinkMaps}}
+	<div>
+{{#firstLinkMap}}
+	<a href="{{{linkFile}}}">First</a>
+{{/firstLinkMap}}
+
+{{#linkMaps}}
+	<a href="{{{linkFile}}}">{{linkName}}</a>
+{{/linkMaps}}
+
+{{#lastLinkMap}}
+	<a href="{{{linkFile}}}">Last</a>
+{{/lastLinkMap}}
+	</div>
+{{/hasLinkMaps}}
+
+
+{{#logSectionMaps}}
+
+<h3>{{sectionTitle}}</h3>
+<p>
+	{{{sectionSvg}}}
+</p>
+
+{{#sectionComments}}
 <div>
-	For more information, see:
+	{{comment}}
 </div>
-<ul>
-	<li>
-		<a href="http://charlesmchen.github.com/typefacet/topics/autokern/typefacet-autokern-manual.html">TypeFacet Autokern Manual</a>
-	</li>	
-	<li>
-		<a href="http://charlesmchen.github.com/typefacet/topics/autokern/index.html">TypeFacet Autokern Home</a>
-	</li>	
-	<li>
-		<a href="http://charlesmchen.github.com/typefacet">TypeFacet project</a>
-	</li>	
-</ul>	
+{{/sectionComments}}
 
-{{#logGroupMaps}}
-<h3>{{logGroupName}}</h3>
+<pre>
+{{#sectionVariables}}
+{{varName}}: {{varValue}}
+{{/sectionVariables}}
+</pre>
 
-{{#logGroupDescription}}
-<div>
-{{logGroupDescription}}
+{{/logSectionMaps}}
+
+<div class="back_link_bottom">
+	Back to <a href="index.html">Log Index</a>
 </div>
-{{/logGroupDescription}}
-
-<div>
-{{#logGroupItems}}
-	<a href="{{logItemFilename}}">{{logItemIndexName}}</a>,
-{{/logGroupItems}}
-
-{{groupSuffix}}
-</div>
-
-{{/logGroupMaps}}
 
       </section>
       <footer>

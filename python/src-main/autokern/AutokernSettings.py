@@ -188,6 +188,9 @@ class AutokernSettings(TFBaseSettings):
                             type=self.boundedInt(minValue=0),
                             default=10,
                             help='The number of disparity logs to write. Default: 10')
+        parser.add_argument('--log-basic-pairs',
+                            action='store_true',
+                            help='The number of disparity logs to write. Default: 10')
 
         parser.add_argument('--glyph-pairs-to-kern',
 #                            type=self.codePointType,
