@@ -547,6 +547,8 @@ class Autokern(TFSMap):
 
         def getGlyphCategoryValue(categoryMap, categoryKeys, glyph):
             result = []
+            if glyph.name not in self.glyphNameToCategoryMap:
+                return result
             category = self.glyphNameToCategoryMap[glyph.name]
             if category is None:
                 return result
@@ -800,6 +802,8 @@ class Autokern(TFSMap):
         S Symbol
         C Other
         '''
+        if glyph.name not in self.glyphNameToCategoryMap:
+            return False
         unicode_category = self.glyphNameToCategoryMap[glyph.name]
         if unicode_category is not None:
             if exceptions:
