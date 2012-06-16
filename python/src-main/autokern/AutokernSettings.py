@@ -323,24 +323,37 @@ class AutokernSettings(TFBaseSettings):
                             type=self.boundedInt(minValue=1),
                             help='Limits the number of kerning values.')
 
-        parser.add_argument('--max-x-extrema-overlap-ems-per-category',
-#                            type=self.glyphCategoryFloatPairsType,
-                            default=('P*', '-0.025', 'M*', '-0.025', 'S*', '-0.025', ),
-                            nargs='+',
-                            help='''
-                            A list of per-category --max-x-extrema-overlap-ems values.
-                            Categories (ie. Lu = Letter, Uppercase) have a major (ie. Letter) and minor (ie. Uppercase) components.
-                            You may use an asterisk in the minor component as a wildcard.
+#        For example, to use -0.025 em for all punctuation, marks and symbols, use: --max-x-extrema-overlap-ems-per-category P* -0.025 M* -0.025 S* -0.025.
+        def addPerCategoryArgument(key, defaultValues=None):
+            helpMsg = '''
+                        A list of per-category %s values.
 
-                            For example, to use -0.025 em for all punctuation, marks and symbols, use: --max-x-extrema-overlap-ems-per-category P* -0.025 M* -0.025 S* -0.025.
+                        For example, to use 0.025 em for all punctuation, marks and symbols, use: %s-per-category P* 0.025 M* 0.025 S* 0.025.
 
-                            See the Unicodedata documentation for a list of glyph categories:
-                            ftp://ftp.unicode.org/Public/3.0-Update/UnicodeData-3.0.0.html
+                        See %s for more details.
+                        See --glyph-categories-to-ignore for an explanation of glyph categories.
+                        ''' % (
+                               key,
+                               key,
+                               key,
+                               )
+            if defaultValues is not None:
+                helpMsg += 'Default: %s' % ( ' '.join(defaultValues), )
+            argm = {
+                    'nargs': '+',
+                    'help': helpMsg,
+                    }
+            if defaultValues is not None:
+                argm['default'] = defaultValues
+            parser.add_argument('%s-per-category' % key,
+                                **argm)
 
-                            See --max-x-extrema-overlap-ems for more details.
-
-                            Default: P* -0.025 M* -0.025 S* -0.025
-                            ''')
+        addPerCategoryArgument('--max-x-extrema-overlap-ems',
+                               defaultValues=('P*', '-0.025', 'M*', '-0.025', 'S*', '-0.025', ))
+        addPerCategoryArgument('--max-distance-ems')
+        addPerCategoryArgument('--min-distance-ems')
+        addPerCategoryArgument('--intrusion-tolerance-ems')
+        addPerCategoryArgument('--tracking-ems')
 
         parser.add_argument('--glyphs-to-ignore',
 #                            type=self.codePointType,
@@ -361,12 +374,12 @@ class AutokernSettings(TFBaseSettings):
                             A list of glyph categories to ignore.
                             Glyphs in these categories will be not kerned and their side bearings will not be updated.
                             Categories (ie. Lu = Letter, Uppercase) have a major (ie. Letter) and minor (ie. Uppercase) components.
-                            You may use an asterisk in the minor component as a wildcard.
+                            You may use an asterisk in the minor component as a wildcard (ie. L* = all Letters).
 
                             For example, to ignore Letter modifiers (Lm) and spacing (Zs, Zl, Zp) use: --glyph-categories-to-ignore Lm Z*.
 
                             See the Unicodedata documentation for a list of glyph categories:
-                            ftp://ftp.unicode.org/Public/3.0-Update/UnicodeData-3.0.0.html
+                            http://www.unicode.org/reports/tr44/tr44-4.html#General_Category_Values
                             Default: Lm Sk C* Z*.
                             ''')
 

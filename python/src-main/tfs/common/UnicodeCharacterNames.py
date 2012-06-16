@@ -79,7 +79,7 @@ def toNameKey(characterCode):
 def readNameYaml(filename, dstMap):
     import tfs.common.TFSProject as TFSProject
     srcFile = os.path.abspath(os.path.join(TFSProject.findProjectRootFolder(), 'data', filename))
-    print 'srcFile', srcFile
+#    print 'srcFile', srcFile
     if not os.path.exists(srcFile) and os.path.isfile(srcFile):
         raise Exception ('Missing srcFile: ' + srcFile)
 
@@ -129,7 +129,7 @@ shortNameToHexMap = {}
 def readGlyphNames():
     import tfs.common.TFSProject as TFSProject
     srcFile = os.path.abspath(os.path.join(TFSProject.findProjectRootFolder(), 'data', 'Adobe Glyph List', 'aglfn13.txt'))
-    print 'srcFile', srcFile
+#    print 'srcFile', srcFile
     if not os.path.exists(srcFile) and os.path.isfile(srcFile):
         raise Exception ('Missing srcFile: ' + srcFile)
 
@@ -155,7 +155,7 @@ unicodeCodeBlocks = []
 def readCodeBlocks():
     import tfs.common.TFSProject as TFSProject
     srcFile = os.path.abspath(os.path.join(TFSProject.findProjectRootFolder(), 'data', 'UnicodeCodeBlocks.yaml'))
-    print 'srcFile', srcFile
+#    print 'srcFile', srcFile
     if not os.path.exists(srcFile) and os.path.isfile(srcFile):
         raise Exception ('Missing srcFile: ' + srcFile)
 
@@ -294,8 +294,9 @@ def getUnicodeCharacterName(characterCode,
     return validateName(basename)
 
 def getUnicodeForShortName(name):
+    _loadDataIfNecessary()
     if name in shortNameToHexMap:
-        return shortNameToHexMap[name]
+        return int(shortNameToHexMap[name], 16)
     return None
 
 #print getUnicodeLongName(0x01AB)

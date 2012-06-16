@@ -96,6 +96,8 @@ pseudo_argv = (
                 'P*', '-0.02',
                 'M*', '-0.02',
                 'S*', '-0.02',
+                '--max-distance-ems-per-category',
+                'P*', '0.050',
 
                 '--intrusion-tolerance-ems',
                 '0.05',

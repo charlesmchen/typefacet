@@ -77,4 +77,6 @@ class TFSMap(dict):
         return key in self
 
     def __getattr__(self, key):
+        if key not in self:
+            raise Exception('Unknown attribute: ' + key)
         return self[key]

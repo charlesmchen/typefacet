@@ -374,7 +374,8 @@ class Autokern(TFSMap):
 #                        if self.isIgnoredGlyph(glyph):
 #                            print '\t', 'ignored Glyph?', glyph.name, 'category', category
 
-        print 'ignoring %d glyphs' % len(self.ignoredGlyphNames)
+        print 'ignoring %s / %s glyphs' %  ( locale.format("%d", len(self.ignoredGlyphNames), grouping=True),
+                                             locale.format("%d", len(glyphs), grouping=True), )
 
         #
 
@@ -423,7 +424,17 @@ class Autokern(TFSMap):
                     if glyphName is not None and lastGlyphName is not None:
                         self.pairsToKern.add( (lastGlyphName, glyphName,) )
                     lastGlyphName = glyphName
-            print 'kerning %d pairs' % len(self.pairsToKern)
+
+        notIgnoredGlyphs = len(glyphs) - len(self.ignoredGlyphNames)
+        if self.pairsToKern is not None:
+            print 'kerning %s / %s pairs' % ( locale.format("%d", len(self.pairsToKern), grouping=True),
+                                              locale.format("%d", notIgnoredGlyphs * notIgnoredGlyphs, grouping=True), )
+        elif self.glyphsToKern is not None:
+            print 'kerning %s / %s glyphs' % ( locale.format("%d", len(self.glyphsToKern), grouping=True),
+                                               locale.format("%d", len(glyphs), grouping=True), )
+        else:
+            print 'kerning %s glyphs, %s pairs' % ( locale.format("%d", notIgnoredGlyphs, grouping=True),
+                                                    locale.format("%d", notIgnoredGlyphs * notIgnoredGlyphs, grouping=True), )
 
         if len(scopeArguments) > 1:
             raise Exception('Do not use more than one of the %s arguments.' % (' '.join(scopeArguments),))
@@ -443,23 +454,97 @@ class Autokern(TFSMap):
                     return value
             raise Exception('Invalid unicodedata category value: ' + value)
 
+        def parseFloatPerCategoryMap(key, values, minValue, maxValue):
+            resultMap = {}
+            resultKeys = []
+            if values is not None:
+                if len(values) < 1:
+                    raise Exception('Missing %s value' % key)
+                if len(values) % 2 != 0:
+                    raise Exception('Uneven number of  %s values' % key)
+                for index in xrange(len(values) / 2):
+                    value0 = values[index * 2 + 0]
+                    value1 = values[index * 2 + 1]
+                    isValidGlyphCategories('%s' % key, value0)
+                    try:
+                        value1 = float(value1)
+                        if not (minValue <= value1 <= maxValue):
+                            raise Exception('Invalid %s value: %s' % (key, str(value1),))
+                        value1 *= value1 * self.units_per_em
+                    except ValueError, e:
+                        raise Exception('Invalid %s value: %s' % (key, str(value1),))
 
-        self.max_x_extrema_overlap_categoryMap = {}
-        if self.max_x_extrema_overlap_ems_per_category is not None:
-            if len(self.max_x_extrema_overlap_ems_per_category) < 1:
-                raise Exception('Missing --max-x-extrema-overlap-ems-per-category value')
-            if len(self.max_x_extrema_overlap_ems_per_category) % 2 != 0:
-                raise Exception('Uneven number of  --max-x-extrema-overlap-ems-per-category values')
-            for index in xrange(len(self.max_x_extrema_overlap_ems_per_category) / 2):
-                value0 = self.max_x_extrema_overlap_ems_per_category[index * 2 + 0]
-                value1 = self.max_x_extrema_overlap_ems_per_category[index * 2 + 1]
-                isValidGlyphCategories('--max-x-extrema-overlap-ems-per-category', value0)
-                try:
-                    value1 = float(value1) * self.units_per_em
-                except ValueError, e:
-                    raise Exception('Invalid --max-x-extrema-overlap-ems-per-category value: %s' % str(value1))
+                    resultMap[value0] = value1
+                    resultKeys.append(value0)
+            return resultMap, resultKeys
 
-                self.max_x_extrema_overlap_categoryMap[value0] = value1
+        def getGlyphCategoryValue(categoryMap, categoryKeys, glyph):
+            result = []
+            category = self.getUnicodeCategory(glyph)
+            if category is None:
+                return result
+            if category in categoryMap:
+                result.append( ( categoryMap[category],
+                                 categoryKeys.index(category), ) )
+            categoryMajor = category[:-1] + '*'
+            if categoryMajor in categoryMap:
+                result.append( ( categoryMap[categoryMajor],
+                                 categoryKeys.index(categoryMajor), ) )
+            return result
+
+        def getGlyphPairCategoryValue(categoryMap, categoryKeys,
+                                      defaultValue, glyph0, glyph1):
+            '''
+            The LAST category rule has precedence.
+            '''
+            values = []
+            values.extend(getGlyphCategoryValue(categoryMap, categoryKeys, glyph0))
+            values.extend(getGlyphCategoryValue(categoryMap, categoryKeys, glyph1))
+            if len(values) < 1:
+                return defaultValue
+            bestValue, bestIndex = values[0]
+            for value, index in values[1:]:
+                if index > bestIndex:
+                    bestValue, bestIndex = value, index
+            return bestValue
+
+        def parseFloatPerCategoryProperty(name, minValue, maxValue):
+            '''
+            self.max_x_extrema_overlap_categoryMap = parseFloatPerCategoryMap('--max-x-extrema-overlap-ems-per-category',
+                                                                              self.max_x_extrema_overlap_ems_per_category,
+                                                                              -1.0, 1.0)
+            '''
+            valuesName = name.replace('-', '_')[2:]
+            values = getattr(self, valuesName)
+            defaultValueName = valuesName[:-len('-ems-per-category')]
+            defaultValue = getattr(self, defaultValueName)
+            valueMap, valueKeys = parseFloatPerCategoryMap(name, values,
+                                                           -1.0, 1.0)
+            '''
+            We want the LAST rules to have precedence, so we reverse order.
+            '''
+            valueKeys.reverse()
+            setattr(self, defaultValueName + '_valueMap', valueMap)
+            setattr(self, defaultValueName + '_valueKeys', valueKeys)
+            def getterFunc(glyph0, glyph1):
+                return getGlyphPairCategoryValue(valueMap,
+                                                 valueKeys,
+                                                 defaultValue,
+                                                 glyph0, glyph1)
+            getterFuncName = 'getGlyphPair_' + defaultValueName
+            setattr(self, getterFuncName, getterFunc)
+
+
+        self.max_x_extrema_overlap_categoryMap = parseFloatPerCategoryProperty('--max-x-extrema-overlap-ems-per-category',
+                                                                               -1.0, 1.0)
+        self.min_distance_categoryMap = parseFloatPerCategoryProperty('--min-distance-ems-per-category',
+                                                                      0.0, 1.0)
+        self.max_distance_categoryMap = parseFloatPerCategoryProperty('--max-distance-ems-per-category',
+                                                                      0.0, 1.0)
+        self.intrusion_tolerance_categoryMap = parseFloatPerCategoryProperty('--intrusion-tolerance-ems-per-category',
+                                                                             0.0, 1.0)
+        self.tracking_categoryMap = parseFloatPerCategoryProperty('--tracking-ems-per-category',
+                                                                  0.0, 1.0)
 
         #
 
@@ -470,36 +555,14 @@ class Autokern(TFSMap):
                 continue
             glyphMinmax = self.dstCache.getContoursMinmax(ufoglyph)
             minmax = minmaxMerge(minmax, glyphMinmax)
-        self.allGlyphsMinY = minmax.minY
-        self.allGlyphsMaxY = minmax.maxY
+        allGlyphsMinY = minmax.minY
+        allGlyphsMaxY = minmax.maxY
+        #
+        max_max_distance = max(self.max_distance,
+                               reduce(max, self.max_distance_valueMap.values()))
+        self.profileMaxYunits = int(math.ceil((allGlyphsMaxY + max_max_distance) / float(self.precision)))
+        self.profileMinYunits = int(math.floor((allGlyphsMinY - max_max_distance) / float(self.precision)))
 
-    def getGlyphCategoryValue(self, categoryMap, glyph):
-        category = self.getUnicodeCategory(glyph)
-        if category is None:
-            return None
-        if category in categoryMap:
-            return categoryMap[category]
-        categoryMajor = category[:-1] + '*'
-        if categoryMajor in categoryMap:
-            return categoryMap[categoryMajor]
-        return None
-
-    def getGlyphPairCategoryValue(self, categoryMap, func, defaultValue, glyph0, glyph1):
-        value0 = self.getGlyphCategoryValue(categoryMap, glyph0)
-        value1 = self.getGlyphCategoryValue(categoryMap, glyph1)
-        if value0 is None and value1 is None:
-            return defaultValue
-        if value0 is None:
-            return value1
-        if value1 is None:
-            return value0
-        return func(value0, value1)
-
-    def getGlyphPairMaxXExtremaOverlap(self, glyph0, glyph1):
-        return self.getGlyphPairCategoryValue(self.max_x_extrema_overlap_categoryMap,
-                                              max,
-                                              -self.max_x_extrema_overlap,
-                                              glyph0, glyph1)
 
     def formatUnitsInEms(self, value):
         return formatEms(value / float(self.units_per_em))
@@ -641,12 +704,20 @@ class Autokern(TFSMap):
 
     def getUnicodeCategory(self, glyph):
         def getUnicodeCategory_():
-            if glyph.unicode is None:
-                return None
-            uc = unichr(glyph.unicode)
-            if uc is not None:
-                unicode_category = unicodedata.category(uc)
-                return unicode_category
+            codePoint = glyph.unicode
+            if codePoint is None:
+                name = glyph.name
+                if '.' in name:
+                    name = name[:name.index('.')]
+                codePoint = UnicodeCharacterNames.getUnicodeForShortName(name)
+            if codePoint is not None:
+                try:
+                    uc = unichr(codePoint)
+                except UnicodeEncodeError:
+                    return None
+                if uc is not None:
+                    unicode_category = unicodedata.category(uc)
+                    return unicode_category
             return None
         return self.srcCache.getCachedValue('getUnicodeCategory: %s' % glyph.name, getUnicodeCategory_)
 
@@ -731,10 +802,10 @@ class Autokern(TFSMap):
         if hRanges:
             for hRange in hRanges:
                 rangeName, rangeLeft, rangeRight = hRange
-                if rangeLeft == rangeLeft:
+                if rangeLeft == rangeRight:
                     continue
-                p0 = TFSPoint(rangeLeft, int(round(self.max_distance * -1.3)))
-                p1 = TFSPoint(rangeRight, int(round(self.max_distance * -1.3)))
+                p0 = TFSPoint(rangeLeft, int(round(self.dstUfoFont.info.descender * 0.2)))
+                p1 = TFSPoint(rangeRight, int(round(self.dstUfoFont.info.descender * 0.2)))
                 H_RANGE_COLOR = 0xaf3f3faf
                 tfsSvg.addItem(TFSSvgPath(openPathWithPoints(p0, p1)).addStroke(H_RANGE_COLOR, 3))
 
@@ -1008,7 +1079,7 @@ class Autokern(TFSMap):
 
 
     def convertProfileToLogPaths(self, profile, isLeft, offset=None):
-        minYunits = int(math.floor((self.allGlyphsMinY - self.max_distance) / float(self.precision)))
+        minYunits = self.profileMinYunits
 
         result = []
 
@@ -1056,8 +1127,8 @@ class Autokern(TFSMap):
 
 
     def makeProfile(self, paths=None, segments=None, debug=False):
-        maxYunits = int(math.ceil((self.allGlyphsMaxY + self.max_distance) / float(self.precision)))
-        minYunits = int(math.floor((self.allGlyphsMinY - self.max_distance) / float(self.precision)))
+        minYunits = self.profileMinYunits
+        maxYunits = self.profileMaxYunits
         yHeightUnits = 1 + maxYunits - minYunits
 
 #        print 'maxYunits', maxYunits
@@ -1099,8 +1170,6 @@ class Autokern(TFSMap):
             '''
             y0u = int(round(point0.y / float(self.precision)))
             y1u = int(round(point1.y / float(self.precision)))
-#            y0u = int(round((point0.y - self.max_distance) / float(self.precision)))
-#            y1u = int(round((point1.y - self.max_distance) / float(self.precision)))
 
             if debug:
                 print 'addSegmentSection', point0.description(), point1.description(), 'y0u', y0u, 'y1u', y1u
@@ -1142,14 +1211,16 @@ class Autokern(TFSMap):
 
         return minProfile, maxProfile
 
-    def isValidProfileIntrusion(self, profile0, profile1, referenceProfiles, advance):
+    def isValidProfileIntrusion(self, profile0, profile1, referenceProfiles, advance,
+                                pair_max_distance,
+                                pair_intrusion_tolerance):
 
 #        DEBUG_h_n_ISSUE = True
 #        print 'isValidProfileIntrusion', 'advance', advance
 
-        maxRowExtrusion = self.max_distance
-        maxSectionGapLength = int(round(self.max_distance * 1.0 / self.precision))
-        maxSectionPadding = int(round(self.max_distance * 0.5 / self.precision))
+        maxRowExtrusion = pair_max_distance
+        maxSectionGapLength = int(round(pair_max_distance * 1.0 / self.precision))
+        maxSectionPadding = int(round(pair_max_distance * 0.5 / self.precision))
         defaultMaxXOffset = maxRowExtrusion
 
 
@@ -1201,9 +1272,9 @@ class Autokern(TFSMap):
             closely to the next glyph.
 
             To resolve this, we split sections with large continuous internal gaps.
-            The gaps must be entirely deeper and longer than self.max_distance.
+            The gaps must be entirely deeper and longer than pair_max_distance.
 
-            We leave up to self.max_distance of the gap around the split which
+            We leave up to pair_max_distance of the gap around the split which
             will be trimmed by the next phase anyhow.
             '''
 
@@ -1216,7 +1287,7 @@ class Autokern(TFSMap):
                         if gapLength >= maxSectionGapLength:
                             left = section[:index]
                             right = section[lastValidIndex + 1:]
-#                            print 'maxGapLength', maxGapLength, 'gapLength', gapLength, 'self.max_distance', self.max_distance
+#                            print 'maxGapLength', maxGapLength, 'gapLength', gapLength, 'pair_max_distance', pair_max_distance
 #                            print 'left', left
 #                            print 'right', right
                             return splitSection(left) + splitSection(right)
@@ -1239,9 +1310,9 @@ class Autokern(TFSMap):
             profile and causes their bottoms to be kerned too closely.
 
             To resolve this, we trim large continuous gaps at the top or bottom
-            of a section.  The gaps must be entirely greater than self.max_distance.
+            of a section.  The gaps must be entirely greater than pair_max_distance.
 
-            We leave up to self.max_distance * 0.5 of the gap, so that beaks
+            We leave up to pair_max_distance * 0.5 of the gap, so that beaks
             and arms are kerned closer.  For example, t vs. L or r vs. a.
 
             This isn't an ideal solution.  It might better to add a new argument that
@@ -1259,13 +1330,13 @@ class Autokern(TFSMap):
                 if isValidRow(x_offset):
                     break
                 tailCount = index
-#            maxPadding = int(round(self.max_distance * 0.5 / self.precision))
+#            maxPadding = int(round(pair_max_distance * 0.5 / self.precision))
             headTrimCount = max(0, headCount - maxSectionPadding)
             tailTrimCount = max(0, tailCount - maxSectionPadding)
             if headTrimCount + tailTrimCount >= len(section):
                 return []
 #            print 'section', len(section)
-#            print 'maxPadding', maxPadding, 'self.max_distance', self.max_distance, 'self.precision', self.precision
+#            print 'maxPadding', maxPadding, 'pair_max_distance', pair_max_distance, 'self.precision', self.precision
 #            print 'headCount', headCount, 'headTrimCount', headTrimCount
 #            print 'tailCount', tailCount, 'tailTrimCount', tailTrimCount
             if tailTrimCount > 0:
@@ -1335,7 +1406,8 @@ class Autokern(TFSMap):
             if intrusionTotal > extrusionTotal * INTRUSION_EXTRUSION_MIN_RATIO:
                 return False
 
-            intrusionToleranceArea = self.intrusion_tolerance * len(section)
+            intrusionToleranceArea = pair_intrusion_tolerance * len(section)
+
 #            print 'intrusionToleranceArea', intrusionToleranceArea
             if intrusionTotal > intrusionToleranceArea:
                 return False
@@ -1363,7 +1435,9 @@ class Autokern(TFSMap):
         return contactAdvance
 
 
-    def findMinProfileAdvance_withIntrusion(self, profile0, profile1, referenceProfiles):
+    def findMinProfileAdvance_withIntrusion(self, profile0, profile1, referenceProfiles,
+                                            pair_max_distance,
+                                            pair_intrusion_tolerance):
         contactAdvance = self.findMinProfileAdvance(profile0, profile1)
 
         if contactAdvance is None:
@@ -1377,8 +1451,8 @@ class Autokern(TFSMap):
         I'm not sure what the best way to determine an upper bound on this value is,
         so I've erred on the side of accuracy by chosing a very high upper bound.
         '''
-        maximumIntrusionOffset = int(math.ceil(2.0 * max(self.intrusion_tolerance,
-                                                         self.max_distance)))
+        maximumIntrusionOffset = int(math.ceil(2.0 * max(pair_intrusion_tolerance,
+                                                         pair_max_distance)))
         highInvalidIntrusionOffset = maximumIntrusionOffset
         while True:
             intrusionOffset = int(round((lowValidIntrusionOffset + highInvalidIntrusionOffset) / 2))
@@ -1390,7 +1464,9 @@ class Autokern(TFSMap):
                 intrudingAdvance = contactAdvance - lowValidIntrusionOffset
                 return intrudingAdvance
 
-            if self.isValidProfileIntrusion(profile0, profile1, referenceProfiles, contactAdvance - intrusionOffset):
+            if self.isValidProfileIntrusion(profile0, profile1, referenceProfiles, contactAdvance - intrusionOffset,
+                                            pair_max_distance,
+                                            pair_intrusion_tolerance):
                 lowValidIntrusionOffset = intrusionOffset
             else:
                 highInvalidIntrusionOffset = intrusionOffset
@@ -1521,6 +1597,14 @@ class Autokern(TFSMap):
 
         self.timing.mark('processKerningPair.010')
 
+        pair_min_distance = self.getGlyphPair_min_distance(ufoglyph0, ufoglyph1)
+        pair_max_distance = self.getGlyphPair_max_distance(ufoglyph0, ufoglyph1)
+        pair_tracking = self.getGlyphPair_tracking(ufoglyph0, ufoglyph1)
+        pair_max_x_extrema_overlap = self.getGlyphPair_max_x_extrema_overlap(ufoglyph0, ufoglyph1)
+        pair_intrusion_tolerance = self.getGlyphPair_intrusion_tolerance(ufoglyph0, ufoglyph1)
+
+        self.timing.mark('processKerningPair.011')
+
         def getGlyphProfiles(contours):
             return self.makeProfile(paths=contours)
 
@@ -1537,33 +1621,37 @@ class Autokern(TFSMap):
             return result
 
         def getGlyphProfilesInflateMin(contours):
-            return self.makeInflatedProfile(contours=contours, radius=self.min_distance * 0.5)
+            return self.makeInflatedProfile(contours=contours, radius=pair_min_distance * 0.5)
         def getGlyphProfilesInflateMax(contours):
-            return self.makeInflatedProfile(contours=contours, radius=self.max_distance * 0.5)
+            return self.makeInflatedProfile(contours=contours, radius=pair_max_distance * 0.5)
 
         _, profile0 = self.dstCache.getCachedValue('getGlyphProfiles %s' % ufoglyph0.name, getGlyphProfiles, contours0)
         self.timing.mark('processKerningPair.011')
 
-        _, profileMin0 = self.dstCache.getCachedValue('getGlyphProfilesInflateMin %s' % ufoglyph0.name, getGlyphProfilesInflateMin, contours0)
+        _, profileMin0 = self.dstCache.getCachedValue('getGlyphProfilesInflateMin %s %f' % (ufoglyph0.name,
+                                                                                         pair_min_distance,), getGlyphProfilesInflateMin, contours0)
         self.timing.mark('processKerningPair.012')
 
-        _, profileMax0 = self.dstCache.getCachedValue('getGlyphProfilesInflateMax %s' % ufoglyph0.name, getGlyphProfilesInflateMax, contours0)
+        _, profileMax0 = self.dstCache.getCachedValue('getGlyphProfilesInflateMax %s %f' % (ufoglyph0.name,
+                                                                                            pair_max_distance,), getGlyphProfilesInflateMax, contours0)
         self.timing.mark('processKerningPair.013')
 
         profile1, _ = self.dstCache.getCachedValue('getGlyphProfiles %s' % ufoglyph1.name, getGlyphProfiles, contours1)
         self.timing.mark('processKerningPair.014')
 
-        profileMin1, _ = self.dstCache.getCachedValue('getGlyphProfilesInflateMin %s' % ufoglyph1.name, getGlyphProfilesInflateMin, contours1)
+        profileMin1, _ = self.dstCache.getCachedValue('getGlyphProfilesInflateMin %s %f' % (ufoglyph1.name,
+                                                                                            pair_min_distance,), getGlyphProfilesInflateMin, contours1)
         self.timing.mark('processKerningPair.015')
 
-        profileMax1, _ = self.dstCache.getCachedValue('getGlyphProfilesInflateMax %s' % ufoglyph1.name, getGlyphProfilesInflateMax, contours1)
+        profileMax1, _ = self.dstCache.getCachedValue('getGlyphProfilesInflateMax %s %f' % (ufoglyph1.name,
+                                                                                            pair_max_distance,), getGlyphProfilesInflateMax, contours1)
         self.timing.mark('processKerningPair.016')
 
         if DEBUG_h_n_ISSUE:
             print ufoglyph0.name, ufoglyph1.name, 'findMinProfileAdvance(profileMin0, profileMin1)'
         minDistanceAdvance = self.findMinProfileAdvance(profileMin0, profileMin1)
         if minDistanceAdvance is None:
-            minDistanceAdvance = minmax0.maxX + self.min_distance - minmax1.minX
+            minDistanceAdvance = minmax0.maxX + pair_min_distance - minmax1.minX
         minDistanceAdvance = int(round(minDistanceAdvance))
         self.timing.mark('processKerningPair.020')
         if debugKerning:
@@ -1571,10 +1659,13 @@ class Autokern(TFSMap):
 
         if DEBUG_h_n_ISSUE:
             print ufoglyph0.name, ufoglyph1.name, 'findMinProfileAdvance_withIntrusion(profileMax0, profileMax1)'
-        intrudingAdvance = self.findMinProfileAdvance_withIntrusion(profileMax0, profileMax1, referenceProfiles=(profile0, profile1))
+        intrudingAdvance = self.findMinProfileAdvance_withIntrusion(profileMax0, profileMax1,
+                                                                    referenceProfiles=(profile0, profile1),
+                                                                    pair_max_distance=pair_max_distance,
+                                                                    pair_intrusion_tolerance=pair_intrusion_tolerance)
         self.timing.mark('processKerningPair.022')
         if intrudingAdvance is None:
-            intrudingAdvance = minmax0.maxX + self.min_distance - minmax1.minX
+            intrudingAdvance = minmax0.maxX + pair_min_distance - minmax1.minX
         intrudingAdvance = int(round(intrudingAdvance))
         if debugKerning:
             print 'intrudingAdvance', intrudingAdvance
@@ -1594,12 +1685,12 @@ class Autokern(TFSMap):
         '''
         2. Make sure advance is at least the "minimum advance."
         '''
-        advance = maxAdvance(advance, minDistanceAdvance, minmax0.maxX + self.min_distance - minmax1.minX)
+        advance = maxAdvance(advance, minDistanceAdvance, minmax0.maxX + pair_min_distance - minmax1.minX)
 
         '''
         3. Add the "tracking" value.
         '''
-        advance += self.tracking
+        advance += pair_tracking
 
         '''
         4. Apply --x-extrema-overlap-scaling argument.
@@ -1616,8 +1707,6 @@ class Autokern(TFSMap):
         5. Make sure the "x-extrema overlap" is not greater than the "max x-extrema overlap".
         '''
         x_extrema_overlap = minmax0.maxX - (minmax1.minX + advance)
-        pair_max_x_extrema_overlap = self.getGlyphPairMaxXExtremaOverlap(ufoglyph0, ufoglyph1)
-
         if x_extrema_overlap > pair_max_x_extrema_overlap:
             advance += x_extrema_overlap - pair_max_x_extrema_overlap
 
@@ -1797,7 +1886,7 @@ class Autokern(TFSMap):
                 If no collisions between the glyph profiles, use x-extrema
                 plus the max_distance argument.
                 '''
-                maxDistanceAdvance = minmax0.maxX + self.max_distance - minmax1.minX
+                maxDistanceAdvance = minmax0.maxX + pair_max_distance - minmax1.minX
             maxDistanceAdvance = int(round(maxDistanceAdvance))
 
             self.timing.mark('processKerningPair.66')
@@ -2235,7 +2324,7 @@ class Autokern(TFSMap):
             '''
             Default sidebearings to half of the "max distance" parameter.
             '''
-            leftSideBearing = rightSideBearing = 0.5 * self.max_distance_ems * self.units_per_em
+            leftSideBearing = rightSideBearing = 0.5 * self.max_distance
             '''
             If we have kerning values for left or right side, use half of the average as the side bearing.
             '''
