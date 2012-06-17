@@ -46,11 +46,16 @@ section ul li {
 }
 
 section h3 {
-	padding-top: 25px;
+	padding-top: 35px;
+	margin-bottom: 0;
 }
 
 section b {
 	color: #333;
+}
+
+section ul {
+	margin-bottom: 0;
 }
 
 section {
@@ -82,6 +87,11 @@ section pre {
         <h1>TypeFacet</h1>
         <p><a href="http://charlesmchen.github.com/typefacet/topics/autokern/index.html"><img src="images/typefacet logo.120.png" /></a></p>
         <p class="view"><a href="http://charlesmchen.github.com/typefacet/topics/autokern/index.html">TypeFacet Autokern Home</a></p>
+        <ul>
+          <li><a href="typefacet-autokern-manual.html">Autokern Manual</a></li>
+          <li><a href="typefacet-autokern-install.html">Installation Guide</a></li>
+          <li><a href="typefacet-autokern-faq.html">Autokern FAQ</a></li>
+        </ul>
         <p class="view"><a href="https://github.com/charlesmchen/typefacet">View the Project on GitHub</a></p>
         <ul>
           <li><a href="https://github.com/charlesmchen/typefacet/zipball/master">Download <strong>ZIP File</strong></a></li>
@@ -258,7 +268,8 @@ python python/src-main/autokern/Autokern.py -h
 	</div>
 	<div>
 		Tune the <b>--min-distance-ems</b> value by
-		kerning a pair of glyphs such as T vs. T or t vs. t whose profiles meet at the endpoints of two horizontal strokes.
+		kerning a pair of glyphs such as T vs. T, t vs. t, f vs. T or r vs. f 
+		whose profiles usually meet at the endpoints of two strokes.
 	</div>
 
 	<div>
@@ -494,11 +505,75 @@ Autokern.py \
 		<li>
 			The <b>--tracking</b> argument can be used to add a constant value to all kerning values.
 		</li>
+		<li>
+			The <b>--glyphs-to-ignore</b> and <b>--glyph-categories-to-ignore</b> arguments can be used to 
+			specify a set of glyphs that should not be kerned.  Use the <b>-h</b> usage argument
+			for more information.
+		</li>
 	</ul>
-	
+
+	<h3>
+		Per-Category Tuning
+	</h3>
 
 	<div>
+		The <b>--max-x-extrema-overlap-ems-per-category</b>, 
+		<b>--max-distance-ems-per-category</b>,
+		<b>--min-distance-ems-per-category</b>,
+		<b>--intrusion-tolerance-ems-per-category</b>
+		and 
+		<b>--tracking-ems-per-category</b>,
+		arguments allow the user to use different values for different unicode categories,
+		for example: punctuation (P*) or currency symbols (Sc).  
 	</div>
+	<div>
+		The user sets these values using a set of (category, value) rules.
+	</div>
+<pre>
+# Example:
+# Require a minimum x-extrema offset of -0.025 em 
+# for all punctuation, marks and symbols:
+--max-x-extrema-overlap-ems-per-category P* -0.025 M* -0.025 S* -0.025
+
+# Example:
+# Apply a --max-distance-ems value of 0.050 em to all currency symbols.
+--max-distance-ems-per-category Sc 0.050 
+</pre>
+	<div>
+		These categories are defined by the unicode standard.
+		See the Unicodedata documentation for a list of glyph categories:
+		http://www.unicode.org/reports/tr44/tr44-4.html#General_Category_Values
+	</div>
+	<div>
+		Unicode glyph categories (ie. Lu = Letter, Uppercase) 
+		have a major (ie. Letter) and minor (ie. Uppercase) components.
+		You may use an asterisk in the minor component as a wildcard (ie. L* = all Letters).
+	</div>
+	<div>
+		When the user has defined more than one rule that applies to a kerning pair, 
+		the last rule in the rule set has precedence.
+	</div>
+<pre>
+# Rule precedence example:
+--min-distance-ems 0.030
+--min-distance-ems-per-category P* 0.015 M* 0.025 S* 0.025 Sc 0.050 
+
+# No per-category rule applies, so the default --min-distance-ems 0.030 applies.
+A vs. T 
+
+# The punctuation wildcard rule (P*) matches period, so it applies: 0.015.
+A vs. period
+
+# The symbol wildcard rule (S*) and the currency symbol rule (Sc) both match dollar,
+# so the currency symbol rule applies since it is defined later in the rule set: 0.050.
+A vs. dollar
+
+# The punctuation wildcard rule (S*) matches period 
+# the and the currency symbol rule (Sc) matches dollar,
+# so the currency symbol rule applies since it is defined later in the rule set: 0.050.
+period vs. dollar
+</pre>
+	
 
 	<div>
 		<a href="index.html">TypeFacet Autokern Home</a>

@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="chrome=1">
     
-    <title>TypeFacet Autokern Installation</title>
+    <title>TypeFacet Autokern FAQ</title>
 
     <link rel="stylesheet" href="stylesheets/styles.css">
     <link rel="stylesheet" href="stylesheets/pygment_trac.css">
@@ -120,30 +120,22 @@ section pre {
       
       <section>
       
-        <h2>TypeFacet Autokern Installation</h2>
+        <h2>TypeFacet Autokern FAQ</h2>
 
-	<h3>Step 1: Download TypeFacet</h3>
 	<ul>
-	  <li><a href="https://github.com/charlesmchen/typefacet/zipball/master">Download as .zip</a></li>
-	  <li><a href="https://github.com/charlesmchen/typefacet/tarball/master">Download as .tar</a></li>
-	</ul>
-	<div>
-		Once downloaded, expand the archive.
-	</div>
-
-
-	
-	<h3>Step 2: Python</h3>
-	<div>
-		Autokern requires <a href="http://www.python.org/">Python</a> 2.7 or later.  
-		Python comes pre-installed on Mac OS X.  It is easily installed on Windows.
-	</div>
-	<div>
-		Autokern should work with earlier versions of Python, but I haven't tested this.
-		For versions of Python before 2.7, you will (at the very least) need to install
-		the <a href="http://pypi.python.org/pypi/argparse">argparse</a> python module.
-	</div>
-	<ul>
+		<li>
+			<div><b>
+				Does Autokern support non-Roman glyphs?
+			</b></div>
+			Yes.  Autokern is language agnostic.
+		</li>
+		<li>
+			<div><b>
+				Does Autokern treat all glyphs equally?
+			</b></div>
+			No. Kerning depends on the class of the glyphs.  
+			Letters and Numerals are... TODO: complete this FAQ.
+		</li>
 		<li>
 			<div><b>
 				What version of Python do I have on my computer?
@@ -156,89 +148,24 @@ python --version
 Python 2.7.1
 </pre>
 		</li>
+<!--
+		<li>
+			<div><b>
+				My fonts aren't in .UFO format.  
+				Can I use  
+			</b></div>
+		</li>
+-->
+		<li>
+			<div><b>
+			</b></div>
+		</li>
+		<li>
+			<div><b>
+			</b></div>
+		</li>
 	</ul>
 
-	
-	
-	<h3>Step 3: Python Packages</h3>
-	<div>
-		Autokern requires the following Python packages:
-	</div>
-	<ul>
-	  <li><a href="http://robofab.org/">robofab</a> package. robofab also has dependencies of its own.</li>
-	  <li><a href="https://github.com/defunkt/pystache/">pystache</a> package. Only necessary if using --log-path option to write html logs.</li>
-	  <li><a href="http://pypi.python.org/pypi/svgwrite/1.0.1">svgwrite</a> package. Only necessary if using --log-path option to write html logs.</li> 
-	</ul>
-	<div>
-		<b>I've pre-bundled these Python packages with TypeFacet</b> in the "dependencies" subfolder, so you don't need to download them.
-	</div>
-	<div>
-		It is <b>not</b> necessary to install the Python packages in your Python installation.
-	</div>
-	<div>
-		All of these Python packages are free and 	open source. 
-	</div>
-	
-	
-	
-	
-	<h3>Step 4: Test Installation</h3>
-	<ul>
-	  <li>Go to your Typefacet folder in Console (Mac) or Command Prompt (Windows)</li>
-	</ul>
-<pre>
-# Examples assume you expanded the TypeFacet archive 
-# in your Downloads folder.  
-
-# Mac
-cd ~/Downloads/typefacet
-
-# Windows
-cd Downloads\typefacet
-</pre>
-	<ul>
-	  <li>Invoke Autokern With Usage Switch</li>
-	</ul>
-<pre>
-# Temporarily append the Python dependencies to the Python path.
-
-# Mac:
-env PYTHONPATH=dependencies/robofab:dependencies/pystache:dependencies/svgwrite:python/src-main python python/src-main/autokern/Autokern.py -h
-
-# Windows:
-set PYTHONPATH=%PYTHONPATH%;dependencies/robofab;dependencies/pystache;dependencies/svgwrite
-python python/src-main/autokern/Autokern.py -h
-</pre>
-	<div>
-		Using the -h help switch (as above) should output the usage message, 
-		which should look something like this:
-	</div>
-<pre>
-usage: Autokern.py [-h]
-                   --ufo-src-path UFO_SRC 
-                   --ufo-dst-path UFO_DST
-                   [--log-path LOG_DST]
-                   [--glyph-pairs-to-kern GLYPH_PAIRS_TO_KERN [GLYPH_PAIRS_TO_KERN ...]]
-                   [--glyphs-to-kern GLYPHS_TO_KERN [GLYPHS_TO_KERN ...]]
-                   [--min-distance-ems MIN_DISTANCE_EMS]
-                   [--max-distance-ems MAX_DISTANCE_EMS] 
-                   [--do-not-modify-side-bearings]
-                   [--allow-negative-side-bearings] 
-                   [--precision PRECISION]
-                   [--intrusion-tolerance INTRUSION_TOLERANCE]
-                   [--kerning-threshold-ems KERNING_THRESHOLD_EMS]
-
-etc.
-</pre>
-
-	<div>
-		Congratulations, installation is complete.
-	</div>
-	
-	<div>
-		<a href="index.html">TypeFacet Autokern Home</a>
-	</div>
-	
       </section>
       
       <footer>
