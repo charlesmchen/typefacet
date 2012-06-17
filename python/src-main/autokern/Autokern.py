@@ -2224,9 +2224,11 @@ class Autokern(TFSMap):
                     else:
                         return '0x%X' % ( value, )
 #                print 'ufoglyph0', ufoglyph0.unicode, ufoglyph0.name, 'ufoglyph1', ufoglyph1.unicode, ufoglyph1.name
-                print '\t', '%s vs. %s (%0.2f%%)' % ( ufoglyph0.name,
-                                                      ufoglyph1.name,
-                                                      100 * count / float(total),), '\t', remaining
+                print '\t', '%s vs. %s %d / %d (%0.2f%%)' % ( ufoglyph0.name,
+                                                              ufoglyph1.name,
+                                                              count,
+                                                              total,
+                                                              100 * count / float(total),), '\t', remaining
 
 #        print
 #        print 'self.advanceMap =', repr(self.advanceMap)

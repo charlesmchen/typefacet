@@ -37,7 +37,7 @@ section h3 {
       <header>
         <h1>TypeFacet Autokern</h1>
         <p>
-          <a href="http://charlesmchen.github.com/typefacet/topics/autokern/index.html/">Autokern Documentation</a>
+          <a href="http://charlesmchen.github.com/typefacet/topics/autokern/index.html">Autokern Documentation</a>
         </p>
         <h3>Results</h3>
         <ul>

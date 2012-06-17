@@ -190,7 +190,10 @@ class AutokernSettings(TFBaseSettings):
                             help='The number of disparity logs to write. Default: 10')
         parser.add_argument('--log-basic-pairs',
                             action='store_true',
-                            help='The number of disparity logs to write. Default: 10')
+                            help='''
+                            If present, Autokern will write the "basic pairs" logs which can be used for proofing.
+                            NOTE: these logs are time-consuming to generate.
+                            ''')
 
         parser.add_argument('--glyph-pairs-to-kern',
 #                            type=self.codePointType,
