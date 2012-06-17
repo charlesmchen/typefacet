@@ -550,7 +550,7 @@ class Autokern(TFSMap):
                         value1 = float(value1)
                         if not (minValue <= value1 <= maxValue):
                             raise Exception('Invalid %s value: %s' % (key, str(value1),))
-                        value1 *= value1 * self.units_per_em
+                        value1 *= self.units_per_em
                     except ValueError, e:
                         raise Exception('Invalid %s value: %s' % (key, str(value1),))
 
@@ -582,13 +582,16 @@ class Autokern(TFSMap):
             values = []
             values.extend(getGlyphCategoryValue(categoryMap, categoryKeys, glyph0))
             values.extend(getGlyphCategoryValue(categoryMap, categoryKeys, glyph1))
+#            print 'values', values
             if len(values) < 1:
                 return defaultValue
             bestValue, bestIndex = values[0]
             for value, index in values[1:]:
                 if index > bestIndex:
                     bestValue, bestIndex = value, index
+
             return bestValue
+
 
         def parseFloatPerCategoryProperty(name, minValue, maxValue):
             '''
@@ -609,6 +612,10 @@ class Autokern(TFSMap):
             setattr(self, defaultValueName + '_valueMap', valueMap)
             setattr(self, defaultValueName + '_valueKeys', valueKeys)
             def getterFunc(glyph0, glyph1):
+#                print 'defaultValueName', defaultValueName
+#                print 'valuesName', valuesName
+#                print 'valueMap', valueMap
+#                print 'valueKeys', valueKeys
                 return getGlyphPairCategoryValue(valueMap,
                                                  valueKeys,
                                                  defaultValue,
@@ -640,8 +647,11 @@ class Autokern(TFSMap):
         allGlyphsMinY = minmax.minY
         allGlyphsMaxY = minmax.maxY
         #
-        max_max_distance = max(self.max_distance,
-                               reduce(max, self.max_distance_valueMap.values()))
+        if self.max_distance_valueMap:
+            max_max_distance = max(self.max_distance,
+                                   reduce(max, self.max_distance_valueMap.values()))
+        else:
+            max_max_distance = self.max_distance
         self.profileMaxYunits = int(math.ceil((allGlyphsMaxY + max_max_distance) / float(self.precision)))
         self.profileMinYunits = int(math.floor((allGlyphsMinY - max_max_distance) / float(self.precision)))
 
@@ -665,7 +675,7 @@ class Autokern(TFSMap):
 ##                ( 'Intrusion Min. Thickness', 'intrusion_min_thickness_ems',),
 #                ( 'Max. x-extrema Overlap', 'max_x_extrema_overlap_ems',),
 #                ( 'x-extrema Overlap Scaling', 'x_extrema_overlap_scaling',),
-                ( 'Glyph Count', 'glyph_count',),
+                ( 'Total Glyphs', 'glyph_count',),
                 )
 
         if kerned:
@@ -1315,8 +1325,8 @@ class Autokern(TFSMap):
 
     def getFilenamePrefixPair(self, prefix, ufoglyph0, ufoglyph1):
         return '%s-%s-%s' % ( prefix,
-                              formatUnicode(ufoglyph0.unicode),
-                              formatUnicode(ufoglyph1.unicode), )
+                              ufoglyph0.name,
+                              ufoglyph1.name, )
 
     def getKerningPairFilename(self, prefix, ufoglyph0, ufoglyph1, extension):
         return self.getFilenamePrefixPair(prefix, ufoglyph0, ufoglyph1) + extension
@@ -1850,6 +1860,10 @@ class Autokern(TFSMap):
         pair_max_x_extrema_overlap = self.getGlyphPair_max_x_extrema_overlap(ufoglyph0, ufoglyph1)
         pair_intrusion_tolerance = self.getGlyphPair_intrusion_tolerance(ufoglyph0, ufoglyph1)
 
+#        print 'pair_min_distance', pair_min_distance
+#        print 'pair_max_distance', pair_max_distance
+#        print 'pair_intrusion_tolerance', pair_intrusion_tolerance
+
         self.timing.mark('processKerningPair.011')
 
         def getGlyphProfiles(contours):
@@ -2038,6 +2052,7 @@ class Autokern(TFSMap):
                           minDistanceAdvance,
                           (
                               ('--min-distance-ems', 'min_distance_ems',),
+                              ('Pair-specific --min-distance-ems', 'pair_min_distance_in_ems',),
                           ),
                           comments=('The minimum distance kerning.',
                                     'From each glyph, a facade profile is constructed from its contours (inflated by half of --min-distance-ems).',))
@@ -2067,6 +2082,7 @@ class Autokern(TFSMap):
                           maxDistanceAdvance,
                           (
                               ('--max-distance-ems', 'max_distance_ems',),
+                              ('Pair-specific --max-distance-ems', 'pair_max_distance_in_ems',),
                           ),
                           comments=('The maximum distance kerning.',
                                     'From each glyph, a facade profile is constructed from its contours (inflated by half of --max-distance-ems).',))
@@ -2084,6 +2100,7 @@ class Autokern(TFSMap):
 #                              ('intrudingAdvance (Right)', 'intrudingAdvance0_in_ems',),
 #                              ('intrudingAdvance (Left)', 'intrudingAdvance1_in_ems',),
                               ('--intrusion-tolerance-ems', 'intrusion_tolerance_ems',),
+                              ('Pair-specific --intrusion-tolerance-ems', 'pair_intrusion_tolerance_in_ems',),
                           ),
                           comments=('The intrusion kerning.',
                                     'From each glyph, a facade profile is constructed from its contours (inflated by half of --max-distance-ems).',
@@ -2099,7 +2116,10 @@ class Autokern(TFSMap):
                           advance,
                           (
                               ('--max-x-extrema-overlap-ems', 'max_x_extrema_overlap_in_ems',),
+                              ('Pair-specific --max-x-extrema-overlap-ems', 'pair_max_x_extrema_overlap_in_ems',),
                               ('--x-extrema-overlap-scaling', 'x_extrema_overlap_scaling',),
+                              ('--tracking-ems', 'tracking_ems',),
+                              ('Pair-specific --tracking-ems', 'pair_tracking_in_ems',),
                           ),
                           comments=('The raw kerning.',
                                     'The results of the previous steps are combined, and the effects of various arguments are applied.',
@@ -2147,7 +2167,7 @@ class Autokern(TFSMap):
         startTime = time.time()
         lastLog = None
         firstKernedName = None
-        glyphs.sort(lambda glyph0, glyph1:cmp(glyph0.unicode, glyph1.unicode))
+#        glyphs.sort(lambda glyph0, glyph1:cmp(glyph0.unicode, glyph1.unicode))
         for ufoglyph0 in glyphs:
             if ufoglyph0.name in self.ignoredGlyphNames:
                 count += len(glyphs)
@@ -2204,10 +2224,8 @@ class Autokern(TFSMap):
                     else:
                         return '0x%X' % ( value, )
 #                print 'ufoglyph0', ufoglyph0.unicode, ufoglyph0.name, 'ufoglyph1', ufoglyph1.unicode, ufoglyph1.name
-                print '\t', '%s %s vs. %s %s (%0.2f%%)' % ( ufoglyph0.name,
-                                                      formatUnicode(ufoglyph0.unicode),
+                print '\t', '%s vs. %s (%0.2f%%)' % ( ufoglyph0.name,
                                                       ufoglyph1.name,
-                                                      formatUnicode(ufoglyph1.unicode),
                                                       100 * count / float(total),), '\t', remaining
 
 #        print
@@ -2424,7 +2442,7 @@ class Autokern(TFSMap):
         Removes the left and right side bearings from the glyph.
         '''
         glyphs = self.dstUfoFont.getGlyphs()
-        glyphs.sort(lambda glyph0, glyph1:cmp(glyph0.unicode, glyph1.unicode))
+#        glyphs.sort(lambda glyph0, glyph1:cmp(glyph0.unicode, glyph1.unicode))
         for ufoglyph in glyphs:
             if self.glyphsToKern is not None:
                 if ufoglyph.name not in self.glyphsToKern:
@@ -2482,7 +2500,7 @@ class Autokern(TFSMap):
         Removes the left and right side bearings from the glyph.
         '''
         glyphs = self.dstUfoFont.getGlyphs()
-        glyphs.sort(lambda glyph0, glyph1:cmp(glyph0.unicode, glyph1.unicode))
+#        glyphs.sort(lambda glyph0, glyph1:cmp(glyph0.unicode, glyph1.unicode))
 
         glyphWidthMap = {}
         for ufoglyph in glyphs:

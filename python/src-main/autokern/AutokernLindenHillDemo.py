@@ -95,15 +95,16 @@ pseudo_argv = (
                 '--max-distance-ems',
 #                '0.1',
                 '0.080',
+                '--max-distance-ems-per-category',
+                'P*', '0.060',
+
                 '--max-x-extrema-overlap-ems',
                 '0.075',
-
                 '--max-x-extrema-overlap-ems-per-category',
-                'P*', '-0.015',
+                'P*', '0.015',
                 'M*', '-0.015',
                 'S*', '-0.015',
-                '--max-distance-ems-per-category',
-                'P*', '0.050',
+
 
 #                '--x-extrema-overlap-scaling',
 #                '0.65',
@@ -115,10 +116,11 @@ pseudo_argv = (
                 os.path.abspath(os.path.join(TFSProject.findProjectRootFolder(), 'out')),
 #                '--log-basic-pairs',
                 '--disparity-log-count',
+                '25',
+#                '--disparity-log-count',
 #                '0',
-                '100',
 #                '--kern-samples-only',
-#
+##
 #                '--write-kerning-pair-logs',
 #                '--glyph-pairs-to-kern',
 #                'C', 'O',
