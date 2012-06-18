@@ -211,14 +211,16 @@ section pre {
 		</li>
 		<li>
 			Autokern's performance is very dependent on its arguments.  
-			Writing the html logs (using the <b>--log-path</b> argument) is slow and should probably not used when kerning an entire font.
-			The <b>--precision-ems</b> argument also has a significant effect on performance. 
+			For example, the <b>--precision-ems</b> argument also has a significant effect on performance. 
 			Values smaller than the default (0.005) are more accurate but slower.
 		</li>
 		<li>
-			When tuning Autokern's arguments, use the <b>--glyph-pairs-to-kern</b> or <b>--glyphs-to-kern</b> arguments 
-			to kern just a specific subset of glyphs or glyph pairs.  
-			This is much faster than processing the entire font.
+			Also, certain logging configurations (for example, the <b>--write-kerning-pair-logs</b>and <b>--log-basic-pairs</b> arguments)
+				are slow and should probably not be used when kerning an entire font.
+			Instead, when tuning Autokern's arguments 
+				use one of the <b>--kern-samples-only</b>, <b>--glyph-pairs-to-kern</b> or <b>--glyphs-to-kern</b> arguments 
+			to kern just a subset of glyphs or glyph pairs.  
+			This is far faster than processing the entire font.
 		</li>
 	</ul>
 
@@ -259,6 +261,104 @@ python python/src-main/autokern/Autokern.py -h
 
 
 
+<h3>
+	Using Autokern's Logs
+</h3>
+<div>
+	There are two ways to review Autokern's results.  
+	You can open the output .ufo file in a font editor. 
+	A more convenient alternative is to look at Autokern's HTML logs.  
+</div>
+<div>
+	To activate Autokern's logs, set the <b>--log-path</b> argument.
+</div>
+
+
+
+
+<h3>
+	How to Tune Autokern Arguments 
+</h3>
+<div>
+	Autokerning an entire font is slow.  
+	When tuning Autokern's configuration, you will usually only want to kern a limited set of glyphs or glyph pairs.
+</div>
+<div>
+	To tune an argument:
+</div>
+<ul>
+	<li>
+		Run Autokern 
+	</li>
+	<li>
+		Refresh the browser window that contains the HTML log.
+	</li>
+	<li>
+		Repeat as necessary, tuning Autokern's arguments one by one, as described below.
+	</li>
+</ul>
+<div>
+	The key to tuning is to use the most appropriate logs.
+</div>
+<div>
+	The "sample texts" log (<a href="league_gothic/sample_texts.html">example</a>)
+	is particularly useful when tuning arguments.
+	Use the <b>--kern-samples-only</b> argument 
+	to kern just the pairs that are used in the sample texts.  
+	Use the <b>--extra-sample-texts</b> argument to add to the built-in sample texts.
+</div>
+<div>
+	The <b>--write-kerning-pair-logs</b> argument will activate the "kerning pair" logs
+	which document the kerning process in detail in a separate log file for each kerning pair.
+	<a href="autokern-pair-example-0.html">Example</a>.
+	Combine this with the <b>--glyph-pairs-to-kern</b> or <b>--write-kerning-pair-logs</b> arguments
+	to kern just a specific set of glyphs or glyph pairs.
+</div>
+
+
+
+
+
+
+
+
+
+
+	<h3>
+		Step 0: Getting started
+	</h3>
+
+	<div>
+		Let's begin without an empty configuration.
+	</div>
+
+<pre>
+# See "Invoking TypeFacet Autokern" above for example of how to append dependencies to the Python path.
+# All arguments should be one line.
+Autokern.py \
+	--ufo-src-path "theleagueof-league-gothic-4f9ff8d/source/League Gothic.ufo" \
+	--ufo-dst-path "out/League Gothic-kerned.ufo" \
+	--min-distance-ems 0.00 \
+	--max-distance-ems 0.00 \
+	--max-x-extrema-overlap-ems 0.0 \
+	--intrusion-tolerance-ems 0.0 \
+	--precision-ems 0.005 \
+	--log-path logs \
+	--kern-samples-only 
+</pre>
+
+
+<div>
+	Consult the "sample texts" log.  All glyphs should be kerned with zero space, ie. just barely touching each other.
+</div>
+
+
+
+
+
+
+
+
 	<h3>
 		Step 1: the --min-distance-ems argument
 	</h3>
@@ -270,6 +370,9 @@ python python/src-main/autokern/Autokern.py -h
 		Tune the <b>--min-distance-ems</b> value by
 		kerning a pair of glyphs such as T vs. T, t vs. t, f vs. T or r vs. f 
 		whose profiles usually meet at the endpoints of two strokes.
+	</div>
+	<div>
+		Note: Set the <b>--min-distance-ems</b> and <b>--max-distance-ems</b> arguments to the same value for now.
 	</div>
 
 	<div>
@@ -291,7 +394,7 @@ Autokern.py \
 	--max-x-extrema-overlap-ems 0.0 \
 	--intrusion-tolerance-ems 0.0 \
 	--precision-ems 0.005 \
-	--log-path out \
+	--log-path logs \
 	--glyph-pairs-to-kern T T \
 	--write-kerning-pair-logs
 </pre>
@@ -311,37 +414,11 @@ Autokern.py \
 	--max-x-extrema-overlap-ems 0.0 \
 	--intrusion-tolerance-ems 0.0 \
 	--precision-ems 0.005 \
-	--log-path out \
+	--log-path logs \
 	--kern-samples-only \
 	--extra-sample-texts "ttrfTT"
 </pre>
 
-
-
-
-<h3>
-	Tuning Autokern Arguments Using Autokern's Logs
-</h3>
-<div>
-	There are two ways to review Autokern's results.  
-	You can open the output .ufo file in a font editor. 
-	A more convenient alternative is to look at Autokern's HTML logs.  
-	We've set the <b>--log-path</b> and <b>--write-kerning-pair-logs</b> arguments, 
-	so Autokern will write a HTML logs documenting its process
-	including a separate log for each kerning pair.
-	<a href="autokern-pair-example-0.html">Example</a>.
-</div>
-<div>
-	The <a href="league_gothic/sample_texts.html">sample texts log</a> 
-	is particularly useful
-		for comparing the original kerning with Autokern's kerning.
-	Use the <b>--kern-samples-only</b> argument 
-	(instead of the <b>--glyph-pairs-to-kern</b> and <b>--write-kerning-pair-logs</b> arguments)
-	to kern just the pairs that are used in the sample texts.  
-</div>
-<div>
-	To tune an argument, modify it's value, re-run Autokern, then refresh the browser window that contains the HTML log.
-</div>
 
 
 
@@ -357,6 +434,10 @@ Autokern.py \
 	<div>
 		Tune the <b>--max-distance-ems</b> value by
 		kerning a pair of glyphs such as N vs. N, which have straight, uninterrupted profiles.
+	</div>
+	<div>
+		If you aren't kerning a sans-serif font, your N may not have straight sides.  
+		You may have to use the "vertical line" glyph ("bar", unicode 0x7c) instead.
 	</div>
 
 	<div>
@@ -378,9 +459,9 @@ Autokern.py \
 	--max-x-extrema-overlap-ems 0.0 \
 	--intrusion-tolerance-ems 0.0 \
 	--precision-ems 0.005 \
-	--log-path out \
-	--glyph-pairs-to-kern N N \
-	--write-kerning-pair-logs
+	--log-path logs \
+	--kern-samples-only \
+	--extra-sample-texts "||NNnnOOoo"
 </pre>
 
 
@@ -393,7 +474,7 @@ Autokern.py \
 	The <b>--intrusion-tolerance-ems</b> argument defines the maximum amount to which the glyphs can "intrude" into the spacing between them.
 </div>
 <div>
-	For example, if you are working with a serif font, your results for the N vs. N kerning (see above) ought to look something like this:
+	For example, if you are kerning a serif font, your results for the N vs. N kerning (see above) ought to look something like this:
 </div>
 
 	<div>
@@ -406,13 +487,17 @@ Autokern.py \
 		glyph's bodies, not small details like serifs. 
 	The serifs should intrude into the spacing between the glyphs.
 </div>
-<div>
-	Intrusion is limited by the <b>--min-distance-ems</b> argument, so intrusion will not lead to overlapping contours.
-</div>
-
 	<div>
 		<embed src="svg/example-max-distance-2.svg" type="image/svg+xml" />
 	</div>
+<div>
+	The <b>--intrusion-tolerance-ems</b> argument is crucial and should be tuned with care.  
+	As a rule, it should be as large as necessary and no larger.
+</div>
+<div>
+	A good point of departure are pairs such as A vs. A or O vs. O which should pull towards each other. 
+	You should also review the entirety of the "sample texts" log.
+</div>
 
 <pre>
 # See "Invoking TypeFacet Autokern" above for example of how to append dependencies to the Python path.
@@ -425,10 +510,13 @@ Autokern.py \
 	--max-x-extrema-overlap-ems 0.0 \
 	--intrusion-tolerance-ems 0.1 \ <-- Tune this value
 	--precision-ems 0.005 \
-	--log-path out \
-	--glyph-pairs-to-kern N N \
-	--write-kerning-pair-logs
+	--log-path logs \
+	--kern-samples-only \
+	--extra-sample-texts "NNOOAA"
 </pre>
+<div>
+	Note: intrusion is limited by the <b>--min-distance-ems</b> argument, so intrusion will never cause contours to overlap.
+</div>
 
 
 
@@ -446,18 +534,14 @@ Autokern.py \
 		Do not confuse x-extrema overlap with contour overlap.
 	</div>
 	<div>
+		<embed src="svg/example-extrema-overlap-0.svg" type="image/svg+xml" />
+	</div>
+
+	<div>
 		Tune the <b>--max-x-extrema-overlap-ems</b> value by
 		kerning a pair of glyphs such as V vs. A, T vs. a, L vs. T, etc. whose x-extrema do not collide.
 	</div>
 
-	<div>
-		<embed src="svg/example-extrema-overlap-0.svg" type="image/svg+xml" />
-	</div>
-
-<div>
-	If the <b>--max-x-extrema-overlap-ems</b> argument is negative, Autokern
-	will maintain a minimum spacing between the glyphs' x-extrema.
-</div>
 
 <pre>
 # See "Invoking TypeFacet Autokern" above for example of how to append dependencies to the Python path.
@@ -470,10 +554,20 @@ Autokern.py \
 	--max-x-extrema-overlap-ems 0.1 \ <-- Tune this value
 	--intrusion-tolerance-ems 0.1 \ 
 	--precision-ems 0.005 \
-	--log-path out \
-	--glyph-pairs-to-kern V A \
-	--write-kerning-pair-logs
+	--log-path logs \
+	--kern-samples-only \
+	--extra-sample-texts "WAVTaLTLY"
 </pre>
+
+<div>
+	If the <b>--max-x-extrema-overlap-ems</b> argument is negative, Autokern
+	will maintain a minimum spacing between the glyphs' x-extrema.
+</div>
+
+
+
+
+
 
 	<h3>
 		Further Tuning
@@ -481,7 +575,8 @@ Autokern.py \
 
 	<ul>
 		<li>
-			To kern an entire font, remove the <b>--glyph-pairs-to-kern</b> or <b>--glyphs-to-kern</b> arguments.
+			To kern an entire font, remove the <b>--kern-samples-only</b>, 
+			<b>--glyph-pairs-to-kern</b> or <b>--glyphs-to-kern</b> arguments.
 		</li>
 		<li>
 			When kerning an entire font, do not use the <b>--write-kerning-pair-logs</b> argument 
@@ -493,15 +588,11 @@ Autokern.py \
 			<a href="league_gothic_disparities/disparity-0.html">Example</a>.
 		</li>
 		<li>
-			The "sample texts" log compares a series of short texts with original and Autokern kerning. 
-			<a href="league_gothic_sample_texts.html">Example</a>.
-		</li>
-		<li>
 			If the <b>--do-not-modify-side-bearings</b> argument is present,
 			Autokern will preserve the original side bearings.
 		</li>
 		<li>
-			Side bearings can be negative, ie. within the x-extrema of a glyph.
+			By default, Autokern will not allow negative side bearings, ie. within the x-extrema of a glyph.
 			The <b>--allow-negative-side-bearings</b> argument enables such side bearings.
 		</li>
 		<li>
@@ -510,20 +601,12 @@ Autokern.py \
 		</li>
 		<li>
 			If the <b>--max-kerning-pairs</b> argument is present, 
-			Autokern will only output the N largest kerning values.
-		</li>
-		<li>
-			If the <b>--kern-samples-only</b> argument is present, 
-			Autokern will only process the kerning pairs necessary to render the "sample text" log.
-		</li>
-		<li>
-			The <b>--extra-sample-texts</b> argument can be used to specify
-			specific short words or phrases to render in the "sample text" log.
+			Autokern will only output the N largest kerning values and discard the rest.
 		</li>
 		<li>
 			If the <b>--log-basic-pairs</b> argument is present, 
 			Autokern will write the "basic pairs" logs which can be used for proofing.
-                            NOTE: these logs are time-consuming to generate.
+			NOTE: these logs are very time-consuming to generate.
 		</li>
 		<li>
 			In addition to the <b>--max-x-extrema-overlap-ems</b> argument, 
@@ -534,6 +617,10 @@ Autokern.py \
 		</li>
 		<li>
 			The <b>--tracking</b> argument can be used to add a constant value to all kerning values.
+		</li>
+		<li>
+			The <b>--ignore-x-extrema-overlap-outside-ascender</b> argument can be used to 
+			ignore x-extrema overlap below the baseline or above the ascender.
 		</li>
 		<li>
 			The <b>--glyphs-to-ignore</b> and <b>--glyph-categories-to-ignore</b> arguments can be used to 
@@ -566,13 +653,14 @@ Autokern.py \
 --max-x-extrema-overlap-ems-per-category P* -0.025 M* -0.025 S* -0.025
 
 # Example:
-# Apply a --max-distance-ems value of 0.050 em to all currency symbols.
+# Apply a --max-distance-ems value of 0.050 em 
+# to all currency symbols.
 --max-distance-ems-per-category Sc 0.050 
 </pre>
 	<div>
 		These categories are defined by the unicode standard.
-		See the Unicodedata documentation for a list of glyph categories:
-		http://www.unicode.org/reports/tr44/tr44-4.html#General_Category_Values
+		See <a href="http://www.unicode.org/reports/tr44/tr44-4.html#General_Category_Values">the Unicodedata documentation</a> for a list of glyph categories.
+		
 	</div>
 	<div>
 		Unicode glyph categories (ie. Lu = Letter, Uppercase) 
