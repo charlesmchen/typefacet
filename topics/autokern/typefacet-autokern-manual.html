@@ -296,11 +296,34 @@ Autokern.py \
 	--write-kerning-pair-logs
 </pre>
 
+<div>
+	To kern a T vs. T, t vs. t, f vs. T and r vs. f , use the following arguments:
+</div>
+
+<pre>
+# See "Invoking TypeFacet Autokern" above for example of how to append dependencies to the Python path.
+# All arguments should be one line.
+Autokern.py \
+	--ufo-src-path "theleagueof-league-gothic-4f9ff8d/source/League Gothic.ufo" \
+	--ufo-dst-path "out/League Gothic-kerned.ufo" \
+	--min-distance-ems 0.04 \ <-- Tune these arguments together using the same value
+	--max-distance-ems 0.04 \ <-- Tune these arguments together using the same value
+	--max-x-extrema-overlap-ems 0.0 \
+	--intrusion-tolerance-ems 0.0 \
+	--precision-ems 0.005 \
+	--log-path out \
+	--kern-samples-only \
+	--extra-sample-texts "ttrfTT"
+</pre>
+
+
+
+
 <h3>
-	Tuning Autokern Arguments
+	Tuning Autokern Arguments Using Autokern's Logs
 </h3>
 <div>
-	There are two ways to review the results.  
+	There are two ways to review Autokern's results.  
 	You can open the output .ufo file in a font editor. 
 	A more convenient alternative is to look at Autokern's HTML logs.  
 	We've set the <b>--log-path</b> and <b>--write-kerning-pair-logs</b> arguments, 
@@ -309,10 +332,12 @@ Autokern.py \
 	<a href="autokern-pair-example-0.html">Example</a>.
 </div>
 <div>
-	See the 
-	<a href="league_gothic/index.html">example logs</a>.
-	The <a href="league_gothic/sample_texts.html">sample texts</a> are particularly useful
-	 for comparing the original kerning with Autokern's kerning.
+	The <a href="league_gothic/sample_texts.html">sample texts log</a> 
+	is particularly useful
+		for comparing the original kerning with Autokern's kerning.
+	Use the <b>--kern-samples-only</b> argument 
+	(instead of the <b>--glyph-pairs-to-kern</b> and <b>--write-kerning-pair-logs</b> arguments)
+	to kern just the pairs that are used in the sample texts.  
 </div>
 <div>
 	To tune an argument, modify it's value, re-run Autokern, then refresh the browser window that contains the HTML log.
