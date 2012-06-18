@@ -178,8 +178,7 @@ class AutokernSettings(TFBaseSettings):
                             type=self.dstFolderType,
                             help='''
                             Optional folder in which to write HTML logs.
-                            Note: Writing the HTML logs dramatically worsens performance.
-                            CAUTION: This folder will be completely overwritten.
+                            Note: Some logging configurations dramatically worsen performance.
                             ''')
         parser.add_argument('--write-kerning-pair-logs',
                             action='store_true',

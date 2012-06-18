@@ -268,42 +268,37 @@ class Autokern(TFSMap):
         if self.log_path is None:
             return
 
-        OVERWRITE_LOGS = True
-#            OVERWRITE_LOGS = False
-
-        if OVERWRITE_LOGS:
+        if os.path.exists(self.log_path):
+            for index in xrange(1, 100000):
+                oldLogsPath = os.path.join(os.path.dirname(self.log_path),
+                                           os.path.basename(self.log_path) + '.' + str(index))
+                if not os.path.exists(oldLogsPath):
+                    break
+            os.rename(self.log_path, oldLogsPath)
             if os.path.exists(self.log_path):
-                shutil.rmtree(self.log_path)
-            if os.path.exists(self.log_path):
-                raise Exception('Could not clear log_path: %s' % self.log_path)
+                raise Exception('Could not rename exists logs folder: ' + self.log_path)
+            print 'Renaming old logs folder to:', oldLogsPath
 
-        if not os.path.exists(self.log_path):
-            os.mkdir(self.log_path)
+        os.mkdir(self.log_path)
         if not (os.path.exists(self.log_path) and os.path.isdir(self.log_path)):
-            raise Exception('Invalid log_path: %s' % self.log_path)
+            raise Exception('Could not create logs folder: %s' % self.log_path)
 
-        if OVERWRITE_LOGS:
-            def makeLogSubfolder(parent, name):
-                subfolder = os.path.abspath(os.path.join(parent, name))
-                os.mkdir(subfolder)
-                if not (os.path.exists(subfolder) and os.path.isdir(subfolder)):
-                    raise Exception('Invalid log_path: %s' % self.log_path)
-                return subfolder
+        self.html_folder = self.log_path
 
-            self.html_folder = makeLogSubfolder(self.log_path, 'html')
-            self.css_folder = makeLogSubfolder(self.html_folder, 'stylesheets')
-#            self.svg_folder = makeLogSubfolder(self.html_folder, 'svg')
+        def makeLogSubfolder(parent, name):
+            subfolder = os.path.abspath(os.path.join(parent, name))
+            os.mkdir(subfolder)
+            if not (os.path.exists(subfolder) and os.path.isdir(subfolder)):
+                raise Exception('Invalid log_path: %s' % self.log_path)
+            return subfolder
 
-            import tfs.common.TFSProject as TFSProject
-            srcCssFile = os.path.abspath(os.path.join(TFSProject.findProjectRootFolder(), 'data', 'styles.css'))
-            dstCssFile = os.path.abspath(os.path.join(self.css_folder, os.path.basename(srcCssFile)))
-            shutil.copy(srcCssFile, dstCssFile)
-        else:
-            self.html_folder = os.path.join(self.log_path, 'html')
-            self.css_folder = os.path.join(self.html_folder, 'stylesheets')
-#            self.svg_folder = os.path.join(self.html_folder, 'svg')
+        self.css_folder = makeLogSubfolder(self.html_folder, 'stylesheets')
 
-#        self.kerningPairLogFilenames = set()
+        import tfs.common.TFSProject as TFSProject
+        srcCssFile = os.path.abspath(os.path.join(TFSProject.findProjectRootFolder(), 'data', 'styles.css'))
+        dstCssFile = os.path.abspath(os.path.join(self.css_folder, os.path.basename(srcCssFile)))
+        shutil.copy(srcCssFile, dstCssFile)
+
         self.logFileTuples = []
 
 

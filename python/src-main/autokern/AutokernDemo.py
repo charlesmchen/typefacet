@@ -110,7 +110,7 @@ pseudo_argv = (
                 '--precision-ems',
                 '0.005',
                 '--log-path',
-                os.path.abspath(os.path.join(TFSProject.findProjectRootFolder(), 'out')),
+                os.path.abspath(os.path.join(TFSProject.findProjectRootFolder(), 'logs')),
                 '--disparity-log-count',
 #                '0',
 #                '100',

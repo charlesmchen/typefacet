@@ -1,6 +1,6 @@
 out
 data-ignore
-logs
+logs*
 lib-ignore
 out-old
 
