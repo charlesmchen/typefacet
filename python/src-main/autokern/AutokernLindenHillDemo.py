@@ -94,9 +94,10 @@ pseudo_argv = (
 #                '0.034',
                 '--max-distance-ems',
 #                '0.1',
-                '0.080',
-                '--max-distance-ems-per-category',
-                'P*', '0.060',
+#                '0.080',
+                '0.10',
+#                '--max-distance-ems-per-category',
+#                'P*', '0.060',
 
                 '--max-x-extrema-overlap-ems',
                 '0.075',
@@ -104,12 +105,15 @@ pseudo_argv = (
                 'P*', '0.015',
                 'M*', '-0.015',
                 'S*', '-0.015',
+                '--ignore-x-extrema-overlap-outside-ascender',
 
 
 #                '--x-extrema-overlap-scaling',
 #                '0.65',
                 '--intrusion-tolerance-ems',
-                '0.05',
+#                '0.050',
+                '0.030',
+#                '0.025',
                 '--precision-ems',
                 '0.005',
                 '--log-path',
@@ -120,7 +124,7 @@ pseudo_argv = (
 #                '--disparity-log-count',
 #                '0',
 #                '--kern-samples-only',
-##
+#
 #                '--write-kerning-pair-logs',
 #                '--glyph-pairs-to-kern',
 #                'C', 'O',

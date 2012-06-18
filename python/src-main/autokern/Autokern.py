@@ -115,7 +115,12 @@ DEFAULT_SAMPLE_TEXTS = (
                'Style',
                'enjoying',
                'hamburgerfont',
+               'tragedy',
+               'success',
+               'lavas',
+               'TTttrf', # min distance
                'NNOOoo', # max distance
+               'rtryvjj',
                'pqpiitt',
                'ijiJn.',
                'N-N=NtN',
@@ -123,6 +128,7 @@ DEFAULT_SAMPLE_TEXTS = (
                'VAWML4TO',
                'hhnnhn',
                'JFrf',
+               'WaToYaVa',
                'O!O?O.O;O;O,',
                'o!o?o.o;o;o,',
                'r!r?r.r;r;r,',
@@ -185,6 +191,33 @@ def xTranslateContours(contours, value):
     return [contour.applyPlus(TFSPoint(value, 0)) for contour in contours]
 
 
+def minmaxPathsEvaluatedWithinYRange(paths, precision, minY, maxY):
+    allPoints = []
+    for path in paths:
+        for segment in path:
+            if segment.isStraight():
+                startPoint = segment.startPoint()
+                allPoints.append(startPoint)
+                endPoint = segment.endPoint()
+                allPoints.append(endPoint)
+
+                minYPoint = TFSIntersection.calculateIntersectPoint(startPoint, endPoint,
+                                                                        TFSPoint(min(startPoint.x, endPoint.x) - 1, minY),
+                                                                        TFSPoint(max(startPoint.x, endPoint.x) + 1, minY))
+                if minYPoint:
+                    allPoints.append(minYPoint)
+                maxYPoint = TFSIntersection.calculateIntersectPoint(startPoint, endPoint,
+                                                                        TFSPoint(min(startPoint.x, endPoint.x) - 1, maxY),
+                                                                        TFSPoint(max(startPoint.x, endPoint.x) + 1, maxY))
+                if maxYPoint:
+                    allPoints.append(maxYPoint)
+            else:
+                allPoints.extend(segment.evaluateRangeWithPrecision(precision))
+    validPoints = [point for point in allPoints if minY <= point.y <= maxY]
+    return minmaxPoints(validPoints)
+    return minmaxPoints(validPoints)
+
+
 class AutokernCache(TFSMap):
 
     def __init__(self):
@@ -210,6 +243,15 @@ class AutokernCache(TFSMap):
             contours = self.getGlyphContours(ufoglyph)
             return minmaxPathsEvaluated(contours, AUTOKERN_SEGMENT_PRECISION)
         return self.getCachedValue('getCachedMinmax %s' % ufoglyph.name, getCachedMinmax)
+
+    def getAdjMinmax(self, ufoglyph, context):
+        if not context.ignore_x_extrema_overlap_outside_ascender:
+            return self.getContoursMinmax(ufoglyph)
+
+        def getCachedAdjMinmax():
+            contours = self.getGlyphContours(ufoglyph)
+            return minmaxPathsEvaluatedWithinYRange(contours, AUTOKERN_SEGMENT_PRECISION, 0, context.ascender)
+        return self.getCachedValue('getCachedAdjMinmax %s' % ufoglyph.name, getCachedAdjMinmax)
 
 
 class Autokern(TFSMap):
@@ -266,6 +308,8 @@ class Autokern(TFSMap):
 
 
     def configure(self):
+
+        print 'Processing configuration...'
 
         self.dstCache = AutokernCache()
         self.srcCache = AutokernCache()
@@ -964,6 +1008,10 @@ class Autokern(TFSMap):
         kerningInfo.xAdvance = ufoglyph0.xAdvance
         kerningInfo.kernedAdvance = kerningInfo.xAdvance + kerningInfo.kerningValue
         kerningInfo.x_extrema_overlap = kerningInfo.minmax0.maxX - (kerningInfo.minmax1.minX + kerningInfo.kernedAdvance)
+#        kerningInfo.adj_minmax0 = cache.getAdjMinmax(ufoglyph0, self)
+#        kerningInfo.adj_minmax1 = cache.getAdjMinmax(ufoglyph1, self)
+#        kerningInfo.x_extrema_overlap = kerningInfo.adj_minmax0.maxX - (kerningInfo.adj_minmax1.minX + kerningInfo.kernedAdvance)
+
         return kerningInfo
 
 
@@ -1468,6 +1516,7 @@ class Autokern(TFSMap):
 
         return minProfile, maxProfile
 
+
     def isValidProfileIntrusion(self, profile0, profile1, referenceProfiles, advance,
                                 pair_max_distance,
                                 pair_intrusion_tolerance):
@@ -1477,7 +1526,8 @@ class Autokern(TFSMap):
 
         maxRowExtrusion = pair_max_distance
         maxSectionGapLength = int(round(pair_max_distance * 1.0 / self.precision))
-        maxSectionPadding = int(round(pair_max_distance * 0.5 / self.precision))
+#        maxSectionPadding = int(round(pair_max_distance * 0.5 / self.precision))
+        maxSectionPadding = int(round(pair_max_distance * 0.3 / self.precision))
         defaultMaxXOffset = maxRowExtrusion
 
 
@@ -1588,6 +1638,12 @@ class Autokern(TFSMap):
                     break
                 tailCount = index
 #            maxPadding = int(round(pair_max_distance * 0.5 / self.precision))
+
+#            # Pad section if necessary
+#            headPaddingCount = max(0, maxSectionPadding - headCount)
+#            tailPaddingCount = max(0, maxSectionPadding - tailCount)
+#            section = ([defaultMaxXOffset,] * headPaddingCount) + section + ([defaultMaxXOffset,] * tailPaddingCount)
+
             headTrimCount = max(0, headCount - maxSectionPadding)
             tailTrimCount = max(0, tailCount - maxSectionPadding)
             if headTrimCount + tailTrimCount >= len(section):
@@ -1601,11 +1657,11 @@ class Autokern(TFSMap):
             else:
                 result = section[headTrimCount:]
 
-            # Trim empty space
-            while (len(result) > 0) and (result[0] is None):
-                result = result[1:]
-            while (len(result) > 0) and (result[-1] is None):
-                result = result[:-1]
+#            # Trim empty space
+#            while (len(result) > 0) and (result[0] is None):
+#                result = result[1:]
+#            while (len(result) > 0) and (result[-1] is None):
+#                result = result[:-1]
 
             return result
 
@@ -1956,20 +2012,26 @@ class Autokern(TFSMap):
         '''
         4. Apply --x-extrema-overlap-scaling argument.
         '''
-        x_extrema_overlap = minmax0.maxX - (minmax1.minX + advance)
-        if x_extrema_overlap > 0:
-            '''
-            If x-extrema are overlapping, adjust advance accordingly.
-            '''
-            scaled_x_extrema_overlap = x_extrema_overlap * self.x_extrema_overlap_scaling
-            advance += x_extrema_overlap - scaled_x_extrema_overlap
+
+        adj_minmax0 = self.dstCache.getAdjMinmax(ufoglyph0, self)
+        adj_minmax1 = self.dstCache.getAdjMinmax(ufoglyph1, self)
+
+        if adj_minmax0 is not None and adj_minmax1 is not None:
+            x_extrema_overlap = adj_minmax0.maxX - (adj_minmax1.minX + advance)
+            if x_extrema_overlap > 0:
+                '''
+                If x-extrema are overlapping, adjust advance accordingly.
+                '''
+                scaled_x_extrema_overlap = x_extrema_overlap * self.x_extrema_overlap_scaling
+                advance += x_extrema_overlap - scaled_x_extrema_overlap
 
         '''
         5. Make sure the "x-extrema overlap" is not greater than the "max x-extrema overlap".
         '''
-        x_extrema_overlap = minmax0.maxX - (minmax1.minX + advance)
-        if x_extrema_overlap > pair_max_x_extrema_overlap:
-            advance += x_extrema_overlap - pair_max_x_extrema_overlap
+        if adj_minmax0 is not None and adj_minmax1 is not None:
+            x_extrema_overlap = adj_minmax0.maxX - (adj_minmax1.minX + advance)
+            if x_extrema_overlap > pair_max_x_extrema_overlap:
+                advance += x_extrema_overlap - pair_max_x_extrema_overlap
 
         advance = int(round(advance))
 
@@ -2322,6 +2384,21 @@ class Autokern(TFSMap):
             variableTuples += ( (title + ' x-extrema offset', self.formatUnitsInEms(section_x_extrema_offset), True, ), )
         else:
             variableTuples += ( (title + ' x-extrema overlap', self.formatUnitsInEms(-section_x_extrema_offset), True, ), )
+
+        if self.ignore_x_extrema_overlap_outside_ascender:
+            adjGlyphMinmax0 = cache.getAdjMinmax(ufoglyph0, self)
+            adjGlyphMinmax1 = minmaxPathsEvaluatedWithinYRange(glyphContours1, AUTOKERN_SEGMENT_PRECISION, 0, self.ascender)
+#            print 'ufoglyph0,1', ufoglyph0.name, ufoglyph1.name
+#            print 'adjGlyphMinmax0', adjGlyphMinmax0
+#            print 'adjGlyphMinmax1', adjGlyphMinmax1
+            if adjGlyphMinmax0 is not None and adjGlyphMinmax1 is not None:
+                adj_section_x_extrema_offset = adjGlyphMinmax1.minX - adjGlyphMinmax0.maxX
+                if adj_section_x_extrema_offset >= 0:
+                    variableTuples += ( (title + ' in-ascender x-extrema offset', self.formatUnitsInEms(adj_section_x_extrema_offset), True, ), )
+                else:
+                    variableTuples += ( (title + ' in-ascender x-extrema overlap', self.formatUnitsInEms(-adj_section_x_extrema_offset), True, ), )
+            else:
+                variableTuples += ( (title + ' in-ascender x-extrema overlap', 'None', True, ), )
 
         if extraVariableTuples:
             variableTuples += extraVariableTuples

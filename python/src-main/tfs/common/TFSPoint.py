@@ -266,6 +266,8 @@ def controlPointsWithSides(_left, _right, _top, _bottom):
     return result
 
 def minmaxPoints(points):
+    if len(points) < 1:
+        return None
     result = TFSMap()
     result.minX = reduce(min, [point.x for point in points])
     result.maxX = reduce(max, [point.x for point in points])

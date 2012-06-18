@@ -317,6 +317,11 @@ class AutokernSettings(TFBaseSettings):
                             0.0 <= x <= 1.0.
                             Default: 1.0.
                             ''')
+        parser.add_argument('--ignore-x-extrema-overlap-outside-ascender',
+                            action='store_true',
+                            help='''
+                            If present, Autokern ignore x-extrema overlap below the baseline and above the ascender.
+                            ''')
         parser.add_argument('--kerning-threshold-ems',
                             type=self.boundedFloat(0.0, 1.0),
                             default=0.01,
