@@ -342,6 +342,11 @@ class Autokern(TFSMap):
                 setattr(self, key[:-len('_ems')], value * self.units_per_em)
         self.precision = int(round(self.precision))
 
+        if self.min_distance > self.max_distance:
+            raise Exception('--min-distance-ems value (%0.3f) cannot be greater than --max-distance-ems value (%0.3f)' % (self.min_distance_ems,
+                                                                                                                          self.max_distance_ems,
+                                                                                                                          ) )
+
         self.ascender = self.srcUfoFont.ascender
         self.descender = self.srcUfoFont.descender
         self.ascender_ems = self.srcUfoFont.ascender / float(self.units_per_em)
@@ -2740,116 +2745,6 @@ class Autokern(TFSMap):
         self.dstCache = AutokernCache()
 
 
-    def assessKerningPair(self, ufoglyph0, ufoglyph1):
-
-        contours0 = self.dstCache.getGlyphContours(ufoglyph0)
-        contours1 = self.dstCache.getGlyphContours(ufoglyph1)
-
-        if (not contours0) or (not contours1):
-            return None
-
-        kerning = self.dstUfoFont.getKerningPair(ufoglyph0.name, ufoglyph1.name)
-        if kerning is None:
-            kerning = 0
-        advance = ufoglyph0.xAdvance + kerning
-
-        profile0 = self.makeProfile(func=max, paths=contours0)
-        profile1 = self.makeProfile(func=min, paths=contours1)
-
-        def convertToPixelUnits(value):
-            return int(math.ceil(value / float(self.precision)))
-
-        '''
-        Find the closest pair of pixels.
-        '''
-        minDistanceSqrd = None
-        for y0, x0 in enumerate(profile0):
-            for y1, x1 in enumerate(profile1):
-                if x0 is None or x1 is None:
-                    continue
-                diffX = x0 - (x1 + advance / float(self.precision))
-                diffY = y0 - y1
-                distanceSqrd = (diffX * diffX) + (diffY * diffY)
-                if (minDistanceSqrd is None) or (distanceSqrd < minDistanceSqrd):
-                    minDistanceSqrd = distanceSqrd
-
-        if minDistanceSqrd is None:
-            return None
-        else:
-            minDistance = math.sqrt(float(minDistanceSqrd))
-            return minDistance * self.precision
-
-
-    def assessKerning(self):
-
-        glyphs = self.dstUfoFont.getGlyphs()
-#        glyphNameMap = {}
-#        for ufoglyph in glyphs:
-#            glyphNameMap[ufoglyph.name] = ufoglyph
-        unicodeGlyphMap = {}
-        for ufoglyph in glyphs:
-            if ufoglyph.unicode:
-                unicodeGlyphMap[ufoglyph.unicode] = ufoglyph
-
-
-        pairGroups = (
-                      ( min, 'Minimum Distance Pairs',
-                         ( ('A', 'A'),
-                           ('T', 'T'),
-                           ('A', 'V'),
-                           ('M', 'M'),
-                           ('W', 'W'),
-                           ('V', 'V'),
-                           ('L', 'L'),
-                           ('L', 'J'),
-                           ('Y', 'Y'),
-                           ('W', 'A'),
-                           ('V', 'A'),
-                           ('A', 'V'),
-                           ('A', 'W'),
-                           ),
-                         ),
-                      ( max, 'Maximum Distance Pairs',
-                         ( ('J', 'L'),
-                           ('H', 'H'),
-                           ('H', 'L'),
-                           ('J', 'H'),
-                           ('H', 'F'),
-                           ('V', 'V'),
-                           ('I', 'I'),
-                           ('N', 'F'),
-                           ('N', 'B'),
-                           ('N', 'H'),
-                           ('N', 'L'),
-                           ('H', 'B'),
-                           ('W', 'A'),
-                           ('V', 'A'),
-                           ('A', 'V'),
-                           ('A', 'W'),
-                           ),
-                         ),
-                      )
-
-        def formatEmScalar(value):
-            return formatEms(value / float(self.units_per_em))
-
-        for reduceFunc, pairGroupName, pairs in pairGroups:
-            print
-            print pairGroupName
-            values = []
-            for char0, char1 in pairs:
-                unicode0 = ord(char0)
-                unicode1 = ord(char1)
-#                print 'pair', char0, char1, unicode0, unicode1
-                ufoglyph0 = unicodeGlyphMap[unicode0]
-                ufoglyph1 = unicodeGlyphMap[unicode1]
-                pairDistance = self.assessKerningPair(ufoglyph0, ufoglyph1)
-                print 'pair', char0, hex(unicode0), 'vs.', char1, hex(unicode1), 'pairDistance:', pairDistance, ('(%s)' % ( formatEmScalar(pairDistance), ) )
-                values.append(pairDistance)
-            print pairGroupName, formatEmScalar(reduce(reduceFunc, values))
-        print
-
-
     def convertTextToContours(self, text, ufoFont, cache, lastKerningValues=None):
         outsideContours = []
         insideContours = []
@@ -2933,12 +2828,23 @@ class Autokern(TFSMap):
                     if abs(xExtremaOverlapDelta) >= KERNING_HIGHLIGHT_HIGH_THRESHOLD:
                         KERNING_LABEL_COLOR = 0xdfa70000
                     elif abs(xExtremaOverlapDelta) >= KERNING_HIGHLIGHT_LOW_THRESHOLD:
-                        KERNING_LABEL_COLOR = 0xdf530000
+                        KERNING_LABEL_COLOR = 0xff530000
 
                     text += ' (%s%0.0f)' % (
                                            '' if xExtremaOverlapDelta == 0 else ('+' if xExtremaOverlapDelta > 0 else '-'),
                                            float(abs(xExtremaOverlapDelta)),
                                            )
+
+                if lastUfoGlyph is not None and lastKerningValues is not None:
+                    '''
+                    For the Autokern kerning values, we want to visually highlight
+                    values which were not kerned.
+                    '''
+                    if ( lastUfoGlyph.name, ufoglyph.name, ) not in self.advanceMap:
+                        '''
+                        Kerning pair was ignored.
+                        '''
+                        KERNING_LABEL_COLOR = 0xdf007f7f
 
 
                 label = TFSMap()
@@ -3131,11 +3037,6 @@ class Autokern(TFSMap):
         startTime = time.time()
 
         self.configure()
-
-        if self.assess_only:
-            print 'Entering assessment mode...'
-            self.assessKerning()
-            return
 
         self.timing.mark('configure.')
 

@@ -82,6 +82,9 @@ section div.back_link_bottom {
 <div>
 	Large changes to the x-extrema offsets are <span style="color: #920000">highlighted in red</span>.
 </div>
+<div>
+	Kerning pairs which were ignored (due to the <b>--glyph-pairs-to-kern</b> or <b>--glyphs-to-kern</b> arguments) are <span style="color: #007f7f">highlighted in blue</span>.
+</div>
 
 {{#sampleTextsMaps}}
 

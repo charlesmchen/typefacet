@@ -233,27 +233,31 @@ class AutokernSettings(TFBaseSettings):
                             ''')
 
         parser.add_argument('--tracking-ems',
-                            type=self.boundedFloat(0.0, 1.0),
+                            type=self.boundedFloat(-1.0, +1.0),
                             default=0.0,
-                            help='A constant padding value for all kerning pairs in ems. 0.0 <= x <= 1.0. Default: 0.0 em')
+                            help='''
+                            A constant padding value for all kerning pairs in ems.
+                            Can be negative.
+                            -1.0 <= x <= +1.0.
+                            Default: 0.0 em
+                            ''')
         parser.add_argument('--min-distance-ems',
                             type=self.boundedFloat(0.0, 1.0),
-                            default=0.025,
-                            help='The absolute minimum distance between glyphs in ems. 0.0 <= x <= 1.0. Default: 0.025 em')
+#                            default=0.025,
+                            default=0.0,
+                            help='''
+                            The absolute minimum distance between glyphs in ems.
+                            0.0 <= x <= 1.0.
+                            Default: 0.0 em
+                            ''')
         parser.add_argument('--max-distance-ems',
                             type=self.boundedFloat(0.0, 1.0),
-                            default=0.08,
+#                            default=0.08,
+                            default=0.0,
                             help='''
                             The absolute maximum distance between glyphs in ems.
                             0.0 <= x <= 1.0.
-                            Default: 0.08 em.
-                            ''')
-
-        parser.add_argument('--assess-only',
-                            action='store_true',
-                            help='''
-                            Activates assessment mode which analyzes the input font and suggests --min-distance-ems and --max-distance-ems values.
-                            In assessment mode, no kerning is performed and no output is written.
+                            Default: 0.0 em.
                             ''')
 
         parser.add_argument('--do-not-modify-side-bearings',
@@ -285,11 +289,12 @@ class AutokernSettings(TFBaseSettings):
                             ''')
         parser.add_argument('--intrusion-tolerance-ems',
                             type=self.boundedFloat(0.0, 1.0),
-                            default=0.05,
+#                            default=0.05,
+                            default=0.0,
                             help='''
                             Intrusion tolerance in ems.
                             0.0 <= x <= 1.0.
-                            Default: 0.1.
+                            Default: 0.0.
                             ''')
 #        parser.add_argument('--intrusion-min-thickness-ems',
 #                            type=self.boundedFloat(0.0, 1.0),
@@ -301,13 +306,15 @@ class AutokernSettings(TFBaseSettings):
 #                            ''')
         parser.add_argument('--max-x-extrema-overlap-ems',
                             type=self.boundedFloat(-1.0, 1.0),
-                            default=0.1,
+#                            default=0.1,
+                            default=0.0,
                             help='''
                             The maximum overlap of the x-extrema of the glyphs being kerned in ems.
                             A negative value implies a minimum x-extrema distance.
                             -1.0 <= x <= 1.0.
-                            Default: 0.1 em.
+                            Default: 0.0 em.
                             ''')
+#                            Default: 0.1 em.
         parser.add_argument('--x-extrema-overlap-scaling',
                             type=self.boundedFloat(0.0, 1.0),
                             default=1.0,
