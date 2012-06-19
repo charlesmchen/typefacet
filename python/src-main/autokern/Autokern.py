@@ -74,9 +74,13 @@ import itertools
 import yaml
 import types
 import unicodedata
+import traceback
 
-locale.setlocale(locale.LC_ALL, 'en_US')
-
+try:
+    locale.setlocale(locale.LC_ALL, 'en_US')
+except locale.Error, e:
+    print 'Could not set locale:', str(e)
+    
 #from robofab.world import *
 import robofab.world
 
@@ -1852,6 +1856,8 @@ class Autokern(TFSMap):
         segments = []
 
         def addEndpointRounding(point):
+            if radius <= 0:
+                return
 #            print
 #            print 'addEndpointRounding', point.description(), 'radius', radius
             circle = TFSOval(point, hRadius=radius, vRadius=radius)
@@ -3083,11 +3089,15 @@ class Autokern(TFSMap):
 
 
 if __name__ == "__main__":
-    autokern = Autokern()
+    autokernArgs = TFSMap()
+    AutokernSettings(autokernArgs).getCommandLineSettings()
+    autokern = Autokern(autokernArgs)
     AutokernSettings(autokern).getCommandLineSettings()
     try:
         autokern.process()
         print
         print 'complete.'
     except Exception, e:
-        print 'Error:', e.message
+        print 'Error:', str(e)
+        traceback.print_exc()
+        

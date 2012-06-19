@@ -278,7 +278,7 @@ class AutokernSettings(TFBaseSettings):
 #                            help='The slope of oblique fonts is defined as rise/run (1.0/0.0 for non-oblique fonts).')
 
         parser.add_argument('--precision-ems',
-                            type=self.boundedFloat(0.0, 1.0),
+                            type=self.boundedFloat(0.001, 1.0),
                             default=0.005,
                             help='''
                             Precision of the algorithm.
