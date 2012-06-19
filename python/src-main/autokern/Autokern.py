@@ -80,7 +80,7 @@ try:
     locale.setlocale(locale.LC_ALL, 'en_US')
 except locale.Error, e:
     print 'Could not set locale:', str(e)
-    
+
 #from robofab.world import *
 import robofab.world
 
@@ -1523,20 +1523,33 @@ class Autokern(TFSMap):
 
     def isValidProfileIntrusion(self, profile0, profile1, referenceProfiles, advance,
                                 pair_max_distance,
-                                pair_intrusion_tolerance):
+                                pair_intrusion_tolerance,
+                                withinAscender=False):
 
 #        DEBUG_h_n_ISSUE = True
 #        print 'isValidProfileIntrusion', 'advance', advance
 
-        maxRowExtrusion = pair_max_distance
-        maxSectionGapLength = int(round(pair_max_distance * 1.0 / self.precision))
-#        maxSectionPadding = int(round(pair_max_distance * 0.5 / self.precision))
-        maxSectionPadding = int(round(pair_max_distance * 0.3 / self.precision))
+#        maxRowExtrusion = pair_max_distance
+        maxRowExtrusion = pair_max_distance * 1.5
+#        maxRowExtrusion = pair_max_distance * 1.0
+#        maxRowExtrusion = pair_max_distance * 2.0
+#        maxSectionGapLength = int(round(pair_max_distance * 1.0 / self.precision))
+        maxSectionGapLength = int(round(pair_max_distance * 0.5 / self.precision))
+        maxSectionPadding = int(round(pair_max_distance * 0.5 / self.precision))
+#        maxSectionPadding = int(round(pair_max_distance * 0.3 / self.precision))
+#        maxSectionPadding = int(round(pair_max_distance * 1.5 / self.precision))
+#        maxSectionPadding = int(round(pair_max_distance * 1.0 / self.precision))
         defaultMaxXOffset = maxRowExtrusion
 
 
         def isValidRow(x_offset):
+#            return (x_offset is not None)
+#            return (x_offset is not None) and (x_offset > -maxRowExtrusion)
             return (x_offset is not None) and (x_offset < maxRowExtrusion)
+
+        minYunits = self.profileMinYunits
+        ascenderIndex = int(round(self.ascender / float(self.precision))) - minYunits
+        baselineIndex = int(round(0 / float(self.precision))) - minYunits
 
         '''
         Step 1
@@ -1551,6 +1564,10 @@ class Autokern(TFSMap):
             x_offset = None
             if (edge0 is not None) and (edge1 is not None):
                 x_offset = advance + edge1 - edge0
+#
+            if withinAscender:
+                if not (baselineIndex <= index <= ascenderIndex):
+                    x_offset = None
 
             '''
             A row is hollow if it only exists because one of the profiles was inflated,
@@ -1595,6 +1612,8 @@ class Autokern(TFSMap):
                 if isValidRow(x_offset):
                     if lastValidIndex is not None:
                         gapLength = index - lastValidIndex
+#                        if gapLength > 1:
+#                            print 'gapLength', gapLength
                         if gapLength >= maxSectionGapLength:
                             left = section[:index]
                             right = section[lastValidIndex + 1:]
@@ -1608,8 +1627,11 @@ class Autokern(TFSMap):
             return [section,]
 
 #        print 'splitSections.0', len(sections)
+#        print 'splitSections.0', len(allXOffsets), allXOffsets
         sections = splitSection(allXOffsets)
 #        print 'splitSections.1', len(sections)
+#        print 'maxRowExtrusion', maxRowExtrusion
+#        print 'maxSectionGapLength', maxSectionGapLength
 
 
         def trimSection(section):
@@ -1660,12 +1682,13 @@ class Autokern(TFSMap):
                 result = section[headTrimCount:-tailTrimCount]
             else:
                 result = section[headTrimCount:]
+#            result = section
 
-#            # Trim empty space
-#            while (len(result) > 0) and (result[0] is None):
-#                result = result[1:]
-#            while (len(result) > 0) and (result[-1] is None):
-#                result = result[:-1]
+            # Trim empty space
+            while (len(result) > 0) and (result[0] is None):
+                result = result[1:]
+            while (len(result) > 0) and (result[-1] is None):
+                result = result[:-1]
 
             return result
 
@@ -1781,9 +1804,16 @@ class Autokern(TFSMap):
                 intrudingAdvance = contactAdvance - lowValidIntrusionOffset
                 return intrudingAdvance
 
-            if self.isValidProfileIntrusion(profile0, profile1, referenceProfiles, contactAdvance - intrusionOffset,
-                                            pair_max_distance,
-                                            pair_intrusion_tolerance):
+
+            if (self.isValidProfileIntrusion(profile0, profile1, referenceProfiles, contactAdvance - intrusionOffset,
+                                             pair_max_distance,
+                                             pair_intrusion_tolerance) and
+                self.isValidProfileIntrusion(profile0, profile1, referenceProfiles, contactAdvance - intrusionOffset,
+                                             pair_max_distance,
+                                             pair_intrusion_tolerance, withinAscender=True)):
+#            if self.isValidProfileIntrusion(profile0, profile1, referenceProfiles, contactAdvance - intrusionOffset,
+#                                            pair_max_distance,
+#                                            pair_intrusion_tolerance):
                 lowValidIntrusionOffset = intrusionOffset
             else:
                 highInvalidIntrusionOffset = intrusionOffset
@@ -2189,9 +2219,9 @@ class Autokern(TFSMap):
                               ('--tracking-ems', 'tracking_ems',),
                               ('Pair-specific --tracking-ems', 'pair_tracking_in_ems',),
                           ),
-                          comments=('The raw kerning.',
+                          comments=('The raw kerning. Does not represent the final output which is effected by changes to the side bearings.',
                                     'The results of the previous steps are combined, and the effects of various arguments are applied.',
-                                    'Does not represent the final output which is effected by changes to the side bearings.',))
+                                    ))
 
             self.timing.mark('processKerningPair.69')
 
@@ -2367,10 +2397,28 @@ class Autokern(TFSMap):
         avgGlyphWidth = ((glyphMinmax0.maxX - glyphMinmax0.minX) +
                          (glyphMinmax1.maxX - glyphMinmax1.minX)) * 0.5
         fillAdvance = glyphMinmax1_.maxX + avgGlyphWidth / 3.0
-        fillPathTuples += (
-                           ( 0x7f7faf7f, xTranslateContours(glyphContours0, fillAdvance,), ),
-                           ( 0x7f7f7faf, xTranslateContours(glyphContours1, fillAdvance,), ),
-                           )
+
+        def fillGlyphContours(glyphContours, glyphColor):
+            result = ()
+            tempUfoFont = robofab.world.NewFont(familyName='ignore', styleName='ignore')
+            tempUfoGlyph = tempUfoFont.newGlyph('ignore')
+            tempTFSGlyph = TFSGlyph(tempUfoGlyph)
+            tempTFSGlyph.setContours(glyphContours, correctDirection=True)
+            reorientedContours = tempTFSGlyph.getContours(warnings=False)
+
+            for contour in reorientedContours:
+                if isClosedPathClockwise(contour):
+                    result += ( ( glyphColor, [contour,] ), )
+                else:
+                    result += ( ( 0xffffffff, [contour,] ), )
+            return result
+
+        fillPathTuples += fillGlyphContours(xTranslateContours(glyphContours0, fillAdvance,), 0x7f7faf7f)
+        fillPathTuples += fillGlyphContours(xTranslateContours(glyphContours1, fillAdvance,), 0x7f7f7faf)
+#        fillPathTuples += (
+#                           ( 0x7f7faf7f, xTranslateContours(glyphContours0, fillAdvance,), ),
+#                           ( 0x7f7f7faf, xTranslateContours(glyphContours1, fillAdvance,), ),
+#                           )
 
         variableTuples = (
                           ('%s (%s) lsb' % (ufoglyph0.name, formatUnicode(ufoglyph0.unicode),), (glyphMinmax0.minX), True,),
@@ -3040,9 +3088,12 @@ class Autokern(TFSMap):
 
 
     def process(self):
+        print
         startTime = time.time()
 
         self.configure()
+
+#        self.dstUfoFont.save(self.ufo_dst_path + '.1.ufo')
 
         self.timing.mark('configure.')
 
@@ -3060,9 +3111,13 @@ class Autokern(TFSMap):
             self.updateSideBearings()
             self.timing.mark('updateSideBearings.')
 
+#        self.dstUfoFont.save(self.ufo_dst_path + '.3.ufo')
+
 #        print 'updateKerning'
         self.updateKerning()
         self.timing.mark('updateKerning.')
+
+#        self.dstUfoFont.save(self.ufo_dst_path + '.5.ufo')
 
         self.writeSamples()
         self.timing.mark('writeSamples.')
@@ -3078,6 +3133,8 @@ class Autokern(TFSMap):
 
         self.writeLogIndex()
         self.timing.mark('writeLogIndex.')
+
+#        self.dstUfoFont.save(self.ufo_dst_path + '.7.ufo')
 
         self.dstUfoFont.update()
         self.dstUfoFont.save(self.ufo_dst_path)
@@ -3100,4 +3157,3 @@ if __name__ == "__main__":
     except Exception, e:
         print 'Error:', str(e)
         traceback.print_exc()
-        

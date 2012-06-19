@@ -196,11 +196,13 @@ class TFBaseSettings(object):
         '''
         Copy attributes
         '''
-        print
+        if self.dumpCommandLineSettings():
+            print
         for attr in sorted(dir(args)):
             if attr.startswith('_'):
                 continue
             if self.dumpCommandLineSettings():
                 print 'arg', attr, getattr(args, attr)
             setattr(self.target, attr, getattr(args, attr))
-        print
+        if self.dumpCommandLineSettings():
+            print
