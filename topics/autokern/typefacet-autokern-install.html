@@ -135,18 +135,16 @@ section pre {
 	
 	<h3>Step 2: Python</h3>
 	<div>
-		Autokern requires <a href="http://www.python.org/">Python</a> 2.7 or later.  
+		Autokern requires <a href="http://www.python.org/">Python</a> 2.6 or later.  
 		Python comes pre-installed on Mac OS X.  It is easily installed on Windows.
 	</div>
 	<div>
-		Autokern should work with earlier versions of Python, but I haven't tested this.
-		For versions of Python before 2.7, you will (at the very least) need to install
-		the <a href="http://pypi.python.org/pypi/argparse">argparse</a> python module.
+		The next steps depend on what version of Python you have.		
 	</div>
 	<ul>
 		<li>
 			<div><b>
-				What version of Python do I have on my computer?
+				What version of Python is installed on my computer?
 			</b></div>
 			Use the following command on the command line:
 <pre>
@@ -162,7 +160,7 @@ Python 2.7.1
 	
 	<h3>Step 3: Python Packages</h3>
 	<div>
-		Autokern requires the following Python packages:
+		Autokern always requires the following Python packages:
 	</div>
 	<ul>
 	  <li><a href="http://robofab.org/">robofab</a> package. robofab also has dependencies of its own.</li>
@@ -179,6 +177,17 @@ Python 2.7.1
 		All of these Python packages are free and 	open source. 
 	</div>
 	
+	
+	<h3>Step 3a: Python Packages (version 2.6 only)</h3>
+	<div>
+		For Python before version 2.7, (ie. version 2.6), you will also need:
+	</div>
+	<ul>
+	  <li><a href="http://pypi.python.org/pypi/argparse/">argparse</a> package. I have included argparse in the dependencies folder.</li>
+	  <li>
+	  	svgwrite also needs to be patched to work on Python 2.6.  I've patched the version of svgwrite in the dependencies folder.  
+	  </li> 
+	</ul>
 	
 	
 	
