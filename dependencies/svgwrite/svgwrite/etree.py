@@ -30,7 +30,10 @@ def CDATA(text):
     element.text = text
     return element
 
-original_serialize_xml = etree._serialize_xml
+try:
+    original_serialize_xml = etree._serialize_xml
+except AttributeError, e:
+    print 'etree patch error', str(e)
 
 if PY3:
     def _serialize_xml_with_CDATA_support(write, elem, qnames, namespaces):
@@ -46,4 +49,8 @@ else:
             original_serialize_xml(write, elem, encoding, qnames, namespaces)
 
 # ugly, ugly, ugly patching
-etree._serialize_xml = _serialize_xml_with_CDATA_support
+try:
+    etree._serialize_xml = _serialize_xml_with_CDATA_support
+except AttributeError, e:
+    print 'etree patch error', str(e)
+    
