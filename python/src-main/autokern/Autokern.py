@@ -350,6 +350,8 @@ class Autokern(TFSMap):
             raise Exception('--min-distance-ems value (%0.3f) cannot be greater than --max-distance-ems value (%0.3f)' % (self.min_distance_ems,
                                                                                                                           self.max_distance_ems,
                                                                                                                           ) )
+        if self.only_modify_side_bearings and self.do_not_modify_side_bearings:
+            raise Exception('--only-modify-side-bearings and --do-not-modify-side-bearings arguments cannot be used together.')
 
         self.ascender = self.srcUfoFont.ascender
         self.descender = self.srcUfoFont.descender
@@ -2549,6 +2551,11 @@ class Autokern(TFSMap):
 
 
     def updateKerning(self):
+        if self.only_modify_side_bearings:
+            print 'Clearing kerning...'
+            self.dstUfoFont.clearKerning()
+            return
+
         print 'Updating kerning...'
         self.dstUfoFont.clearKerning()
 

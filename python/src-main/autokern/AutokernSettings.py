@@ -268,9 +268,21 @@ class AutokernSettings(TFBaseSettings):
                             Default: 0.0 em.
                             ''')
 
+        parser.add_argument('--only-modify-side-bearings',
+                            action='store_true',
+                            help='''
+                            If present, Autokern only performs auto-spacing and not auto-kerning.
+                            Autokern will update the side bearings and discard the current kerning table.
+                            Cannot be used with --do-not-modify-side-bearings.
+                            ''')
         parser.add_argument('--do-not-modify-side-bearings',
                             action='store_true',
-                            help='Preserves the current side bearings.')
+                            help='''
+                            If present, Autokern only performs auto-kerning and not auto-spacing.
+                            Autokern will preserve the current side bearings.
+                            Cannot be used with --do-not-modify-side-bearings.
+                            ''')
+
         parser.add_argument('--allow-negative-side-bearings',
                             action='store_true',
                             help='Allows side bearings that intrude within the x-extrema of the glyph.')
