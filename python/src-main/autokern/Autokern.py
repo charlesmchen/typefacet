@@ -1529,23 +1529,24 @@ class Autokern(TFSMap):
 #        DEBUG_h_n_ISSUE = True
 #        print 'isValidProfileIntrusion', 'advance', advance
 
-#        maxRowExtrusion = pair_max_distance
-        maxRowExtrusion = pair_max_distance * 1.5
-#        maxRowExtrusion = pair_max_distance * 1.0
-#        maxRowExtrusion = pair_max_distance * 2.0
+#        maxRowProtrusion = pair_max_distance
+        maxRowProtrusion = pair_max_distance * 1.5
+#        maxRowProtrusion = pair_max_distance * 1.0
+#        maxRowProtrusion = pair_max_distance * 2.0
 #        maxSectionGapLength = int(round(pair_max_distance * 1.0 / self.precision))
         maxSectionGapLength = int(round(pair_max_distance * 0.5 / self.precision))
-        maxSectionPadding = int(round(pair_max_distance * 0.5 / self.precision))
+#        maxSectionPadding = int(round(pair_max_distance * 0.5 / self.precision))
 #        maxSectionPadding = int(round(pair_max_distance * 0.3 / self.precision))
 #        maxSectionPadding = int(round(pair_max_distance * 1.5 / self.precision))
-#        maxSectionPadding = int(round(pair_max_distance * 1.0 / self.precision))
-        defaultMaxXOffset = maxRowExtrusion
+        maxSectionPadding = int(round(pair_max_distance * 1.0 / self.precision))
+#        maxSectionPadding = int(round(pair_max_distance * 1.15 / self.precision))
+        defaultMaxXOffset = maxRowProtrusion
 
 
         def isValidRow(x_offset):
 #            return (x_offset is not None)
-#            return (x_offset is not None) and (x_offset > -maxRowExtrusion)
-            return (x_offset is not None) and (x_offset < maxRowExtrusion)
+#            return (x_offset is not None) and (x_offset > -maxRowProtrusion)
+            return (x_offset is not None) and (x_offset < maxRowProtrusion)
 
         minYunits = self.profileMinYunits
         ascenderIndex = int(round(self.ascender / float(self.precision))) - minYunits
@@ -1580,7 +1581,7 @@ class Autokern(TFSMap):
             if hollow and x_offset >= 0:
                 '''
                 If a row is hollow and there is no intrusion, ignore it
-                so that it does not count towards extrusion.
+                so that it does not count towards protrusion.
                 '''
                 x_offset = None
 
@@ -1630,7 +1631,7 @@ class Autokern(TFSMap):
 #        print 'splitSections.0', len(allXOffsets), allXOffsets
         sections = splitSection(allXOffsets)
 #        print 'splitSections.1', len(sections)
-#        print 'maxRowExtrusion', maxRowExtrusion
+#        print 'maxRowProtrusion', maxRowProtrusion
 #        print 'maxSectionGapLength', maxSectionGapLength
 
 
@@ -1718,32 +1719,45 @@ class Autokern(TFSMap):
         '''
         for section in sections:
             intrusionTotal = 0
-            extrusionTotal = 0
+            protrusionTotal = 0
+            intrusionPowTotal = 0
+            protrusionPowTotal = 0
 
             for x_offset in section:
                 if x_offset is None:
                     '''
-                    Fill in missing gaps with maximum extrusion value.
+                    Fill in missing gaps with maximum protrusion value.
                     '''
                     x_offset = defaultMaxXOffset
                 rowIntrusion = max(0, -x_offset)
                 '''
-                Ignore extrusion greater than --max-distance argument.
+                Ignore protrusion greater than --max-distance argument.
                 '''
-                rowExtrusion = min(maxRowExtrusion, max(0, +x_offset))
-#                print 'edge0, edge1', edge0, edge1, 'diff', diff, 'advance', advance, 'rowIntrusion', rowIntrusion, 'rowExtrusion', rowExtrusion
+                rowProtrusion = min(maxRowProtrusion, max(0, +x_offset))
+#                print 'edge0, edge1', edge0, edge1, 'diff', diff, 'advance', advance, 'rowIntrusion', rowIntrusion, 'rowProtrusion', rowProtrusion
                 intrusionTotal += rowIntrusion
-                extrusionTotal += rowExtrusion
+                protrusionTotal += rowProtrusion
+#                intrusionPowTotal += pow(rowIntrusion, 2.0)
+#                protrusionPowTotal += pow(rowProtrusion, 2.0)
+                TRUSION_POWER = 1.15
+#                TRUSION_POWER = 1.10
+#                intrusionTotal += pow(rowIntrusion, TRUSION_POWER)
+#                protrusionTotal += pow(rowProtrusion, 1 / TRUSION_POWER)
+                intrusionPowTotal += pow(rowIntrusion, TRUSION_POWER)
+#                protrusionPowTotal += pow(rowProtrusion, 1 / TRUSION_POWER)
+                protrusionPowTotal += rowProtrusion
 
             '''
             Enforce
             '''
 
 #            print 'advance', advance
-#            print 'intrusionTotal', intrusionTotal, 'extrusionTotal', extrusionTotal
+#            print 'intrusionTotal', intrusionTotal, 'protrusionTotal', protrusionTotal
 #            INTRUSION_EXTRUSION_MIN_RATIO = 1.5
             INTRUSION_EXTRUSION_MIN_RATIO = 1.0
-            if intrusionTotal > extrusionTotal * INTRUSION_EXTRUSION_MIN_RATIO:
+#            if intrusionTotal > protrusionTotal * INTRUSION_EXTRUSION_MIN_RATIO:
+#                return False
+            if intrusionPowTotal > protrusionPowTotal * INTRUSION_EXTRUSION_MIN_RATIO:
                 return False
 
             intrusionToleranceArea = pair_intrusion_tolerance * len(section)
@@ -1753,7 +1767,7 @@ class Autokern(TFSMap):
                 return False
 
 #        print 'totalSectionRowCount', totalSectionRowCount, 'advance', advance
-#        print 'intrusionTotal', intrusionTotal, 'extrusionTotal', extrusionTotal, 'intrusionToleranceArea', intrusionToleranceArea
+#        print 'intrusionTotal', intrusionTotal, 'protrusionTotal', protrusionTotal, 'intrusionToleranceArea', intrusionToleranceArea
 
         return True
 
@@ -2010,6 +2024,18 @@ class Autokern(TFSMap):
         if debugKerning:
             print 'minDistanceAdvance', minDistanceAdvance
 
+
+
+        maxDistanceAdvance = self.findMinProfileAdvance(profileMax0, profileMax1)
+        if debugKerning:
+            print 'maxDistanceAdvance', maxDistanceAdvance
+        if maxDistanceAdvance is None:
+            maxDistanceAdvance = minmax0.maxX + pair_max_distance - minmax1.minX
+        maxDistanceAdvance = int(round(maxDistanceAdvance))
+        self.timing.mark('processKerningPair.021')
+
+
+
         if DEBUG_h_n_ISSUE:
             print ufoglyph0.name, ufoglyph1.name, 'findMinProfileAdvance_withIntrusion(profileMax0, profileMax1)'
         intrudingAdvance = self.findMinProfileAdvance_withIntrusion(profileMax0, profileMax1,
@@ -2034,6 +2060,18 @@ class Autokern(TFSMap):
         All subsequent steps should only serve to increase the advance.
         '''
         advance = intrudingAdvance
+
+#        '''
+#        1a. Apply the kerning stretgth.
+#        '''
+##        print 'kerning_strength', self.kerning_strength
+#        naiveAdvance = (minDistanceAdvance + maxDistanceAdvance) * 0.5
+#        self.kerning_strength = max(0, min(1.0, self.kerning_strength))
+##        print 'advance', advance, 'kerning_strength', self.kerning_strength
+##        print 'minDistanceAdvance', minDistanceAdvance, 'maxDistanceAdvance', maxDistanceAdvance, 'naiveAdvance', naiveAdvance
+#        advance = (advance * self.kerning_strength) + (naiveAdvance * (1.0 - self.kerning_strength))
+##        print 'advance.1', advance
+
 
         '''
         2. Make sure advance is at least the "minimum advance."
@@ -2068,6 +2106,7 @@ class Autokern(TFSMap):
             x_extrema_overlap = adj_minmax0.maxX - (adj_minmax1.minX + advance)
             if x_extrema_overlap > pair_max_x_extrema_overlap:
                 advance += x_extrema_overlap - pair_max_x_extrema_overlap
+
 
         advance = int(round(advance))
 
@@ -2158,20 +2197,20 @@ class Autokern(TFSMap):
             self.timing.mark('processKerningPair.65')
 
             # -----------
-
-            maxDistanceAdvance = self.findMinProfileAdvance(profileMax0, profileMax1)
-            if debugKerning:
-                print 'maxDistanceAdvance', maxDistanceAdvance
-
-            if maxDistanceAdvance is None:
-                '''
-                If no collisions between the glyph profiles, use x-extrema
-                plus the max_distance argument.
-                '''
-                maxDistanceAdvance = minmax0.maxX + pair_max_distance - minmax1.minX
-            maxDistanceAdvance = int(round(maxDistanceAdvance))
-
-            self.timing.mark('processKerningPair.66')
+#
+#            maxDistanceAdvance = self.findMinProfileAdvance(profileMax0, profileMax1)
+#            if debugKerning:
+#                print 'maxDistanceAdvance', maxDistanceAdvance
+#
+#            if maxDistanceAdvance is None:
+#                '''
+#                If no collisions between the glyph profiles, use x-extrema
+#                plus the max_distance argument.
+#                '''
+#                maxDistanceAdvance = minmax0.maxX + pair_max_distance - minmax1.minX
+#            maxDistanceAdvance = int(round(maxDistanceAdvance))
+#
+#            self.timing.mark('processKerningPair.66')
 
             addLogSection('Maximum Distance',
                           self.dstCache,

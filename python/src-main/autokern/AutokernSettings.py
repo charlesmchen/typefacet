@@ -232,6 +232,14 @@ class AutokernSettings(TFBaseSettings):
                             help='''A list of short texts to render in the "sample text" log.
                             ''')
 
+#        parser.add_argument('--kerning-strength',
+#                            type=self.boundedFloat(0.0, +1.0),
+#                            default=0.75,
+#                            help='''
+#                            The lower the value, the less glyphs will "intrude" into the whitespace between them.
+#                            0.0 <= x <= 1.0.
+#                            Default: 0.75 em
+#                            ''')
         parser.add_argument('--tracking-ems',
                             type=self.boundedFloat(-1.0, +1.0),
                             default=0.0,

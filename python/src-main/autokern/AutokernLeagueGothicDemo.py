@@ -79,7 +79,7 @@ pseudo_argv = (
                '--ufo-src-path',
 #               os.path.abspath(os.path.join(TFSProject.findProjectRootFolder(), 'data-ignore', 'League Gothic-kerned.old.ufo')),
                os.path.abspath(os.path.join(TFSProject.findProjectRootFolder(), 'data-ignore', 'theleagueof', 'theleagueof-league-gothic-4f9ff8d', 'source', 'League Gothic.ufo')),
-#               os.path.abspath(os.path.join(TFSProject.findProjectRootFolder(), 'out', 'League Gothic-kerned.1.ufo')),
+#               os.path.abspath(os.path.join(TFSProject.findProjectRootFolder(), 'out', 'League Gothic-kerned.3.ufo')),
                '--ufo-dst-path',
                os.path.abspath(os.path.join(TFSProject.findProjectRootFolder(), 'out', 'League Gothic-kerned.ufo')),
 
@@ -125,6 +125,7 @@ pseudo_argv = (
 #                '--kern-samples-only',
 #                '--write-kerning-pair-logs',
 #                '--glyph-pairs-to-kern',
+#                'o', 'g',
 #                'C', 'O',
 #                'y', 'p',
 #                'T', 'T',
