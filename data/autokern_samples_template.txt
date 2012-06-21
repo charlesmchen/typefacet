@@ -86,6 +86,10 @@ section div.back_link_bottom {
 <div>
 	Kerning pairs which were ignored (due to the <b>--glyph-pairs-to-kern</b> or <b>--glyphs-to-kern</b> arguments) are <span style="color: #007f7f">highlighted in blue</span>.
 </div>
+<div>
+	<u>Make sure to force reload this page</u>.
+	Chrome doesn't seem to be honoring this page's no-cache meta tag.
+</div>
 
 {{#sampleTextsMaps}}
 

@@ -9,7 +9,7 @@ Project Pages: http://charlesmchen.github.com/typefacet/
 
 ### Autokern
 
-A set of scripts for auto-kerning fonts.  See the [TypeFacet Autokern Manual](http://charlesmchen.github.com/typefacet/topics/autokern/index.html).
+A set of scripts for auto-kerning fonts.  See the [TypeFacet Autokern Project Pages](http://charlesmchen.github.com/typefacet/topics/autokern/index.html).
 
 ### Font Interpolator
 

@@ -1,0 +1,161 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    
+    <title>{{pageTitle}}</title>
+
+    <link rel="stylesheet" href="stylesheets/styles.css">
+    <link rel="stylesheet" href="stylesheets/pygment_trac.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    
+    
+
+<style type="text/css">
+<!--
+
+
+header {
+	position: static;
+}
+
+header div {
+	padding-bottom: 10px;
+}
+
+section div {
+	color: #000;
+}
+
+section div,
+section ul {
+	padding-top: 10px;
+}
+
+section pre {
+	margin-top: 10px;
+}
+
+section div,
+section ul li {
+	color: #000;
+	font: 16px;
+}
+
+section h3 {
+	padding-top: 35px;
+	margin-bottom: 0;
+}
+
+section b {
+	color: #333;
+}
+
+section ul {
+	margin-bottom: 0;
+}
+
+section {
+/*
+    width: auto;
+	float: none;
+*/
+}
+
+section {
+	width: 700px;
+}
+.wrapper {
+	width: 1060px;
+}
+
+-->
+</style>
+
+  </head>
+  <body>
+
+    <div class="wrapper">
+
+<h3>
+	&lt;&lt; <a href="http://typefacet.com/">TypeFacet Blog</a>
+	&lt;&lt; <a href="http://charlesmchen.github.com/typefacet/">TypeFacet on GitHub</a>
+</h3>
+
+      <header>
+        <h1>TypeFacet</h1>
+        <p><a href="http://charlesmchen.github.com/typefacet/topics/autokern/index.html"><img src="images/typefacet logo.120.png" /></a></p>
+        <p class="view"><a href="http://charlesmchen.github.com/typefacet/topics/autokern/index.html">TypeFacet Autokern Home</a></p>
+        <ul>
+          <li><a href="typefacet-autokern-manual.html">Autokern Manual</a></li>
+          <li><a href="typefacet-autokern-install.html">Installation Guide</a></li>
+          <li><a href="typefacet-autokern-faq.html">Autokern FAQ</a></li>
+          <li><a href="glyph_categories.html">Unicode Category Chart</a></li>
+          <li><a href="typefacet-autokern-links.html">Links</a></li>
+        </ul>
+        <p class="view"><a href="https://github.com/charlesmchen/typefacet">View the Project on GitHub</a></p>
+        <ul>
+          <li><a href="https://github.com/charlesmchen/typefacet/zipball/master">Download <strong>ZIP File</strong></a></li>
+          <li><a href="https://github.com/charlesmchen/typefacet/tarball/master">Download <strong>TAR Ball</strong></a></li>
+          <li><a href="https://github.com/charlesmchen/typefacet">View On <strong>GitHub</strong></a></li>
+        </ul>
+        
+<div>
+ <a href="http://typefacet.com/">TypeFacet Blog</a>
+</div>
+
+<div class="social">
+
+<div>
+<a href="https://twitter.com/share" class="twitter-share-button" data-url="http://charlesmchen.github.com/typefacet/topics/autokern/index.html" data-text="Typefacet Autokern" data-via="cmchen" data-hashtags="typefacet">Tweet</a>
+<script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0];if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src="//platform.twitter.com/widgets.js";fjs.parentNode.insertBefore(js,fjs);}}(document,"script","twitter-wjs");</script>
+</div>
+
+<div>
+<iframe src="http://markdotto.github.com/github-buttons/github-btn.html?user=charlesmchen&amp;repo=typefacet&amp;type=watch&amp;count=true" allowtransparency="true" frameborder="0" scrolling="0" width="170px" height="30px"></iframe>
+</div>
+
+</div>
+        
+      </header>
+      
+      <section>
+      
+        <h2>{{pageTitle}}</h2>
+        
+        <div class="statsTitle">
+        {{statsTitle}}
+		</div>
+		
+		
+<div>
+	<a href="http://typefacet.com/post/24110659154/most-commonly-implemented-font-glyphs">Blog post describing the process.</a>
+</div>
+
+<pre>
+{{#stats}}
+{{key}}: {{value}}
+{{/stats}}
+</pre>  
+      
+<pre>
+{{#pres}}
+{{{label}}}: {{{value}}}
+{{/pres}}
+</pre>
+        
+      </section>
+      <footer>
+<!--
+        <p>This project is maintained by <a href="https://github.com/charlesmchen">charlesmchen</a></p>
+-->
+      </footer>
+    </div>
+    <script src="javascripts/scale.fix.js"></script>
+    
+  </body>
+</html>

@@ -122,7 +122,10 @@ class TFSGlyph(object):
 #                    fiPoint = rfPointToTFSPoint(rfpoint)
 #                    print '\t', 'fiPoint', fiPoint
 #                print '\t', 'fiPoints', fiPoints
-            paths.append(TFSPath(True, *segments))
+#            print 'segments', len(segments)
+            # TODO: what contour contains no segments?  See Crimson text.
+            if len(segments) > 0:
+                paths.append(TFSPath(True, *segments))
 
         return paths
 

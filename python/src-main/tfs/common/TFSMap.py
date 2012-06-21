@@ -67,8 +67,10 @@ END OF TERMS AND CONDITIONS
 
 class TFSMap(dict):
 
-    def __init__(self):
-        pass
+    def __init__(self, other=None):
+        dict.__init__(self)
+        if other is not None:
+            self.update(other)
 
     def __setattr__(self, key, value):
         self[key] = value
