@@ -167,6 +167,7 @@ Python 2.7.1
 	</div>
 	<ul>
 	  <li><a href="http://robofab.org/">robofab</a> package. robofab also has dependencies of its own.</li>
+	  <li><a href="http://pyyaml.org/wiki/PyYAML">PyYAML</a> package. 
 	  <li><a href="https://github.com/defunkt/pystache/">pystache</a> package. Only necessary if using --log-path option to write html logs.</li>
 	  <li><a href="http://pypi.python.org/pypi/svgwrite/1.0.1">svgwrite</a> package. Only necessary if using --log-path option to write html logs.</li> 
 	</ul>
@@ -215,10 +216,10 @@ cd Downloads\typefacet
 # Temporarily append the Python dependencies to the Python path.
 
 # Mac:
-env PYTHONPATH=dependencies/robofab:dependencies/pystache:dependencies/svgwrite:python/src-main python python/src-main/autokern/Autokern.py -h
+env PYTHONPATH=dependencies/RoboFab/lib:dependencies/pystache:dependencies/svgwrite:dependencies/PyYaml/lib:dependencies/FontTools/Lib:python/src-main python python/src-main/autokern/Autokern.py -h
 
 # Windows:
-set PYTHONPATH=%PYTHONPATH%;dependencies/robofab;dependencies/pystache;dependencies/svgwrite
+set PYTHONPATH=%PYTHONPATH%;dependencies/RoboFab/lib;dependencies/pystache;dependencies/svgwrite;dependencies/PyYaml/lib;dependencies/FontTools/Lib
 python python/src-main/autokern/Autokern.py -h
 </pre>
 	<div>
