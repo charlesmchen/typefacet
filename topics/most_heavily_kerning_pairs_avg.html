@@ -1,0 +1,552 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    
+    <title>Most Heavily Kerning Pairs</title>
+
+    <link rel="stylesheet" href="stylesheets/styles.css">
+    <link rel="stylesheet" href="stylesheets/pygment_trac.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    
+    
+
+<style type="text/css">
+<!--
+
+
+header {
+	position: static;
+}
+
+header div {
+	padding-bottom: 10px;
+}
+
+section div {
+	color: #000;
+}
+
+section div,
+section ul {
+	padding-top: 10px;
+}
+
+section pre {
+	margin-top: 10px;
+}
+
+section div,
+section ul li {
+	color: #000;
+	font: 16px;
+}
+
+section h3 {
+	padding-top: 35px;
+	margin-bottom: 0;
+}
+
+section b {
+	color: #333;
+}
+
+section ul {
+	margin-bottom: 0;
+}
+
+section {
+/*
+    width: auto;
+	float: none;
+*/
+}
+
+section {
+	width: 700px;
+}
+.wrapper {
+	width: 1060px;
+}
+
+-->
+</style>
+
+  </head>
+  <body>
+
+    <div class="wrapper">
+
+<h3>
+	&lt;&lt; <a href="http://typefacet.com/">TypeFacet Blog</a>
+	&lt;&lt; <a href="http://charlesmchen.github.com/typefacet/">TypeFacet on GitHub</a>
+</h3>
+
+<div>
+	<a href="http://typefacet.com/post/25597299092/most-common-kerning-pairs">Blog post describing the process.</a>
+</div>
+
+<div class="social">
+
+<div>
+<a href="https://twitter.com/share" class="twitter-share-button" data-url="http://charlesmchen.github.com/typefacet/" data-text="The Most Commonly Kerned Glyphs Pairs" data-via="cmchen" data-hashtags="typefacet">Tweet</a>
+<script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0];if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src="//platform.twitter.com/widgets.js";fjs.parentNode.insertBefore(js,fjs);}}(document,"script","twitter-wjs");</script>
+</div>
+
+<div>
+<iframe src="http://markdotto.github.com/github-buttons/github-btn.html?user=charlesmchen&amp;repo=typefacet&amp;type=watch&amp;count=true" allowtransparency="true" frameborder="0" scrolling="0" width="170px" height="30px"></iframe>
+</div>
+
+</div>
+    
+    
+    
+    
+      <header>
+        <h1>TypeFacet</h1>
+        <p><a href="http://charlesmchen.github.com/typefacet/topics/autokern/index.html"><img src="images/typefacet logo.120.png" /></a></p>
+        <p class="view"><a href="http://charlesmchen.github.com/typefacet/topics/autokern/index.html">TypeFacet Autokern Home</a></p>
+        <ul>
+          <li><a href="typefacet-autokern-manual.html">Autokern Manual</a></li>
+          <li><a href="typefacet-autokern-install.html">Installation Guide</a></li>
+          <li><a href="typefacet-autokern-faq.html">Autokern FAQ</a></li>
+          <li><a href="glyph_categories.html">Unicode Category Chart</a></li>
+          <li><a href="typefacet-autokern-links.html">Links</a></li>
+        </ul>
+        <p class="view"><a href="https://github.com/charlesmchen/typefacet">View the Project on GitHub</a></p>
+        <ul>
+          <li><a href="https://github.com/charlesmchen/typefacet/zipball/master">Download <strong>ZIP File</strong></a></li>
+          <li><a href="https://github.com/charlesmchen/typefacet/tarball/master">Download <strong>TAR Ball</strong></a></li>
+          <li><a href="https://github.com/charlesmchen/typefacet">View On <strong>GitHub</strong></a></li>
+        </ul>
+        
+<div>
+ <a href="http://typefacet.com/">TypeFacet Blog</a>
+</div>
+
+<div class="social">
+
+<div>
+<a href="https://twitter.com/share" class="twitter-share-button" data-url="http://charlesmchen.github.com/typefacet/topics/autokern/index.html" data-text="Typefacet Autokern" data-via="cmchen" data-hashtags="typefacet">Tweet</a>
+<script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0];if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src="//platform.twitter.com/widgets.js";fjs.parentNode.insertBefore(js,fjs);}}(document,"script","twitter-wjs");</script>
+</div>
+
+<div>
+<iframe src="http://markdotto.github.com/github-buttons/github-btn.html?user=charlesmchen&amp;repo=typefacet&amp;type=watch&amp;count=true" allowtransparency="true" frameborder="0" scrolling="0" width="170px" height="30px"></iframe>
+</div>
+
+</div>
+        
+      </header>
+      
+      <section>
+      
+        <h2>Most Heavily Kerning Pairs</h2>
+        
+        <div class="statsTitle">
+        The most heavily kerning pairs.
+		</div>
+<pre>
+Total Fonts: 1485
+Fonts With Valid Kerning Table: 923
+Kerning Pairs Observed: 380
+</pre>  
+      
+<pre>
+0x02C6 &#x02C6 circumflex vs. 0x0050 &#x0050 P: 0.36 em
+0x0074 &#x0074 t vs. 0x0053 &#x0053 S: 0.35 em
+0x0043 &#x0043 C vs. 0x006F &#x006F o: 0.32 em
+0x0072 &#x0072 r vs. 0x0069 &#x0069 i: 0.24 em
+0x00A0 &#x00A0 no-break_space vs. 0x0141 &#x0141 Lslash: 0.19 em
+0x0074 &#x0074 t vs. 0x0065 &#x0065 e: 0.18 em
+0x00A0 &#x00A0 no-break_space vs. 0x0058 &#x0058 X: 0.17 em
+0x0074 &#x0074 t vs. 0x00A0 &#x00A0 no-break_space: 0.16 em
+0x0050 &#x0050 P vs. 0x002E &#x002E period: 0.15 em
+0x0046 &#x0046 F vs. 0x002E &#x002E period: 0.13 em
+0x00A0 &#x00A0 no-break_space vs. 0x0053 &#x0053 S: 0.13 em
+0x004F &#x004F O vs. 0x0062 &#x0062 b: 0.12 em
+0x0056 &#x0056 V vs. 0x002E &#x002E period: 0.12 em
+0x0064 &#x0064 d vs. 0x006F &#x006F o: 0.12 em
+0x002C &#x002C comma vs. 0x00A0 &#x00A0 no-break_space: 0.12 em
+0x0050 &#x0050 P vs. 0x002C &#x002C comma: 0.11 em
+0x02C6 &#x02C6 circumflex vs. 0x0032 &#x0032 two: 0.11 em
+0x00A0 &#x00A0 no-break_space vs. 0x0049 &#x0049 I: 0.11 em
+0x00A0 &#x00A0 no-break_space vs. 0x00A0 &#x00A0 no-break_space: 0.11 em
+0x0059 &#x0059 Y vs. 0x002E &#x002E period: 0.10 em
+0x004C &#x004C L vs. 0x201D &#x201D quotedblright: 0.10 em
+0x004C &#x004C L vs. 0x2019 &#x2019 quoteright: 0.10 em
+0x0054 &#x0054 T vs. 0x002E &#x002E period: 0.10 em
+0x0057 &#x0057 W vs. 0x002E &#x002E period: 0.10 em
+0x0056 &#x0056 V vs. 0x002C &#x002C comma: 0.09 em
+0x0046 &#x0046 F vs. 0x002C &#x002C comma: 0.09 em
+0x2018 &#x2018 quoteleft vs. 0x0041 &#x0041 A: 0.09 em
+0x201C &#x201C quotedblleft vs. 0x0041 &#x0041 A: 0.09 em
+0x004C &#x004C L vs. 0x0059 &#x0059 Y: 0.09 em
+0x0054 &#x0054 T vs. 0x0061 &#x0061 a: 0.08 em
+0x0031 &#x0031 one vs. 0x0039 &#x0039 nine: 0.08 em
+0x004C &#x004C L vs. 0x0056 &#x0056 V: 0.08 em
+0x0059 &#x0059 Y vs. 0x002C &#x002C comma: 0.08 em
+0x0054 &#x0054 T vs. 0x006F &#x006F o: 0.08 em
+0x0056 &#x0056 V vs. 0x0041 &#x0041 A: 0.08 em
+0x0054 &#x0054 T vs. 0x0065 &#x0065 e: 0.08 em
+0x0054 &#x0054 T vs. 0x0079 &#x0079 y: 0.08 em
+0x0057 &#x0057 W vs. 0x002C &#x002C comma: 0.08 em
+0x02C6 &#x02C6 circumflex vs. 0x00F4 &#x00F4 ocircumflex: 0.08 em
+0x0054 &#x0054 T vs. 0x0077 &#x0077 w: 0.08 em
+0x201C &#x201C quotedblleft vs. 0x0064 &#x0064 d: 0.08 em
+0x0072 &#x0072 r vs. 0x002E &#x002E period: 0.08 em
+0x004C &#x004C L vs. 0x0054 &#x0054 T: 0.08 em
+0x0059 &#x0059 Y vs. 0x0061 &#x0061 a: 0.08 em
+0x0054 &#x0054 T vs. 0x0075 &#x0075 u: 0.08 em
+0x0056 &#x0056 V vs. 0x0061 &#x0061 a: 0.08 em
+0x0054 &#x0054 T vs. 0x0073 &#x0073 s: 0.07 em
+0x0050 &#x0050 P vs. 0x0072 &#x0072 r: 0.07 em
+0x0054 &#x0054 T vs. 0x002C &#x002C comma: 0.07 em
+0x0076 &#x0076 v vs. 0x002E &#x002E period: 0.07 em
+0x0039 &#x0039 nine vs. 0x0030 &#x0030 zero: 0.07 em
+0x0054 &#x0054 T vs. 0x0072 &#x0072 r: 0.07 em
+0x0059 &#x0059 Y vs. 0x006F &#x006F o: 0.07 em
+0x0054 &#x0054 T vs. 0x0041 &#x0041 A: 0.07 em
+0x0059 &#x0059 Y vs. 0x0041 &#x0041 A: 0.07 em
+0x201C &#x201C quotedblleft vs. 0x0077 &#x0077 w: 0.07 em
+0x0074 &#x0074 t vs. 0x0073 &#x0073 s: 0.07 em
+0x0050 &#x0050 P vs. 0x0041 &#x0041 A: 0.07 em
+0x006F &#x006F o vs. 0x201D &#x201D quotedblright: 0.07 em
+0x006D &#x006D m vs. 0x201D &#x201D quotedblright: 0.07 em
+0x0059 &#x0059 Y vs. 0x0065 &#x0065 e: 0.07 em
+0x0041 &#x0041 A vs. 0x0064 &#x0064 d: 0.07 em
+0x0022 &#x0022 quotedbl vs. 0x0064 &#x0064 d: 0.07 em
+0x0041 &#x0041 A vs. 0x0056 &#x0056 V: 0.07 em
+0x0041 &#x0041 A vs. 0x201D &#x201D quotedblright: 0.07 em
+0x006E &#x006E n vs. 0x201D &#x201D quotedblright: 0.07 em
+0x0061 &#x0061 a vs. 0x201D &#x201D quotedblright: 0.07 em
+0x0057 &#x0057 W vs. 0x0041 &#x0041 A: 0.07 em
+0x201C &#x201C quotedblleft vs. 0x004A &#x004A J: 0.07 em
+0x0065 &#x0065 e vs. 0x00A0 &#x00A0 no-break_space: 0.07 em
+0x0041 &#x0041 A vs. 0x2019 &#x2019 quoteright: 0.06 em
+0x0041 &#x0041 A vs. 0x0059 &#x0059 Y: 0.06 em
+0x201C &#x201C quotedblleft vs. 0x0061 &#x0061 a: 0.06 em
+0x0052 &#x0052 R vs. 0x006F &#x006F o: 0.06 em
+0x0070 &#x0070 p vs. 0x201D &#x201D quotedblright: 0.06 em
+0x0072 &#x0072 r vs. 0x0022 &#x0022 quotedbl: 0.06 em
+0x0041 &#x0041 A vs. 0x0054 &#x0054 T: 0.06 em
+0x00A0 &#x00A0 no-break_space vs. 0x2219 &#x2219 bullet_operator: 0.06 em
+0x0065 &#x0065 e vs. 0x0072 &#x0072 r: 0.06 em
+0x0056 &#x0056 V vs. 0x006F &#x006F o: 0.06 em
+0x201C &#x201C quotedblleft vs. 0x006F &#x006F o: 0.06 em
+0x201C &#x201C quotedblleft vs. 0x0071 &#x0071 q: 0.06 em
+0x007A &#x007A z vs. 0x201D &#x201D quotedblright: 0.06 em
+0x0074 &#x0074 t vs. 0x0069 &#x0069 i: 0.06 em
+0x0077 &#x0077 w vs. 0x002E &#x002E period: 0.06 em
+0x0057 &#x0057 W vs. 0x0061 &#x0061 a: 0.06 em
+0x201C &#x201C quotedblleft vs. 0x0065 &#x0065 e: 0.06 em
+0x0056 &#x0056 V vs. 0x0065 &#x0065 e: 0.06 em
+0x0079 &#x0079 y vs. 0x201D &#x201D quotedblright: 0.06 em
+0x0077 &#x0077 w vs. 0x201D &#x201D quotedblright: 0.06 em
+0x0067 &#x0067 g vs. 0x201D &#x201D quotedblright: 0.06 em
+0x0075 &#x0075 u vs. 0x201D &#x201D quotedblright: 0.06 em
+0x0063 &#x0063 c vs. 0x201D &#x201D quotedblright: 0.06 em
+0x0054 &#x0054 T vs. 0x0063 &#x0063 c: 0.06 em
+0x004C &#x004C L vs. 0x0022 &#x0022 quotedbl: 0.06 em
+0x201C &#x201C quotedblleft vs. 0x0063 &#x0063 c: 0.06 em
+0x0065 &#x0065 e vs. 0x201D &#x201D quotedblright: 0.06 em
+0x0079 &#x0079 y vs. 0x002E &#x002E period: 0.06 em
+0x0042 &#x0042 B vs. 0x006F &#x006F o: 0.06 em
+0x0022 &#x0022 quotedbl vs. 0x0041 &#x0041 A: 0.06 em
+0x201C &#x201C quotedblleft vs. 0x0067 &#x0067 g: 0.06 em
+0x0046 &#x0046 F vs. 0x0061 &#x0061 a: 0.06 em
+0x201C &#x201C quotedblleft vs. 0x0073 &#x0073 s: 0.06 em
+0x0072 &#x0072 r vs. 0x201D &#x201D quotedblright: 0.06 em
+0x0020 &#x0020 space vs. 0x0031 &#x0031 one: 0.06 em
+0x201C &#x201C quotedblleft vs. 0x0079 &#x0079 y: 0.06 em
+0x201C &#x201C quotedblleft vs. 0x006D &#x006D m: 0.06 em
+0x02C6 &#x02C6 circumflex vs. 0x0070 &#x0070 p: 0.06 em
+0x006D &#x006D m vs. 0x0022 &#x0022 quotedbl: 0.06 em
+0x0046 &#x0046 F vs. 0x0041 &#x0041 A: 0.06 em
+0x0059 &#x0059 Y vs. 0x0075 &#x0075 u: 0.06 em
+0x00A0 &#x00A0 no-break_space vs. 0x0064 &#x0064 d: 0.06 em
+0x0022 &#x0022 quotedbl vs. 0x0065 &#x0065 e: 0.06 em
+0x201C &#x201C quotedblleft vs. 0x006E &#x006E n: 0.06 em
+0x0076 &#x0076 v vs. 0x201D &#x201D quotedblright: 0.06 em
+0x2018 &#x2018 quoteleft vs. 0x0064 &#x0064 d: 0.06 em
+0x0074 &#x0074 t vs. 0x0020 &#x0020 space: 0.05 em
+0x0020 &#x0020 space vs. 0x004E &#x004E N: 0.05 em
+0x004C &#x004C L vs. 0x0057 &#x0057 W: 0.05 em
+0x0065 &#x0065 e vs. 0x0020 &#x0020 space: 0.05 em
+0x0041 &#x0041 A vs. 0x0057 &#x0057 W: 0.05 em
+0x0065 &#x0065 e vs. 0x0061 &#x0061 a: 0.05 em
+0x0076 &#x0076 v vs. 0x002C &#x002C comma: 0.05 em
+0x0068 &#x0068 h vs. 0x201D &#x201D quotedblright: 0.05 em
+0x201C &#x201C quotedblleft vs. 0x0070 &#x0070 p: 0.05 em
+0x006B &#x006B k vs. 0x201D &#x201D quotedblright: 0.05 em
+0x0061 &#x0061 a vs. 0x0022 &#x0022 quotedbl: 0.05 em
+0x006F &#x006F o vs. 0x0022 &#x0022 quotedbl: 0.05 em
+0x2018 &#x2018 quoteleft vs. 0x004A &#x004A J: 0.05 em
+0x006E &#x006E n vs. 0x0022 &#x0022 quotedbl: 0.05 em
+0x0071 &#x0071 q vs. 0x201D &#x201D quotedblright: 0.05 em
+0x0072 &#x0072 r vs. 0x006D &#x006D m: 0.05 em
+0x201C &#x201C quotedblleft vs. 0x0076 &#x0076 v: 0.05 em
+0x0072 &#x0072 r vs. 0x002C &#x002C comma: 0.05 em
+0x2018 &#x2018 quoteleft vs. 0x0061 &#x0061 a: 0.05 em
+0x0050 &#x0050 P vs. 0x0061 &#x0061 a: 0.05 em
+0x0022 &#x0022 quotedbl vs. 0x006F &#x006F o: 0.05 em
+0x0062 &#x0062 b vs. 0x201D &#x201D quotedblright: 0.05 em
+0x0062 &#x0062 b vs. 0x0022 &#x0022 quotedbl: 0.05 em
+0x0068 &#x0068 h vs. 0x2019 &#x2019 quoteright: 0.05 em
+0x0038 &#x0038 eight vs. 0x0038 &#x0038 eight: 0.05 em
+0x0057 &#x0057 W vs. 0x0065 &#x0065 e: 0.05 em
+0x0073 &#x0073 s vs. 0x0079 &#x0079 y: 0.05 em
+0x0057 &#x0057 W vs. 0x006F &#x006F o: 0.05 em
+0x0070 &#x0070 p vs. 0x0022 &#x0022 quotedbl: 0.05 em
+0x201C &#x201C quotedblleft vs. 0x002E &#x002E period: 0.05 em
+0x0066 &#x0066 f vs. 0x002E &#x002E period: 0.05 em
+0x0073 &#x0073 s vs. 0x201D &#x201D quotedblright: 0.05 em
+0x0022 &#x0022 quotedbl vs. 0x0061 &#x0061 a: 0.05 em
+0x0075 &#x0075 u vs. 0x0022 &#x0022 quotedbl: 0.05 em
+0x0079 &#x0079 y vs. 0x2019 &#x2019 quoteright: 0.05 em
+0x0067 &#x0067 g vs. 0x0022 &#x0022 quotedbl: 0.05 em
+0x0079 &#x0079 y vs. 0x0022 &#x0022 quotedbl: 0.05 em
+0x02C6 &#x02C6 circumflex vs. 0x00A0 &#x00A0 no-break_space: 0.05 em
+0x02C6 &#x02C6 circumflex vs. 0x0034 &#x0034 four: 0.05 em
+0x0077 &#x0077 w vs. 0x002C &#x002C comma: 0.05 em
+0x0056 &#x0056 V vs. 0x0075 &#x0075 u: 0.05 em
+0x007A &#x007A z vs. 0x0022 &#x0022 quotedbl: 0.05 em
+0x0037 &#x0037 seven vs. 0x002C &#x002C comma: 0.05 em
+0x0022 &#x0022 quotedbl vs. 0x002E &#x002E period: 0.05 em
+0x0037 &#x0037 seven vs. 0x002E &#x002E period: 0.05 em
+0x0073 &#x0073 s vs. 0x0074 &#x0074 t: 0.05 em
+0x0078 &#x0078 x vs. 0x201D &#x201D quotedblright: 0.05 em
+0x2018 &#x2018 quoteleft vs. 0x006F &#x006F o: 0.05 em
+0x0065 &#x0065 e vs. 0x0022 &#x0022 quotedbl: 0.05 em
+0x0063 &#x0063 c vs. 0x0022 &#x0022 quotedbl: 0.05 em
+0x0078 &#x0078 x vs. 0x0022 &#x0022 quotedbl: 0.05 em
+0x201C &#x201C quotedblleft vs. 0x0075 &#x0075 u: 0.05 em
+0x006E &#x006E n vs. 0x2019 &#x2019 quoteright: 0.05 em
+0x0022 &#x0022 quotedbl vs. 0x0071 &#x0071 q: 0.05 em
+0x004F &#x004F O vs. 0x002E &#x002E period: 0.05 em
+0x0054 &#x0054 T vs. 0x003A &#x003A colon: 0.05 em
+0x0022 &#x0022 quotedbl vs. 0x0063 &#x0063 c: 0.05 em
+0x201C &#x201C quotedblleft vs. 0x0078 &#x0078 x: 0.05 em
+0x0079 &#x0079 y vs. 0x002C &#x002C comma: 0.05 em
+0x2018 &#x2018 quoteleft vs. 0x0065 &#x0065 e: 0.05 em
+0x0044 &#x0044 D vs. 0x002E &#x002E period: 0.05 em
+0x201C &#x201C quotedblleft vs. 0x007A &#x007A z: 0.05 em
+0x2018 &#x2018 quoteleft vs. 0x0071 &#x0071 q: 0.05 em
+0x0073 &#x0073 s vs. 0x0022 &#x0022 quotedbl: 0.05 em
+0x201C &#x201C quotedblleft vs. 0x0072 &#x0072 r: 0.05 em
+0x004C &#x004C L vs. 0x2018 &#x2018 quoteleft: 0.05 em
+0x006D &#x006D m vs. 0x2019 &#x2019 quoteright: 0.05 em
+0x0022 &#x0022 quotedbl vs. 0x0077 &#x0077 w: 0.05 em
+0x0054 &#x0054 T vs. 0x003B &#x003B semicolon: 0.05 em
+0x0065 &#x0065 e vs. 0x0064 &#x0064 d: 0.05 em
+0x0071 &#x0071 q vs. 0x0022 &#x0022 quotedbl: 0.05 em
+0x2018 &#x2018 quoteleft vs. 0x002E &#x002E period: 0.05 em
+0x0022 &#x0022 quotedbl vs. 0x0073 &#x0073 s: 0.05 em
+0x0074 &#x0074 t vs. 0x0061 &#x0061 a: 0.05 em
+0x2018 &#x2018 quoteleft vs. 0x0063 &#x0063 c: 0.05 em
+0x0020 &#x0020 space vs. 0x0036 &#x0036 six: 0.05 em
+0x0046 &#x0046 F vs. 0x004A &#x004A J: 0.05 em
+0x0077 &#x0077 w vs. 0x0022 &#x0022 quotedbl: 0.05 em
+0x02C6 &#x02C6 circumflex vs. 0x0048 &#x0048 H: 0.05 em
+0x0046 &#x0046 F vs. 0x0065 &#x0065 e: 0.05 em
+0x0061 &#x0061 a vs. 0x2019 &#x2019 quoteright: 0.05 em
+0x0062 &#x0062 b vs. 0x2019 &#x2019 quoteright: 0.05 em
+0x006E &#x006E n vs. 0x0061 &#x0061 a: 0.04 em
+0x0022 &#x0022 quotedbl vs. 0x006D &#x006D m: 0.04 em
+0x2018 &#x2018 quoteleft vs. 0x006E &#x006E n: 0.04 em
+0x0046 &#x0046 F vs. 0x006F &#x006F o: 0.04 em
+0x0022 &#x0022 quotedbl vs. 0x006E &#x006E n: 0.04 em
+0x0066 &#x0066 f vs. 0x201D &#x201D quotedblright: 0.04 em
+0x00A0 &#x00A0 no-break_space vs. 0x00EC &#x00EC igrave: 0.04 em
+0x2018 &#x2018 quoteleft vs. 0x0073 &#x0073 s: 0.04 em
+0x006B &#x006B k vs. 0x2019 &#x2019 quoteright: 0.04 em
+0x0022 &#x0022 quotedbl vs. 0x0075 &#x0075 u: 0.04 em
+0x0054 &#x0054 T vs. 0x0069 &#x0069 i: 0.04 em
+0x02C6 &#x02C6 circumflex vs. 0x0027 &#x0027 quotesingle: 0.04 em
+0x0059 &#x0059 Y vs. 0x003A &#x003A colon: 0.04 em
+0x0056 &#x0056 V vs. 0x0079 &#x0079 y: 0.04 em
+0x0059 &#x0059 Y vs. 0x003B &#x003B semicolon: 0.04 em
+0x0022 &#x0022 quotedbl vs. 0x0067 &#x0067 g: 0.04 em
+0x2018 &#x2018 quoteleft vs. 0x0067 &#x0067 g: 0.04 em
+0x0020 &#x0020 space vs. 0x0035 &#x0035 five: 0.04 em
+0x006F &#x006F o vs. 0x2019 &#x2019 quoteright: 0.04 em
+0x0070 &#x0070 p vs. 0x2019 &#x2019 quoteright: 0.04 em
+0x0061 &#x0061 a vs. 0x0074 &#x0074 t: 0.04 em
+0x004C &#x004C L vs. 0x0065 &#x0065 e: 0.04 em
+0x0041 &#x0041 A vs. 0x0076 &#x0076 v: 0.04 em
+0x00A0 &#x00A0 no-break_space vs. 0x004E &#x004E N: 0.04 em
+0x0022 &#x0022 quotedbl vs. 0x0076 &#x0076 v: 0.04 em
+0x0066 &#x0066 f vs. 0x2019 &#x2019 quoteright: 0.04 em
+0x0027 &#x0027 quotesingle vs. 0x0063 &#x0063 c: 0.04 em
+0x0066 &#x0066 f vs. 0x006F &#x006F o: 0.04 em
+0x2018 &#x2018 quoteleft vs. 0x006D &#x006D m: 0.04 em
+0x0076 &#x0076 v vs. 0x0065 &#x0065 e: 0.04 em
+0x201C &#x201C quotedblleft vs. 0x006A &#x006A j: 0.04 em
+0x0052 &#x0052 R vs. 0x0061 &#x0061 a: 0.04 em
+0x0067 &#x0067 g vs. 0x2019 &#x2019 quoteright: 0.04 em
+0x0020 &#x0020 space vs. 0x0032 &#x0032 two: 0.04 em
+0x0077 &#x0077 w vs. 0x2019 &#x2019 quoteright: 0.04 em
+0x0022 &#x0022 quotedbl vs. 0x0078 &#x0078 x: 0.04 em
+0x007A &#x007A z vs. 0x2019 &#x2019 quoteright: 0.04 em
+0x0065 &#x0065 e vs. 0x2019 &#x2019 quoteright: 0.04 em
+0x0022 &#x0022 quotedbl vs. 0x007A &#x007A z: 0.04 em
+0x004C &#x004C L vs. 0x201C &#x201C quotedblleft: 0.04 em
+0x0022 &#x0022 quotedbl vs. 0x004A &#x004A J: 0.04 em
+0x004B &#x004B K vs. 0x0079 &#x0079 y: 0.04 em
+0x0022 &#x0022 quotedbl vs. 0x0072 &#x0072 r: 0.04 em
+0x0050 &#x0050 P vs. 0x0065 &#x0065 e: 0.04 em
+0x0063 &#x0063 c vs. 0x2019 &#x2019 quoteright: 0.04 em
+0x0075 &#x0075 u vs. 0x2019 &#x2019 quoteright: 0.04 em
+0x0050 &#x0050 P vs. 0x006F &#x006F o: 0.04 em
+0x0057 &#x0057 W vs. 0x0072 &#x0072 r: 0.04 em
+0x0050 &#x0050 P vs. 0x004A &#x004A J: 0.04 em
+0x0054 &#x0054 T vs. 0x0067 &#x0067 g: 0.04 em
+0x0041 &#x0041 A vs. 0x0079 &#x0079 y: 0.04 em
+0x0043 &#x0043 C vs. 0x0061 &#x0061 a: 0.04 em
+0x2018 &#x2018 quoteleft vs. 0x0070 &#x0070 p: 0.04 em
+0x201C &#x201C quotedblleft vs. 0x0054 &#x0054 T: 0.04 em
+0x0030 &#x0030 zero vs. 0x005A &#x005A Z: 0.04 em
+0x006B &#x006B k vs. 0x0022 &#x0022 quotedbl: 0.04 em
+0x0028 &#x0028 parenleft vs. 0x0063 &#x0063 c: 0.04 em
+0x201C &#x201C quotedblleft vs. 0x0066 &#x0066 f: 0.04 em
+0x0068 &#x0068 h vs. 0x0022 &#x0022 quotedbl: 0.04 em
+0x0056 &#x0056 V vs. 0x003B &#x003B semicolon: 0.04 em
+0x2013 &#x2013 endash vs. 0x0054 &#x0054 T: 0.04 em
+0x0022 &#x0022 quotedbl vs. 0x0070 &#x0070 p: 0.04 em
+0x0052 &#x0052 R vs. 0x2019 &#x2019 quoteright: 0.04 em
+0x0022 &#x0022 quotedbl vs. 0x0079 &#x0079 y: 0.04 em
+0x0056 &#x0056 V vs. 0x003A &#x003A colon: 0.04 em
+0x004C &#x004C L vs. 0x0027 &#x0027 quotesingle: 0.04 em
+0x002E &#x002E period vs. 0x0059 &#x0059 Y: 0.04 em
+0x0057 &#x0057 W vs. 0x0079 &#x0079 y: 0.04 em
+0x0076 &#x0076 v vs. 0x0022 &#x0022 quotedbl: 0.04 em
+0x0066 &#x0066 f vs. 0x002C &#x002C comma: 0.04 em
+0x00A0 &#x00A0 no-break_space vs. 0x00D4 &#x00D4 Ocircumflex: 0.04 em
+0x2018 &#x2018 quoteleft vs. 0x0066 &#x0066 f: 0.04 em
+0x004C &#x004C L vs. 0x0079 &#x0079 y: 0.04 em
+0x004E &#x004E N vs. 0x0054 &#x0054 T: 0.04 em
+0x0076 &#x0076 v vs. 0x2019 &#x2019 quoteright: 0.04 em
+0x201C &#x201C quotedblleft vs. 0x0047 &#x0047 G: 0.04 em
+0x2019 &#x2019 quoteright vs. 0x0073 &#x0073 s: 0.04 em
+0x0074 &#x0074 t vs. 0x002D &#x002D hyphen: 0.04 em
+0x0041 &#x0041 A vs. 0x0077 &#x0077 w: 0.04 em
+0x0054 &#x0054 T vs. 0x002D &#x002D hyphen: 0.04 em
+0x004F &#x004F O vs. 0x201D &#x201D quotedblright: 0.04 em
+0x002C &#x002C comma vs. 0x201D &#x201D quotedblright: 0.04 em
+0x2018 &#x2018 quoteleft vs. 0x0047 &#x0047 G: 0.04 em
+0x2018 &#x2018 quoteleft vs. 0x0053 &#x0053 S: 0.04 em
+0x002E &#x002E period vs. 0x201D &#x201D quotedblright: 0.04 em
+0x201C &#x201C quotedblleft vs. 0x0043 &#x0043 C: 0.04 em
+0x0054 &#x0054 T vs. 0x007A &#x007A z: 0.04 em
+0x0075 &#x0075 u vs. 0x0074 &#x0074 t: 0.04 em
+0x0069 &#x0069 i vs. 0x0062 &#x0062 b: 0.04 em
+0x0054 &#x0054 T vs. 0x0076 &#x0076 v: 0.04 em
+0x201C &#x201C quotedblleft vs. 0x0051 &#x0051 Q: 0.04 em
+0x002E &#x002E period vs. 0x0056 &#x0056 V: 0.04 em
+0x2018 &#x2018 quoteleft vs. 0x0051 &#x0051 Q: 0.04 em
+0x006F &#x006F o vs. 0x006D &#x006D m: 0.04 em
+0x0069 &#x0069 i vs. 0x0073 &#x0073 s: 0.03 em
+0x201C &#x201C quotedblleft vs. 0x004F &#x004F O: 0.03 em
+0x0055 &#x0055 U vs. 0x0041 &#x0041 A: 0.03 em
+0x2018 &#x2018 quoteleft vs. 0x0043 &#x0043 C: 0.03 em
+0x002C &#x002C comma vs. 0x2019 &#x2019 quoteright: 0.03 em
+0x002C &#x002C comma vs. 0x0056 &#x0056 V: 0.03 em
+0x002E &#x002E period vs. 0x2019 &#x2019 quoteright: 0.03 em
+0x002E &#x002E period vs. 0x0022 &#x0022 quotedbl: 0.03 em
+0x006F &#x006F o vs. 0x0074 &#x0074 t: 0.03 em
+0x0059 &#x0059 Y vs. 0x002D &#x002D hyphen: 0.03 em
+0x002F &#x002F slash vs. 0x0067 &#x0067 g: 0.03 em
+0x0061 &#x0061 a vs. 0x006E &#x006E n: 0.03 em
+0x002E &#x002E period vs. 0x0054 &#x0054 T: 0.03 em
+0x002C &#x002C comma vs. 0x0054 &#x0054 T: 0.03 em
+0x002F &#x002F slash vs. 0x0071 &#x0071 q: 0.03 em
+0x0056 &#x0056 V vs. 0x0072 &#x0072 r: 0.03 em
+0x02C6 &#x02C6 circumflex vs. 0x0042 &#x0042 B: 0.03 em
+0x201C &#x201C quotedblleft vs. 0x00C6 &#x00C6 AE: 0.03 em
+0x201C &#x201C quotedblleft vs. 0x0053 &#x0053 S: 0.03 em
+0x0064 &#x0064 d vs. 0x00A0 &#x00A0 no-break_space: 0.03 em
+0x2260 &#x2260 notequal vs. 0x00C1 &#x00C1 Aacute: 0.03 em
+0x0059 &#x0059 Y vs. 0x0071 &#x0071 q: 0.03 em
+0x00F6 &#x00F6 odieresis vs. 0x00F4 &#x00F4 ocircumflex: 0.03 em
+0x2126 &#x2126 ohm_sign vs. 0x0192 &#x0192 florin: 0.03 em
+0x2018 &#x2018 quoteleft vs. 0x004F &#x004F O: 0.03 em
+0x00E5 &#x00E5 aring vs. 0x2018 &#x2018 quoteleft: 0.03 em
+0x0059 &#x0059 Y vs. 0x0067 &#x0067 g: 0.03 em
+0x0056 &#x0056 V vs. 0x0069 &#x0069 i: 0.03 em
+0x004C &#x004C L vs. 0x002E &#x002E period: 0.03 em
+0x0048 &#x0048 H vs. 0x0065 &#x0065 e: 0.03 em
+0x0054 &#x0054 T vs. 0x004A &#x004A J: 0.03 em
+0x0037 &#x0037 seven vs. 0x002F &#x002F slash: 0.03 em
+0x0041 &#x0041 A vs. 0x2018 &#x2018 quoteleft: 0.03 em
+0x0055 &#x0055 U vs. 0x002E &#x002E period: 0.03 em
+0x006E &#x006E n vs. 0x0064 &#x0064 d: 0.03 em
+0x0054 &#x0054 T vs. 0x006D &#x006D m: 0.03 em
+0x0045 &#x0045 E vs. 0x0064 &#x0064 d: 0.03 em
+0x006D &#x006D m vs. 0x004E &#x004E N: 0.03 em
+0x0064 &#x0064 d vs. 0x0062 &#x0062 b: 0.03 em
+0x00A0 &#x00A0 no-break_space vs. 0x0067 &#x0067 g: 0.03 em
+0x00E5 &#x00E5 aring vs. 0x0042 &#x0042 B: 0.03 em
+0x0020 &#x0020 space vs. 0x0069 &#x0069 i: 0.03 em
+0x0065 &#x0065 e vs. 0x006C &#x006C l: 0.03 em
+0x004D &#x004D M vs. 0x00A0 &#x00A0 no-break_space: 0.03 em
+0x005C &#x005C backslash vs. 0x0056 &#x0056 V: 0.03 em
+0x0054 &#x0054 T vs. 0x0064 &#x0064 d: 0.03 em
+0x02C6 &#x02C6 circumflex vs. 0x004C &#x004C L: 0.03 em
+0x0022 &#x0022 quotedbl vs. 0x0046 &#x0046 F: 0.03 em
+0x0059 &#x0059 Y vs. 0x0069 &#x0069 i: 0.03 em
+0x006F &#x006F o vs. 0x0072 &#x0072 r: 0.03 em
+0x0061 &#x0061 a vs. 0x0043 &#x0043 C: 0.03 em
+0x0073 &#x0073 s vs. 0x00A0 &#x00A0 no-break_space: 0.03 em
+0x004F &#x004F O vs. 0x002C &#x002C comma: 0.03 em
+0x002F &#x002F slash vs. 0x0063 &#x0063 c: 0.03 em
+0x0074 &#x0074 t vs. 0x0068 &#x0068 h: 0.03 em
+0x0057 &#x0057 W vs. 0x003B &#x003B semicolon: 0.03 em
+0x2030 &#x2030 perthousand vs. 0x2026 &#x2026 ellipsis: 0.03 em
+0x0064 &#x0064 d vs. 0x0065 &#x0065 e: 0.03 em
+0x0152 &#x0152 OE vs. 0x00CE &#x00CE Icircumflex: 0.03 em
+0x0054 &#x0054 T vs. 0x006A &#x006A j: 0.03 em
+0x2018 &#x2018 quoteleft vs. 0x006A &#x006A j: 0.03 em
+0x0054 &#x0054 T vs. 0x0070 &#x0070 p: 0.03 em
+0x0054 &#x0054 T vs. 0x0071 &#x0071 q: 0.03 em
+0x2018 &#x2018 quoteleft vs. 0x00C6 &#x00C6 AE: 0.03 em
+0x2010 &#x2010 hyphen vs. 0x0022 &#x0022 quotedbl: 0.03 em
+0x0040 &#x0040 at vs. 0x002C &#x002C comma: 0.03 em
+0x0050 &#x0050 P vs. 0x0073 &#x0073 s: 0.03 em
+0x0065 &#x0065 e vs. 0x002D &#x002D hyphen: 0.03 em
+0x0054 &#x0054 T vs. 0x0078 &#x0078 x: 0.03 em
+0x0062 &#x0062 b vs. 0x0079 &#x0079 y: 0.03 em
+0x002C &#x002C comma vs. 0x0059 &#x0059 Y: 0.03 em
+0x00A0 &#x00A0 no-break_space vs. 0x0065 &#x0065 e: 0.03 em
+0x2018 &#x2018 quoteleft vs. 0x0077 &#x0077 w: 0.03 em
+0x002C &#x002C comma vs. 0x0022 &#x0022 quotedbl: 0.03 em
+0x0052 &#x0052 R vs. 0x201D &#x201D quotedblright: 0.03 em
+0x0057 &#x0057 W vs. 0x003A &#x003A colon: 0.03 em
+0x00A0 &#x00A0 no-break_space vs. 0x0043 &#x0043 C: 0.03 em
+0x002E &#x002E period vs. 0x0057 &#x0057 W: 0.03 em
+0x0044 &#x0044 D vs. 0x002C &#x002C comma: 0.03 em
+0x005B &#x005B bracketleft vs. 0x0040 &#x0040 at: 0.03 em
+0x002F &#x002F slash vs. 0x002C &#x002C comma: 0.03 em
+0x0044 &#x0044 D vs. 0x201D &#x201D quotedblright: 0.03 em
+0x0022 &#x0022 quotedbl vs. 0x2010 &#x2010 hyphen: 0.03 em
+0x0022 &#x0022 quotedbl vs. 0x0048 &#x0048 H: 0.03 em
+0x0057 &#x0057 W vs. 0x0075 &#x0075 u: 0.03 em
+0x0027 &#x0027 quotesingle vs. 0x0041 &#x0041 A: 0.03 em
+0x00F7 &#x00F7 divide vs. 0x00D5 &#x00D5 Otilde: 0.03 em
+0x0049 &#x0049 I vs. 0x006E &#x006E n: 0.03 em
+</pre>
+        
+      </section>
+      <footer>
+<!--
+        <p>This project is maintained by <a href="https://github.com/charlesmchen">charlesmchen</a></p>
+-->
+      </footer>
+    </div>
+    <script src="javascripts/scale.fix.js"></script>
+    
+  </body>
+</html>
