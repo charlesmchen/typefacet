@@ -308,7 +308,7 @@ python python/src-main/autokern/Autokern.py -h
 	is particularly useful when tuning arguments.
 	Use the <b>--kern-samples-only</b> argument 
 	to kern just the pairs that are used in the sample texts.  
-	Use the <b>--extra-sample-texts</b> argument to add to the built-in sample texts.
+	Use the <b>--sample-texts</b> argument to set the sample texts.
 </div>
 <div>
 	The <b>--write-kerning-pair-logs</b> argument will activate the "kerning pair" logs
@@ -419,7 +419,7 @@ Autokern.py \
 	--precision-ems 0.005 \
 	--log-path logs \
 	--kern-samples-only \
-	--extra-sample-texts "ttrfTT"
+	--sample-texts "ttrfTT"
 </pre>
 
 
@@ -464,7 +464,7 @@ Autokern.py \
 	--precision-ems 0.005 \
 	--log-path logs \
 	--kern-samples-only \
-	--extra-sample-texts "||NNnnOOoo"
+	--sample-texts "||NNnnOOoo"
 </pre>
 
 
@@ -515,7 +515,7 @@ Autokern.py \
 	--precision-ems 0.005 \
 	--log-path logs \
 	--kern-samples-only \
-	--extra-sample-texts "NNOOAA"
+	--sample-texts "NNOOAA"
 </pre>
 <div>
 	Note: intrusion is limited by the <b>--min-distance-ems</b> argument, so intrusion will never cause contours to overlap.
@@ -559,7 +559,7 @@ Autokern.py \
 	--precision-ems 0.005 \
 	--log-path logs \
 	--kern-samples-only \
-	--extra-sample-texts "WAVTaLTLY"
+	--sample-texts "WAVTaLTLY"
 </pre>
 
 <div>
@@ -577,10 +577,6 @@ Autokern.py \
 	</h3>
 
 	<ul>
-		<li>
-			To kern an entire font, remove the <b>--kern-samples-only</b>, 
-			<b>--glyph-pairs-to-kern</b> or <b>--glyphs-to-kern</b> arguments.
-		</li>
 		<li>
 			When kerning an entire font, do not use the <b>--write-kerning-pair-logs</b> argument 
 			as writing a log file for each kerning pair combination will be very slow.
@@ -626,11 +622,34 @@ Autokern.py \
 			ignore x-extrema overlap below the baseline or above the ascender.
 		</li>
 		<li>
-			The <b>--glyphs-to-ignore</b> and <b>--glyph-categories-to-ignore</b> arguments can be used to 
-			specify a set of glyphs that should not be kerned.  Use the <b>-h</b> usage argument
-			for more information.
+			
+		</li>
+		<li>
+			
 		</li>
 	</ul>
+
+
+
+	<h3>
+		Controlling Scope
+	</h3>
+	
+	<div>
+		By default, Autokern will kern nearly all of the glyphs in the font.
+	</div>
+	<div>
+		We've already discussed how to limit Autokern's scope using the <b>--kern-samples-only</b>, 
+		<b>--glyph-pairs-to-kern</b> or <b>--glyphs-to-kern</b> arguments.
+
+		To kern an entire font, make sure none of these arguments are present.
+	</div>
+	<div>
+		The <b>--glyphs-to-ignore</b> and <b>--glyph-categories-to-ignore</b> arguments can be used to 
+		specify a set of glyphs that should not be kerned.  Use the <b>-h</b> usage argument
+		for more information.
+	</div>
+
 
 	<h3>
 		Per-Category Tuning
