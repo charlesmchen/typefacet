@@ -1778,7 +1778,8 @@ class Autokern(TFSMap):
 #                TRUSION_POWER = 1.10
 #                intrusionTotal += pow(rowIntrusion, TRUSION_POWER)
 #                protrusionTotal += pow(rowProtrusion, 1 / TRUSION_POWER)
-                intrusionPowTotal += self.units_per_em * pow(rowIntrusion / self.units_per_em, TRUSION_POWER)
+                intrusionPowTotal += pow(rowIntrusion, TRUSION_POWER)
+#                intrusionPowTotal += self.units_per_em * pow(rowIntrusion / self.units_per_em, TRUSION_POWER)
 #                protrusionPowTotal += pow(rowProtrusion, 1 / TRUSION_POWER)
                 protrusionPowTotal += rowProtrusion
 
