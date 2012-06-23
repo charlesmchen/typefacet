@@ -226,7 +226,7 @@ class AutokernSettings(TFBaseSettings):
                             Other glyphs will be not kerned.
                             Overridden by the --glyph-pairs-to-kern and --glyphs-to-kern arguments.
                             ''')
-        parser.add_argument('--extra-sample-texts',
+        parser.add_argument('--sample-texts',
 #                            type=self.codePointType,
                             nargs='+',
                             help='''A list of short texts to render in the "sample text" log.

@@ -123,7 +123,7 @@ DEFAULT_SAMPLE_TEXTS = (
                'success',
                'lavas',
                'TTttrf', # min distance
-               'NNOOoo', # max distance
+               '||NNnnOOoo', # max distance
                'rtryvjj',
                'pqpiitt',
                'ijiJn.',
@@ -133,12 +133,45 @@ DEFAULT_SAMPLE_TEXTS = (
                'hhnnhn',
                'JFrf',
                'WaToYaVa',
+#                'Alphabet',
+                
+'MOUNTAIN',
+'LAKE',
+'heyboy',
+'1234567890',
+'L7L4',
+'+5-3=74%',
+'8*7/6^2',
+'a@b.com',
+'(ok)[4]<4>{4}',
+'1' + unichr(194) + unichr(162) + '2' + unichr(194) + unichr(163) + '3' + unichr(194) + unichr(165) + '4$5' + unichr(226) + unichr(130) + unichr(172),
+'#7+&>>?',
+'//\+_T' + unichr(195) + unichr(134),
+unichr(208) + unichr(148) + unichr(208) + unichr(160) + unichr(208) + unichr(163) + unichr(208) + unichr(147) + unichr(208) + unichr(144) + unichr(208) + unichr(160) + unichr(208) + unichr(152),
+unichr(208) + unichr(147) + '-' + unichr(208) + unichr(150) + unichr(208) + unichr(138) + '7' + unichr(208) + unichr(147) + unichr(208) + unichr(136),
+unichr(206) + unichr(147) + '-' + unichr(206) + unichr(148) + unichr(206) + unichr(154) + '-' + unichr(206) + unichr(167),
+unichr(206) + unichr(182) + '*' + unichr(206) + unichr(187) + unichr(207) + unichr(130) + unichr(206) + unichr(155) + unichr(206) + unichr(168),
+                                
                'O!O?O.O;O;O,',
                'o!o?o.o;o;o,',
                'r!r?r.r;r;r,',
                'N!N?N.N;N;N,',
                )
 
+def formatUnicodeStringLiteral(value):
+    result = []
+    for c in value:
+        if ord(c) < 127:
+            result.append('\'' + c + '\'')
+        else:
+            result.append('unichr(%d)' % ord(c))
+    return ' + '.join(result)
+
+def formatUnicodeForHtml(value):
+    result = []
+    for c in value:
+        result.append(u'&#%d;' % ord(c) )
+    return ''.join(result)
 
 def formatGlyphUnicode(glyph):
     if glyph.unicode is None:
@@ -457,18 +490,18 @@ class Autokern(TFSMap):
 
         #
 
-        if self.extra_sample_texts is not None:
-            if len(self.extra_sample_texts) < 1:
-                raise Exception('Missing --extra-sample-texts value')
-            for sampleText in self.extra_sample_texts:
+        if self.sample_texts is not None:
+            if len(self.sample_texts) < 1:
+                raise Exception('Missing --sample-texts value')
+            for sampleText in self.sample_texts:
                 if len(sampleText) < 1:
-                    raise Exception('Invalid --extra-sample-texts value: %s' % sampleText)
+                    raise Exception('Invalid --sample-texts value: %s' % sampleText)
                 for glyph in sampleText:
                     if ord(glyph) not in glyphCodePoints:
-                        raise Exception('--extra-sample-texts value: %s has unknown glyph: %s' % (sampleText, glyph,))
+                        raise Exception('--sample-texts value: %s has unknown glyph: %s' % (sampleText, glyph,))
 
-            # Prepend extra sample texts.
-            self.sampleTexts = self.extra_sample_texts + self.sampleTexts
+            # Use sample texts.
+            self.sampleTexts = self.sample_texts
 
         #
 
@@ -546,7 +579,7 @@ class Autokern(TFSMap):
                 for glyph in sampleText:
                     if ord(glyph) not in glyphCodePointToNameMap:
                         '''
-                        We've already validated the "extra" sample texts.
+                        We've already validated the sample texts.
                         Ignore missing characters in the default sample texts.
                         '''
                         continue
@@ -1745,7 +1778,7 @@ class Autokern(TFSMap):
 #                TRUSION_POWER = 1.10
 #                intrusionTotal += pow(rowIntrusion, TRUSION_POWER)
 #                protrusionTotal += pow(rowProtrusion, 1 / TRUSION_POWER)
-                intrusionPowTotal += pow(rowIntrusion, TRUSION_POWER)
+                intrusionPowTotal += self.units_per_em * pow(rowIntrusion / self.units_per_em, TRUSION_POWER)
 #                protrusionPowTotal += pow(rowProtrusion, 1 / TRUSION_POWER)
                 protrusionPowTotal += rowProtrusion
 
@@ -2571,7 +2604,7 @@ class Autokern(TFSMap):
             advance = self.advanceMap[key]
             name0, name1 = key
             kerningValue = advance - glyphWidthMap[name0]
-
+#            print 'name0, name1', name0, name1, 'kerningValue', kerningValue, 'advance', advance, 'glyphWidth', glyphWidthMap[name0]
 #            if key in (
 #                       ('j', 'o',),
 #                        ):
@@ -2616,6 +2649,8 @@ class Autokern(TFSMap):
             return
         if self.glyphsToKern is not None:
             return
+
+        print 'Clearing Side Bearings...'
 
         '''
         Removes the left and right side bearings from the glyph.
@@ -2857,8 +2892,10 @@ class Autokern(TFSMap):
             codePoint = ord(textGlyph)
             ufoglyph = ufoFont.getGlyphByCodePoint(codePoint)
             if ufoglyph is None:
-                print 'Unknown glyph in sample text: %s %s' % (textGlyph, formatUnicode(codePoint),)
-                return None
+                print u'Unknown glyph in sample text: %s' % (formatUnicode(codePoint),)
+#                print u'Unknown glyph in sample text: %s %s' % (textGlyph, formatUnicode(codePoint),)
+                raise Exception(u'Unknown glyph in sample text: %s' % (formatUnicode(codePoint),))
+#                return None
 #                if len(contours) < 1:
 #                    continue
 
@@ -2877,100 +2914,103 @@ class Autokern(TFSMap):
             tempTFSGlyph = TFSGlyph(tempUfoGlyph)
             tempTFSGlyph.setContours(contours, correctDirection=True)
             contours = tempTFSGlyph.getContours(warnings=False)
-
-            kerningValue = None
-            if lastUfoGlyph is None:
+            minmax = None
+            kerningValue = 0
+            
+            if contours:
+                if lastUfoGlyph is None:
+                    minmax = minmaxPaths(contours)
+                    xOffset = -minmax.minX
+                else:
+    #                if lastUfoGlyph is not None:
+                    kerningValue = ufoFont.getKerningPair(lastUfoGlyph.name, ufoglyph.name, )
+                    if kerningValue is not None:
+                        xOffset += kerningValue
+                    else:
+                        kerningValue = 0
+    
+    #            print
+    #            print 'xOffset', xOffset
+    #            print 'ufoglyph.name', ufoglyph.name
+    #            print 'ufoglyph.xAdvance', ufoglyph.xAdvance
+    #            print 'kerningValue', kerningValue
+    #            minmax = minmaxPaths(contours)
+    #            print 'minmax.raw', minmax
+    
+                contours = [contour.applyPlus(TFSPoint(xOffset, 0)) for contour in contours]
                 minmax = minmaxPaths(contours)
-                xOffset = -minmax.minX
-            else:
-#                if lastUfoGlyph is not None:
-                kerningValue = ufoFont.getKerningPair(lastUfoGlyph.name, ufoglyph.name, )
-                if kerningValue is not None:
-                    xOffset += kerningValue
-                else:
-                    kerningValue = 0
-
-#            print
-#            print 'xOffset', xOffset
-#            print 'ufoglyph.name', ufoglyph.name
-#            print 'ufoglyph.xAdvance', ufoglyph.xAdvance
-#            print 'kerningValue', kerningValue
-#            minmax = minmaxPaths(contours)
-#            print 'minmax.raw', minmax
-
-            contours = [contour.applyPlus(TFSPoint(xOffset, 0)) for contour in contours]
-            minmax = minmaxPaths(contours)
-
-#            print 'minmax', minmax
-
-            if kerningValue is not None:
-                xExtremaOverlap = minmax.minX - lastMinmax.maxX
-#                print 'lastMinmax', lastMinmax
-#                print 'xExtremaOverlap', xExtremaOverlap
-#                    text = '%0.0f/%s%0.0f' % (
-#                                                 float(kerningValue),
-#                                                 '+' if xExtremaOverlap > 0 else '-',
-#                                                 float(abs(xExtremaOverlap)),
-#                                                 )
-                text = '%d' % ( int(xExtremaOverlap), )
-
-                KERNING_LABEL_COLOR = 0xdf000000
-                if lastKerningValues is not None:
-                    lastXExtremaOverlap = lastKerningValues[index - 1]
-                    xExtremaOverlapDelta = xExtremaOverlap - lastXExtremaOverlap
-
-#                    print 'index', index
-#                    print 'lastXExtremaOverlap', lastXExtremaOverlap
-#                    print 'xExtremaOverlapDelta', xExtremaOverlapDelta
-
-                    KERNING_HIGHLIGHT_LOW_THRESHOLD = 10
-                    KERNING_HIGHLIGHT_HIGH_THRESHOLD = 20
-                    if abs(xExtremaOverlapDelta) >= KERNING_HIGHLIGHT_HIGH_THRESHOLD:
-                        KERNING_LABEL_COLOR = 0xdfa70000
-                    elif abs(xExtremaOverlapDelta) >= KERNING_HIGHLIGHT_LOW_THRESHOLD:
-                        KERNING_LABEL_COLOR = 0xff530000
-
-                    text += ' (%s%0.0f)' % (
-                                           '' if xExtremaOverlapDelta == 0 else ('+' if xExtremaOverlapDelta > 0 else '-'),
-                                           float(abs(xExtremaOverlapDelta)),
-                                           )
-
-                if lastUfoGlyph is not None and lastKerningValues is not None:
-                    '''
-                    For the Autokern kerning values, we want to visually highlight
-                    values which were not kerned.
-                    '''
-                    if ( lastUfoGlyph.name, ufoglyph.name, ) not in self.advanceMap:
+    
+    #            print 'minmax', minmax
+    
+                if ((kerningValue is not None) and
+                    (lastMinmax is not None)):
+                    xExtremaOverlap = minmax.minX - lastMinmax.maxX
+    #                print 'lastMinmax', lastMinmax
+    #                print 'xExtremaOverlap', xExtremaOverlap
+    #                    text = '%0.0f/%s%0.0f' % (
+    #                                                 float(kerningValue),
+    #                                                 '+' if xExtremaOverlap > 0 else '-',
+    #                                                 float(abs(xExtremaOverlap)),
+    #                                                 )
+                    text = '%d' % ( int(xExtremaOverlap), )
+    
+                    KERNING_LABEL_COLOR = 0xdf000000
+                    if lastKerningValues is not None:
+                        lastXExtremaOverlap = lastKerningValues[index - 1]
+                        xExtremaOverlapDelta = xExtremaOverlap - lastXExtremaOverlap
+    
+    #                    print 'index', index
+    #                    print 'lastXExtremaOverlap', lastXExtremaOverlap
+    #                    print 'xExtremaOverlapDelta', xExtremaOverlapDelta
+    
+                        KERNING_HIGHLIGHT_LOW_THRESHOLD = 10
+                        KERNING_HIGHLIGHT_HIGH_THRESHOLD = 20
+                        if abs(xExtremaOverlapDelta) >= KERNING_HIGHLIGHT_HIGH_THRESHOLD:
+                            KERNING_LABEL_COLOR = 0xdfa70000
+                        elif abs(xExtremaOverlapDelta) >= KERNING_HIGHLIGHT_LOW_THRESHOLD:
+                            KERNING_LABEL_COLOR = 0xff530000
+    
+                        text += ' (%s%0.0f)' % (
+                                               '' if xExtremaOverlapDelta == 0 else ('+' if xExtremaOverlapDelta > 0 else '-'),
+                                               float(abs(xExtremaOverlapDelta)),
+                                               )
+    
+                    if lastUfoGlyph is not None and lastKerningValues is not None:
                         '''
-                        Kerning pair was ignored.
+                        For the Autokern kerning values, we want to visually highlight
+                        values which were not kerned.
                         '''
-                        KERNING_LABEL_COLOR = 0xdf007f7f
-
-
-                label = TFSMap()
-                label.text = text
-#                # Subtract half of the kerning value to center on the ker
-#                labelX = xOffset - kerningValue * 0.5
-#                labelX = xOffset
-                # Center label between the x-extrema of the two glyphs.
-                labelX = (minmax.minX + lastMinmax.maxX) * 0.5
-                label.origin = TFSPoint(labelX, -abs(self.descender * 1.1))
-                label.fillColor = KERNING_LABEL_COLOR
-                label.params = {
-                                       'text-anchor': 'middle',
-                                       'dominant-baseline': 'text-before-edge',
-                                       'font-family': "Lato, Helvetica, Arial, sans-serif;",
-#                                           'font-size': "14px",
-#                                           'font-weight': "bold",
-                                       }
-                labels.append(label)
-                kerningValues.append( xExtremaOverlap )
-
-            for contour in contours:
-                if isClosedPathClockwise(contour):
-                    outsideContours.append(contour)
-                else:
-                    insideContours.append(contour)
+                        if ( lastUfoGlyph.name, ufoglyph.name, ) not in self.advanceMap:
+                            '''
+                            Kerning pair was ignored.
+                            '''
+                            KERNING_LABEL_COLOR = 0xdf007f7f
+    
+    
+                    label = TFSMap()
+                    label.text = text
+    #                # Subtract half of the kerning value to center on the ker
+    #                labelX = xOffset - kerningValue * 0.5
+    #                labelX = xOffset
+                    # Center label between the x-extrema of the two glyphs.
+                    labelX = (minmax.minX + lastMinmax.maxX) * 0.5
+                    label.origin = TFSPoint(labelX, -abs(self.descender * 1.1))
+                    label.fillColor = KERNING_LABEL_COLOR
+                    label.params = {
+                                           'text-anchor': 'middle',
+                                           'dominant-baseline': 'text-before-edge',
+                                           'font-family': "Lato, Helvetica, Arial, sans-serif;",
+    #                                           'font-size': "14px",
+    #                                           'font-weight': "bold",
+                                           }
+                    labels.append(label)
+                    kerningValues.append( xExtremaOverlap )
+    
+                for contour in contours:
+                    if isClosedPathClockwise(contour):
+                        outsideContours.append(contour)
+                    else:
+                        insideContours.append(contour)
 
             xOffset += ufoglyph.xAdvance
             lastMinmax = minmax
@@ -2980,30 +3020,34 @@ class Autokern(TFSMap):
 
 
     def renderTextWithFont(self, text, ufoFont, cache, source, fillColor, lastKerningValues=None):
-        converted = self.convertTextToContours(text, ufoFont, cache, lastKerningValues=lastKerningValues)
-        if converted is None:
-            return {'errorMap': {'text': text,
+        try:
+            converted = self.convertTextToContours(text, ufoFont, cache, lastKerningValues=lastKerningValues)
+        except Exception, e:
+            return {'text': formatUnicodeForHtml(text), 
+                    'errorMap': {'text': formatUnicodeForHtml(text), 
                                  'source': source,
-                                 'message': 'error'},
+                                 'message': e.message,
+                                 },
                     }, None
-        else:
-            outsideContours, insideContours, labels, kerningValues = converted
+            
+        outsideContours, insideContours, labels, kerningValues = converted
 
-            sampleSvg = self.renderSvgScene(None,
-                                            fillPathTuples = ( ( fillColor, outsideContours, ),
-                                                               ( 0xffffffff, insideContours, ),
-                                                               ),
-                                            textTuples = labels,
-                                            padding=(0,0,20,0),
+        sampleSvg = self.renderSvgScene(None,
+                                        fillPathTuples = ( ( fillColor, outsideContours, ),
+                                                           ( 0xffffffff, insideContours, ),
+                                                           ),
+                                        textTuples = labels,
+                                        padding=(0,0,20,0),
 #                                            maxWidth = 800,
 #                                            maxHeight = 300,
-                                            maxWidth = 700,
-                                            maxHeight = 250,
-                                            )
-            return {'renderMap': {'text': text,
-                   'source': source,
-                   'svg': sampleSvg},
-                   }, kerningValues
+                                        maxWidth = 700,
+                                        maxHeight = 250,
+                                        )
+        return {'text': formatUnicodeForHtml(text), 
+                'renderMap': {'text': formatUnicodeForHtml(text), 
+               'source': source,
+               'svg': sampleSvg},
+               }, kerningValues
 
 
     def writeSamples(self):
@@ -3014,8 +3058,11 @@ class Autokern(TFSMap):
         print 'Writing samples...'
 
         sampleTextsMaps = []
-        for sampleText in self.sampleTexts:
+        for index, sampleText in enumerate(self.sampleTexts):
             sampleTextMap, kerningValues = self.renderTextWithFont(sampleText, self.srcUfoFont, self.srcCache, 'Original', 0x7f7f7faf)
+            sampleTextMap['indexMap'] = { 'index': index,
+                                         'indexName': sampleTextMap['text'],
+                                         }
             sampleTextsMaps.append(sampleTextMap)
             sampleTextMap, _ = self.renderTextWithFont(sampleText, self.dstUfoFont, self.dstCache, 'Autokern', 0x7f7faf7f,
                                                        lastKerningValues=kerningValues)

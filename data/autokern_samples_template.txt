@@ -91,22 +91,46 @@ section div.back_link_bottom {
 	Chrome doesn't seem to be honoring this page's no-cache meta tag.
 </div>
 
+
+<h3>Index</h3>
+
+<ul>
+{{#sampleTextsMaps}}
+{{#indexMap}}
+<li>
+	<a href="#{{index}}">{{{indexName}}}</a>
+</li>
+{{/indexMap}}
+{{/sampleTextsMaps}}
+</ul>
+
+
+
+
+
+
 {{#sampleTextsMaps}}
 
+{{#indexMap}}
+<a name="{{index}}">
+{{/indexMap}}
+
 {{#errorMap}}
-<h3>{{source}}: {{text}}</h3>
+<h3>{{source}}: {{{text}}}</h3>
 <div>
 	<b>Error:</b> {{message}}
 </div>
 {{/errorMap}}
 
 {{#renderMap}}
-<h3>{{source}}: {{text}}</h3>
+<h3>{{source}}: {{{text}}}</h3>
 
 <div>
 	{{{svg}}}
 </div>
 {{/renderMap}}
+
+</a>
 
 {{/sampleTextsMaps}}
 
